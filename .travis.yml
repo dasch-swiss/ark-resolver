@@ -2,10 +2,6 @@
 dist: trusty
 sudo: required
 
-# only pull the last commit (faster)
-git:
-  depth: 1
-
 # provides us docker
 services:
   - docker
@@ -34,14 +30,15 @@ jobs:
   include:
     - stage: test
       script:
-        - docker build -t $REPO:$TRAVIS_BRANCH .
+        - docker build -t $REPO:$TRAVIS .
         - docker run $REPO:$TRAVIS_BRANCH --test
 
     - stage: publish
       script:
+        - TAG=$(git describe --tags)
         - docker login -u $DOCKER_USER -p $DOCKER_PASS
-        - docker build -t $REPO:$TRAVIS_BRANCH .
-        - docker tag $REPO:$TRAVIS_BRANCH $REPO:latest
+        - docker build -t $REPO:$TAG .
+        - docker tag $REPO:$TAG $REPO:latest
         - docker push $REPO
 
 notifications:
