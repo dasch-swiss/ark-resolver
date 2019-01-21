@@ -1,5 +1,8 @@
 # The Knora ARK Resolver
 
+Resolves [ARK](https://tools.ietf.org/html/draft-kunze-ark-18) URLs referring to
+resources in [Knora](http://www.knora.org) repositories.
+
 ## Modes of operation
 
 The program `ark.py` has two modes of operation:
