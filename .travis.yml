@@ -23,8 +23,8 @@ env:
 
 stages:
   - test
-  - name: publish # generally, only publish if we are on 'develop' or tagged
-    if: branch = develop OR tag IS present
+  - name: publish # generally, only publish if we are on 'master' or tagged
+    if: branch = master OR tag IS present
 
 # command to install dependencies
 install:
