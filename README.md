@@ -1,5 +1,7 @@
 # The Knora ARK Resolver
 
+## Modes of operation
+
 The program `ark.py` has two modes of operation:
 
 - When run as an HTTP server, it resolves Knora ARK URLs by redirecting
@@ -23,6 +25,17 @@ Prerequisites:
 - Python 3
 - [Sanic](https://sanic.readthedocs.io/en/latest/)
 
+
+## Using Docker
+
+Images are published to the [dhlab-basel/ark-resolver](https://cloud.docker.com/u/dhlabbasel/repository/docker/dhlabbasel/ark-resolver)
+Docker Hub repository.
+
+To use, run:
+
+```bash
+$ docker run dhlab-basel/ark-resolver
+```
 
 ## Requirements
 
