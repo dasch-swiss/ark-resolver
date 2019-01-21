@@ -30,8 +30,8 @@ jobs:
   include:
     - stage: test
       script:
-        - docker build -t $REPO:$TRAVIS .
-        - docker run $REPO:$TRAVIS_BRANCH --test
+        - docker build -t $REPO .
+        - docker run $REPO --test
 
     - stage: publish
       script:
