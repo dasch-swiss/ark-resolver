@@ -1,6 +1,6 @@
 # The Knora ARK Resolver
 
-The program `ark.py` in this directory has two modes of operation:
+The program `ark.py` has two modes of operation:
 
 - When run as an HTTP server, it resolves Knora ARK URLs by redirecting
   to the actual location of each resource. Redirect URLs are generated
