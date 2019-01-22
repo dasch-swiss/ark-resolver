@@ -30,8 +30,9 @@ import argparse
 from urllib import parse
 import configparser
 from string import Template
-from sanic import Sanic, response
 import traceback
+import os
+from sanic import Sanic, response
 
 
 #################################################################################################
@@ -51,22 +52,28 @@ class Settings:
         self.knora_ark_version = 1
         self.resource_iri_regex = re.compile(r"^http://rdfh.ch/([0-9A-F]+)/([A-Za-z0-9_-]+)$")
         self.resource_int_id_factor = 982451653
-        self.ark_url_regex = re.compile(r"^http://" + self.top_config["ArkResolverHost"] + r"/ark:/" + self.top_config["ArkNaan"] + r"/([0-9]+)(?:/([0-9A-F]+)(?:/([A-Za-z0-9_=]+)(?:\.([0-9]{8}T[0-9]{15}Z))?)?)?$")
+        self.ark_path_pattern = r"ark:/" + self.top_config["ArkNaan"] + r"/([0-9]+)(?:/([0-9A-F]+)(?:/([A-Za-z0-9_=]+)(?:\.([0-9]{8}T[0-9]{15}Z))?)?)?"
+        self.ark_path_regex = re.compile("^" + self.ark_path_pattern + "$")
+        self.ark_url_regex = re.compile("^https?://" + self.top_config["ArkExternalHost"] + "/" + self.ark_path_pattern + "$")
 
 
 # Represents the information retrieved from a Knora ARK URL.
 class ArkUrlInfo:
-    def __init__(self, settings, ark_url):
+    def __init__(self, settings, ark_url, path_only=False):
         self.settings = settings
-        match = settings.ark_url_regex.match(ark_url)
+
+        if path_only:
+            match = settings.ark_path_regex.match(ark_url)
+        else:
+            match = settings.ark_url_regex.match(ark_url)
 
         if match is None:
-            raise ArkUrlException("Invalid ARK URL: {}".format(ark_url))
+            raise ArkUrlException("Invalid ARK ID: {}".format(ark_url))
 
         self.url_version = int(match.group(1))
 
         if self.url_version != settings.knora_ark_version:
-            raise ArkUrlException("Invalid ARK URL: {}".format(ark_url))
+            raise ArkUrlException("Invalid ARK ID: {}".format(ark_url))
 
         self.project_id = match.group(2)
         escaped_resource_id_with_check_digit = match.group(3)
@@ -76,7 +83,7 @@ class ArkUrlInfo:
             resource_id_with_check_digit = escaped_resource_id_with_check_digit.replace('=', '-')
 
             if not is_valid(resource_id_with_check_digit):
-                raise ArkUrlException("Invalid ARK URL: {}".format(ark_url))
+                raise ArkUrlException("Invalid ARK ID: {}".format(ark_url))
 
             self.resource_id = resource_id_with_check_digit[0:-1]
             self.timestamp = match.group(4)
@@ -188,8 +195,14 @@ class ArkUrlFormatter:
                        project_id,
                        resource_id_with_check_digit,
                        timestamp):
-        url = "http://{}/ark:/{}/{}/{}/{}".format(
-            self.settings.top_config["ArkResolverHost"],
+        if self.settings.top_config.getboolean("ArkHttpsProxy"):
+            protocol = "https"
+        else:
+            protocol = "http"
+
+        url = "{}://{}/ark:/{}/{}/{}/{}".format(
+            protocol,
+            self.settings.top_config["ArkExternalHost"],
             self.settings.top_config["ArkNaan"],
             self.settings.knora_ark_version,
             project_id,
@@ -286,13 +299,10 @@ def to_check_digit(char_value):
 app = Sanic()
 
 
-@app.get('/')
 @app.get('/<path:path>')
-async def catch_all(_, path=''):
-    ark_url = "http://{}/{}".format(app.config.settings.top_config["ArkResolverHost"], path)
-
+async def catch_all(_, path=""):
     try:
-        redirect_url = ArkUrlInfo(app.config.settings, ark_url).to_redirect_url()
+        redirect_url = ArkUrlInfo(settings=app.config.settings, ark_url=path, path_only=True).to_redirect_url()
     except ArkUrlException as ex:
         return response.text(
             body=ex.message,
@@ -300,7 +310,7 @@ async def catch_all(_, path=''):
         )
     except KeyError:
         return response.text(
-            body="Invalid ARK URL",
+            body="Invalid ARK ID",
             status=400
         )
 
@@ -309,7 +319,7 @@ async def catch_all(_, path=''):
 
 def server(settings):
     app.config.settings = settings
-    app.run(host=settings.top_config["LocalServerHost"], port=settings.top_config.getint("LocalServerPort"))
+    app.run(host=settings.top_config["ArkInternalHost"], port=settings.top_config.getint("ArkInternalPort"))
 
 
 #################################################################################################
@@ -357,56 +367,62 @@ def test(settings):
     print("generate an ARK URL for a resource IRI without a timestamp: ", end='')
     resource_iri = "http://rdfh.ch/0001/cmfk1DMHRBiR4-_6HXpEFA"
     ark_url = ark_url_formatter.resource_iri_to_ark_url(resource_iri)
-    assert ark_url == "http://ark.dasch.swiss/ark:/72163/1/0001/cmfk1DMHRBiR4=_6HXpEFAn"
+    assert ark_url == "https://ark.example.org/ark:/00000/1/0001/cmfk1DMHRBiR4=_6HXpEFAn"
     print("OK")
 
     print("generate an ARK URL for a resource IRI with a timestamp: ", end='')
     ark_url = ark_url_formatter.resource_iri_to_ark_url(resource_iri=resource_iri, timestamp="20190118T102919000031660Z")
-    assert ark_url == "http://ark.dasch.swiss/ark:/72163/1/0001/cmfk1DMHRBiR4=_6HXpEFAn.20190118T102919000031660Z"
+    assert ark_url == "https://ark.example.org/ark:/00000/1/0001/cmfk1DMHRBiR4=_6HXpEFAn.20190118T102919000031660Z"
     print("OK")
 
     print("generate an ARK URL for a PHP resource without a timestamp: ", end='')
     ark_url = ark_url_formatter.php_resource_to_ark_url(php_resource_id=1, project_id="0803")
-    assert ark_url == "http://ark.dasch.swiss/ark:/72163/1/0803/751e0b8am"
+    assert ark_url == "https://ark.example.org/ark:/00000/1/0803/751e0b8am"
     print("OK")
 
     print("generate an ARK URL for a PHP resource with a timestamp: ", end='')
     ark_url = ark_url_formatter.php_resource_to_ark_url(php_resource_id=1, project_id="0803", timestamp="20190118T102919000031660Z")
-    assert ark_url == "http://ark.dasch.swiss/ark:/72163/1/0803/751e0b8am.20190118T102919000031660Z"
+    assert ark_url == "https://ark.example.org/ark:/00000/1/0803/751e0b8am.20190118T102919000031660Z"
     print("OK")
 
     print("parse an ARK URL representing the top-level object: ", end='')
-    ark_url_info = ArkUrlInfo(settings, "http://ark.dasch.swiss/ark:/72163/1")
+    ark_url_info = ArkUrlInfo(settings, "https://ark.example.org/ark:/00000/1")
     redirect_url = ark_url_info.to_redirect_url()
     assert redirect_url == "http://dasch.swiss"
     print("OK")
 
     print("parse an ARK project URL: ", end='')
-    ark_url_info = ArkUrlInfo(settings, "http://ark.dasch.swiss/ark:/72163/1/0001")
+    ark_url_info = ArkUrlInfo(settings, "https://ark.example.org/ark:/00000/1/0001")
     redirect_url = ark_url_info.to_redirect_url()
     assert redirect_url == "http://0.0.0.0:3333/admin/projects/http%3A%2F%2Frdfh.ch%2Fprojects%2F0001"
     print("OK")
 
     print("parse an ARK URL for a Knora resource without a timestamp: ", end='')
-    ark_url_info = ArkUrlInfo(settings, "http://ark.dasch.swiss/ark:/72163/1/0001/cmfk1DMHRBiR4=_6HXpEFAn")
+    ark_url_info = ArkUrlInfo(settings, "https://ark.example.org/ark:/00000/1/0001/cmfk1DMHRBiR4=_6HXpEFAn")
+    redirect_url = ark_url_info.to_redirect_url()
+    assert redirect_url == "http://0.0.0.0:3333/v2/resources/http%3A%2F%2Frdfh.ch%2F0001%2Fcmfk1DMHRBiR4-_6HXpEFA"
+    print("OK")
+
+    print("parse an ARK HTTP URL for a Knora resource without a timestamp: ", end='')
+    ark_url_info = ArkUrlInfo(settings, "http://ark.example.org/ark:/00000/1/0001/cmfk1DMHRBiR4=_6HXpEFAn")
     redirect_url = ark_url_info.to_redirect_url()
     assert redirect_url == "http://0.0.0.0:3333/v2/resources/http%3A%2F%2Frdfh.ch%2F0001%2Fcmfk1DMHRBiR4-_6HXpEFA"
     print("OK")
 
     print("parse an ARK URL for a Knora resource with a timestamp: ", end='')
-    ark_url_info = ArkUrlInfo(settings, "http://ark.dasch.swiss/ark:/72163/1/0001/cmfk1DMHRBiR4=_6HXpEFAn.20190118T102919000031660Z")
+    ark_url_info = ArkUrlInfo(settings, "https://ark.example.org/ark:/00000/1/0001/cmfk1DMHRBiR4=_6HXpEFAn.20190118T102919000031660Z")
     redirect_url = ark_url_info.to_redirect_url()
     assert redirect_url == "http://0.0.0.0:3333/v2/resources/http%3A%2F%2Frdfh.ch%2F0001%2Fcmfk1DMHRBiR4-_6HXpEFA?version=20190118T102919000031660Z"
     print("OK")
 
     print("parse an ARK URL for a PHP resource without a timestamp: ", end='')
-    ark_url_info = ArkUrlInfo(settings, "http://ark.dasch.swiss/ark:/72163/1/0803/751e0b8am")
+    ark_url_info = ArkUrlInfo(settings, "https://ark.example.org/ark:/00000/1/0803/751e0b8am")
     redirect_url = ark_url_info.to_redirect_url()
     assert redirect_url == "http://data.dasch.swiss/resources/1"
     print("OK")
 
     print("parse an ARK URL for a PHP resource with a timestamp: ", end='')
-    ark_url_info = ArkUrlInfo(settings, "http://ark.dasch.swiss/ark:/72163/1/0803/751e0b8am.20190118T102919000031660Z")
+    ark_url_info = ArkUrlInfo(settings, "https://ark.example.org/ark:/00000/1/0803/751e0b8am.20190118T102919000031660Z")
     redirect_url = ark_url_info.to_redirect_url()
     assert redirect_url == "http://data.dasch.swiss/resources/1?citdate=20190118"
     print("OK")
@@ -415,7 +431,7 @@ def test(settings):
     rejected = False
 
     try:
-        ArkUrlInfo(settings, "http://ark.dasch.swiss/ark:/72163/1/0001/cmfk1DMHRBir4=_6HXpEFAn")
+        ArkUrlInfo(settings, "https://ark.example.org/ark:/00000/1/0001/cmfk1DMHRBir4=_6HXpEFAn")
     except ArkUrlException:
         rejected = True
 
@@ -429,6 +445,15 @@ def test(settings):
 def main():
     # Default configuration filename.
     default_config_filename = "ark-config.ini"
+
+    # Default configuration from environment variables.
+    environment_vars = {
+        "ArkExternalHost": os.environ.get("ARK_EXTERNAL_HOST", "ark.example.org"),
+        "ArkInternalHost": os.environ.get("ARK_INTERNAL_HOST", "0.0.0.0"),
+        "ArkInternalPort": os.environ.get("ARK_INTERNAL_PORT", "3336"),
+        "ArkNaan": os.environ.get("ARK_NAAN", "00000"),
+        "ArkHttpsProxy":  os.environ.get("ARK_HTTPS_PROXY", "true")
+    }
 
     # Parse command-line arguments.
     parser = argparse.ArgumentParser(description="Convert between Knora resource IRIs and ARK URLs.")
@@ -445,7 +470,7 @@ def main():
 
     # Read the config file.
 
-    config = configparser.ConfigParser()
+    config = configparser.ConfigParser(defaults=environment_vars)
 
     try:
         if args.config is not None:
