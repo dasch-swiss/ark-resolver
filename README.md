@@ -17,9 +17,9 @@ The program `ark.py` has two modes of operation:
   resource IRIs and ARK URLs, using the same configuration file.
 
 For usage information, run `./ark.py --help`, and see the sample configuration
-file `ark-config.ini` and the sample project registry `ark-registry.ini`.
+file `ark-config.ini` and the sample project registry file `ark-registry.ini`.
 
-In the sample configuration, the redirect URLs are Knora API URLs,
+In the sample registry file, the redirect URLs are Knora API URLs,
 but it is recommended that in production, redirect URLs should refer to
 human-readable representations provided by a user interface.
 
