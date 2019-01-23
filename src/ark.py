@@ -193,6 +193,7 @@ def test(settings):
 def main():
     # Default configuration filename.
     default_config_filename = "ark-config.ini"
+    default_registry_filename = "ark-registry.ini"
 
     # Default configuration from environment variables.
     environment_vars = {
@@ -206,6 +207,7 @@ def main():
     # Parse command-line arguments.
     parser = argparse.ArgumentParser(description="Convert between Knora resource IRIs and ARK URLs.")
     parser.add_argument("-c", "--config", help="config file (default {})".format(default_config_filename))
+    parser.add_argument("-r", "--registry", help="registry file (default {})".format(default_registry_filename))
     group = parser.add_mutually_exclusive_group()
     group.add_argument("-s", "--server", help="start server", action="store_true")
     group.add_argument("-a", "--ark", help="ARK URL")
@@ -216,7 +218,7 @@ def main():
     parser.add_argument("-p", "--project", help="project ID (with -n)")
     args = parser.parse_args()
 
-    # Read the config file.
+    # Read the config and registry files.
 
     config = configparser.ConfigParser(defaults=environment_vars)
 
@@ -225,6 +227,11 @@ def main():
             config.read_file(open(args.config))
         else:
             config.read_file(open(default_config_filename))
+
+        if args.registry is not None:
+            config.read_file(open(args.registry))
+        else:
+            config.read_file(open(default_registry_filename))
 
         settings = ArkUrlSettings(config)
 
