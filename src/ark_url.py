@@ -33,9 +33,11 @@ class ArkUrlSettings:
         self.config = config
         self.top_config = config["DEFAULT"]
         self.knora_ark_version = 1
-        self.resource_iri_regex = re.compile(r"^http://rdfh.ch/([0-9A-F]+)/([A-Za-z0-9_-]+)$")
+        self.project_id_pattern = "([0-9A-F]+)"
+        self.project_id_regex = re.compile("^" + self.project_id_pattern + "$")
+        self.resource_iri_regex = re.compile("^http://rdfh.ch/" + self.project_id_pattern + "/([A-Za-z0-9_-]+)$")
         self.resource_int_id_factor = 982451653
-        self.ark_path_pattern = r"ark:/" + self.top_config["ArkNaan"] + r"/([0-9]+)(?:/([0-9A-F]+)(?:/([A-Za-z0-9_=]+)(?:\.([0-9]{8}T[0-9]{15}Z))?)?)?"
+        self.ark_path_pattern = r"ark:/" + self.top_config["ArkNaan"] + r"/([0-9]+)(?:/" + self.project_id_pattern + r"(?:/([A-Za-z0-9_=]+)(?:\.([0-9]{8}T[0-9]{15}Z))?)?)?"
         self.ark_path_regex = re.compile("^" + self.ark_path_pattern + "$")
         self.ark_url_regex = re.compile("^https?://" + self.top_config["ArkExternalHost"] + "/" + self.ark_path_pattern + "$")
 

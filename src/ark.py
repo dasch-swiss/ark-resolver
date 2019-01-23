@@ -29,8 +29,11 @@ import argparse
 import configparser
 import traceback
 import os
+from io import StringIO
 
 from sanic import Sanic, response
+from sanic.log import logger
+import requests
 
 import base64url_check_digit
 from ark_url import ArkUrlInfo, ArkUrlFormatter, ArkUrlException, ArkUrlSettings
@@ -42,25 +45,60 @@ from ark_url import ArkUrlInfo, ArkUrlFormatter, ArkUrlException, ArkUrlSettings
 app = Sanic()
 
 
+@app.get("/make_php_ark_url")
+async def make_php_ark_url(req):
+    project_id = req.args["project_id"][0]
+
+    if app.config.settings.project_id_regex.match(project_id) is None:
+        return response.text("Invalid project ID: {}".format(project_id), status=400)
+
+    php_resource_id = int(req.args["resource_id"][0])
+    ark_url = ArkUrlFormatter(app.config.settings).php_resource_to_ark_url(php_resource_id, project_id)
+    return response.text(ark_url)
+
+
+@app.get("/config")
+async def config(_):
+    # Make a copy of the configuration.
+    config_output = StringIO()
+    app.config.settings.config.write(config_output)
+    safe_config = configparser.ConfigParser()
+    safe_config.read_string(config_output.getvalue())
+
+    # Remove the GitHub secret from the copy.
+    safe_config.remove_option("DEFAULT", "ArkGitHubSecret")
+
+    # Return the result as a string.
+    safe_config_output = StringIO()
+    safe_config.write(safe_config_output)
+    return response.text(safe_config_output.getvalue())
+
+
+@app.post("/reload")
+async def reload(req):
+    secret = req.json["hook"]["config"]["secret"]
+
+    if secret == app.config.settings.top_config["ArkGitHubSecret"]:
+        settings = load_settings(app.config.config_path)
+        app.config.settings = settings
+        logger.info("Configuration reloaded.")
+        return response.text("", status=204)
+    else:
+        return response.text("Unauthorized", status=401)
+
+
 @app.get('/<path:path>')
 async def catch_all(_, path=""):
     try:
         redirect_url = ArkUrlInfo(settings=app.config.settings, ark_url=path, path_only=True).to_redirect_url()
     except ArkUrlException as ex:
-        return response.text(
-            body=ex.message,
-            status=400
-        )
+        return response.text(body=ex.message, status=400)
+
     except base64url_check_digit.CheckDigitException as ex:
-        return response.text(
-            body=ex.message,
-            status=400
-        )
+        return response.text(body=ex.message, status=400)
+
     except KeyError:
-        return response.text(
-            body="Invalid ARK ID",
-            status=400
-        )
+        return response.text(body="Invalid ARK ID", status=400)
 
     return response.redirect(redirect_url)
 
@@ -68,6 +106,41 @@ async def catch_all(_, path=""):
 def server(settings):
     app.config.settings = settings
     app.run(host=settings.top_config["ArkInternalHost"], port=settings.top_config.getint("ArkInternalPort"))
+
+
+#################################################################################################
+# Loading of config and registry files.
+
+# Loads configuration and returns an ArkUrlSettings.
+def load_settings(config_path):
+    app.config.config_path = config_path
+
+    # Default configuration from environment variables.
+    environment_vars = {
+        "ArkExternalHost": os.environ.get("ARK_EXTERNAL_HOST", "ark.example.org"),
+        "ArkInternalHost": os.environ.get("ARK_INTERNAL_HOST", "0.0.0.0"),
+        "ArkInternalPort": os.environ.get("ARK_INTERNAL_PORT", "3336"),
+        "ArkNaan": os.environ.get("ARK_NAAN", "00000"),
+        "ArkHttpsProxy":  os.environ.get("ARK_HTTPS_PROXY", "true"),
+        "ArkRegistry": os.environ.get("ARK_REGISTRY", "ark-registry.ini"),
+        "ArkGitHubSecret": os.environ.get("ARK_GITHUB_SECRET", "")
+    }
+
+    # Read the config and registry files.
+
+    config = configparser.ConfigParser(defaults=environment_vars)
+    config.read_file(open(config_path))
+
+    registry_path = config["DEFAULT"]["ArkRegistry"]
+
+    if registry_path.startswith("http"):
+        registry_str = requests.get(registry_path).text
+        config.read_string(registry_str, source=registry_path)
+    else:
+        config.read_file(open(registry_path))
+
+    settings = ArkUrlSettings(config)
+    return settings
 
 
 #################################################################################################
@@ -191,23 +264,10 @@ def test(settings):
 # Command-line invocation.
 
 def main():
-    # Default configuration filename.
-    default_config_filename = "ark-config.ini"
-    default_registry_filename = "ark-registry.ini"
-
-    # Default configuration from environment variables.
-    environment_vars = {
-        "ArkExternalHost": os.environ.get("ARK_EXTERNAL_HOST", "ark.example.org"),
-        "ArkInternalHost": os.environ.get("ARK_INTERNAL_HOST", "0.0.0.0"),
-        "ArkInternalPort": os.environ.get("ARK_INTERNAL_PORT", "3336"),
-        "ArkNaan": os.environ.get("ARK_NAAN", "00000"),
-        "ArkHttpsProxy":  os.environ.get("ARK_HTTPS_PROXY", "true")
-    }
-
     # Parse command-line arguments.
+    default_config_path = "ark-config.ini"
     parser = argparse.ArgumentParser(description="Convert between Knora resource IRIs and ARK URLs.")
-    parser.add_argument("-c", "--config", help="config file (default {})".format(default_config_filename))
-    parser.add_argument("-r", "--registry", help="registry file (default {})".format(default_registry_filename))
+    parser.add_argument("-c", "--config", help="config file (default {})".format(default_config_path))
     group = parser.add_mutually_exclusive_group()
     group.add_argument("-s", "--server", help="start server", action="store_true")
     group.add_argument("-a", "--ark", help="ARK URL")
@@ -220,20 +280,13 @@ def main():
 
     # Read the config and registry files.
 
-    config = configparser.ConfigParser(defaults=environment_vars)
+    if args.config is not None:
+        config_path = args.config
+    else:
+        config_path = default_config_path
 
     try:
-        if args.config is not None:
-            config.read_file(open(args.config))
-        else:
-            config.read_file(open(default_config_filename))
-
-        if args.registry is not None:
-            config.read_file(open(args.registry))
-        else:
-            config.read_file(open(default_registry_filename))
-
-        settings = ArkUrlSettings(config)
+        settings = load_settings(config_path)
 
         if args.server:
             server(settings)

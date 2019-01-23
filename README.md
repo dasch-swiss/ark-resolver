@@ -27,7 +27,31 @@ Prerequisites:
 
 - Python 3
 - [Sanic](https://sanic.readthedocs.io/en/latest/)
+- [Requests](http://docs.python-requests.org/en/master/)
 
+## Server routes
+
+```
+GET /config
+```
+
+Returns the server's configuration, including the project registry, but not
+including `ArkGitHubSecret`.
+
+```
+POST /reload
+```
+
+Accepts a GitHub webhook request in JSON. If the request contains a secret matching
+`ArkGitHubSecret`, reloads the configuration, including the project registry.
+Changes to `ArkInternalHost` and `ArkInternalPort` are not taken into account.
+
+```
+GET /make_php_ark_url?project_id=PROJECT_ID&resource_id=RESOURCE_ID
+```
+
+Takes a project ID (a hexadecimal number) and a PHP-SALSAH resource ID (an integer in base 10)
+and returns an ARK URL.
 
 ## Using Docker
 
