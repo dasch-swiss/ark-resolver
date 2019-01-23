@@ -53,6 +53,8 @@ GET /make_php_ark_url?project_id=PROJECT_ID&resource_id=RESOURCE_ID
 Takes a project ID (a hexadecimal number) and a PHP-SALSAH resource ID (an integer in base 10)
 and returns an ARK URL.
 
+All other GET requests are interpreted as ARK URLs.
+
 ## Using Docker
 
 Images are published to the [dhlab-basel/ark-resolver](https://cloud.docker.com/u/dhlabbasel/repository/docker/dhlabbasel/ark-resolver)
