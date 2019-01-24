@@ -1,6 +1,5 @@
 # get us a vm with ubuntu 16.04
 dist: xenial
-sudo: required
 
 # provides us docker
 services:
