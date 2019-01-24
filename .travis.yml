@@ -1,5 +1,5 @@
 # get us a vm with ubuntu 16.04
-dist: trusty
+dist: xenial
 sudo: required
 
 # provides us docker
@@ -8,7 +8,7 @@ services:
 
 language: python
 python:
-  - "3.6"
+  - "3.7"
 
 # define some additional environment variables
 env:
