@@ -10,4 +10,4 @@ COPY src/ /app
 
 WORKDIR /app
 
-ENTRYPOINT ["python", "./ark.py"]
+ENTRYPOINT ["python", "./ark.py", "-s"]
