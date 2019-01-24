@@ -17,10 +17,6 @@ stages:
   - name: publish # generally, only publish if we are on 'master' or tagged
     if: branch = master OR tag IS present
 
-# command to install dependencies
-install:
-  - pip install -r requirements.txt
-
 jobs:
   include:
     - stage: test
