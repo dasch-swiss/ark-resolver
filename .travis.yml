@@ -27,7 +27,7 @@ jobs:
     - stage: publish
       script:
         - TAG=$(git describe --tags)
-        - echo "$DOCKER_PASS" | docker login --username "$DOCKER_USER" --password-stdin
+        - echo $DOCKER_PASS | docker login --username $DOCKER_USER --password-stdin
         - docker build -t $REPO:$TAG .
         - docker tag $REPO:$TAG $REPO:latest
         - docker push $REPO
