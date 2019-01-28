@@ -8,8 +8,6 @@ services:
 # define some additional environment variables
 env:
   global:
-    - secure: "K1WSf/jqXFrGDqcf8FBA685FL6AFSKmZemuZBvfuL5xY4rJzi83loJ/gdfYUTDRqL5FQcpVogh6I4TxgS6Q/m98duUSXktg9aLxvRJ1xR/tRgrMsqR5bmKqGpZP6iR+AAIcfncyYlMIeQudxkH35kVW1A5oqAA5OxhK9oPNxO+CBy/Lvn0uBMfY/MfCJCBOC8FaeqdKbm+ypdFtR0FR+ZjtJR628XCpMwOGc8uBD8yIZzICC8V+CUtQsqLxzznMINwHlplW9Kq14v2NyqU3BEG5BK1ybKJzj/ZNTdQREvY/kBFEKAQ3Bf7LiCEWGwVvZ91bRc4dBKxpvXzQMF8En576Pey+kzHHzG/GQB5e48wpwaXJ0ICJfbqfnc2As3rsYLje9xtZ9rPWtB7Gw7H+3vNj0zPvzNov8CTjrpLApcQf+y5AUhRqBjxMUIlnPZ2oh06t51gzf8F8winAKGzswdF6CL0z6FP5my6LbC0oK243g2wy4gbCknSaQtBJxlTF8/dwEKrs90EIz4nKF9r1oOa0/LcG87ZM31HKGkvQTIWxI6sBIhR9BuOjeXNiX+Z/QePqAoKwsLKvRk70LYmWiXotcnAHIOL3WbMamA/4EnyWZebLVv9OLxBJx5fgeGfRjkOiJGMctAqCXAdCEKV41ZYCrfXw/iZnofNHACegnJaM=" # DOCKER_USER
-    - secure: "QrBnmZK8Lz6lz5nvt8aQMfUmfBvbbLiSeCtAOY5xdSIlVQAGPFSGNmSaZP+4oAfpwEzHqxjOyuiz96zyQSNzqdatoFQQ8Vi2n9A3zJNuUvqxYtbtEvcqyf9Qzo6GzRhHcQU5tOL+wZNLOwfmfJHsLJdQ4oS8GU5k/zHMnuVqTEQ0UZoRw5dJzhgqF27dBGgciW3gZG5lZ/Yj/6r8SDYFoi8WUbq/SlpIHoyzxb/ib2y9UqDrvKegueo6VR0LmsUfqtpCcnDyizqFVovTGpex0SoiKOzJky5h08NUvi33KDetMV//4fPhfjsNPE1bLloY2zJri7f8Yzw895kz58bPvmcNQKDI6taI6d4+6wyVUuCDexiPyQXDpja+dNtEbK1U7drVU7dxCVpo4N/JAph0LDjP9NLzPR/I/OC9ibPGacO8/DrMwGaE2jSSJdTJcf8mj6hV/qn/Ip1qjwndhCaonnuFNyfZV5JYc7jN8vj+cTKd837LcrXgQfhdQaV5moyk1CktcLH/qUxyLKECuJZubfkPCB3tBqVE2+DZVzGkcjVqoeTBcs8/K9osKQUlUw9K9A8MMCT7USalio5/DboBLMw4Zgb1Bk7rGsr5bZvQWlGNZri/fmmNpSmkqQiKzkC9l1QSzdxKvQQG2o8raEy68uAVnkyms7Q0TXL6aj1bQJM=" # DOCKER_PASS
     - REPO=dhlabbasel/ark-resolver
 
 stages:
@@ -27,7 +25,7 @@ jobs:
     - stage: publish
       script:
         - TAG=$(git describe --tags)
-        - echo $DOCKER_PASS | docker login --username $DOCKER_USER --password-stdin
+        - echo $DOCKER_PASSWORD | docker login --username $DOCKER_USERNAME --password-stdin
         - docker build -t $REPO:$TAG .
         - docker tag $REPO:$TAG $REPO:latest
         - docker push $REPO
