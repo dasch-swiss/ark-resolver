@@ -1,35 +1,35 @@
-# get us a vm with ubuntu 16.04
 dist: xenial
 
-# provides us docker
 services:
-  - docker
+- docker
 
-# define some additional environment variables
 env:
   global:
-    - REPO=dhlabbasel/ark-resolver
+  - REPO=dhlabbasel/ark-resolver
+  matrix:
+  - secure: O6cq4JyQjMNGRrlES+XJ7MZdfApwmggAwtjbuOIo3psjRfr0lXneKwP50ZCUiTpCM9AQTJpnQXNa3BQwjFNU7B02wHvLNdow45+JTJH++65C5FEbLptdIq+8sqmF9ACiTsrgfunHLU1qgwLZ6EF5CLPYehSBy1eARqiktlG0Mm0Iv4uDLVnY+nvyS3Myg8VFr+i9DGktVw9YS0S9S5Z0scPgBYeJqb+PWvNNP4VK0XDVzg+qdKg2DEc0Vo6cs38OYsDZlMYFC8k5ZymhB0FAfubH/rK6EDboLQSjelO/y8MinIFb1ars1YTxZJNIbnCpXvJPIGWQSH/+pPfPsOD9GjSXaIJM/Sk5Os/1ccIU4A0y+v5g24dX/FI95Thsv5QpBc6qudQyuJiH/O5th4Gm2/Jd2/zupE1hwDKLkPvJdlB+MADXzFm59corGokllI7oJxrUv9dX0DAdgD0JZNl+C9R7Xq+GEdcyRqN2ZEgGcfLZq7ItpJCjGlgv5oXfmm8oEiTAaVSqVpQeARmLUK21wfxGE729pHg9S/Nb3nRVv/PLMPf1vkbV4Q7ERCvl9SipT3JylT5bou0Kmhl6Oxdt49mTfwmSGu1TG9yUVmF6JEgB9cgFfgnYFAqTmbsl0f1tLZ1AEEsBmY4elzFlO6eXuuozhtEWQcircAM0bqKtK6k=
+  - secure: fnbhqrFr1fCvLHOTlqtAkJi0knGs4v8K6x8vZKhq1T1JdAAbf5UjkFXiH+5t3sbSLPXNrLOmZraKQNpqC7sEDk1QGtUK4MvMb1GkaH2ErIYjjD+qg6YBH9R+NRCphUL9bcWHROE58++2NQTBvqPg6Us3tYKwkosiQDxEAWrWYTaQ+ZN9nus/brHGzh6pVgKuVYv9RWhLmNRILYVFn+dMi2GDwyWAx3nENo5/Y2RwDbk5tOJfaXlqlS7SmwNHH5zF+Wuxbsb1JbgQBLZOrZv/CPOyuBSuVqQC7Q2I6aG1ZBA3QQUFlL+1ttzxyFFUgR/MSC18BG8chM+NcFv3lV8hFichgN4/p/Xs5XpqQiJ41Sj9kv9t4M6WPjBjhc+i6RjWMdtO8pDhiRbRkRVCoeE+yF+RKHVlA5yQS3TJNLUljwQazqa6nz4YlA1Rz5zjNcwVCaUA22zp2MX+XlHJSCV2kSDsnMNC3fkraHMVjkV9iaro9IBashPl4dDF5t4hm9Dyz08DFJZc2+sKWcgSQmZfEIzYSFvXiKJG6XREoaMlJQh7SJ0UoEUacGNvIjoZD4oSGQt3TqmH487XLVlIT2B0V85eORTPwTJAiBT9p3KTXlJgeQtyp/W00/y3jc3eYPq3tHftCLcpXGTw8SzKCd5jZ3ALl9QUu2+SiZTjAN2UvtI=
 
 stages:
-  - test
-  - name: publish # generally, only publish if we are on 'master' or tagged
-    if: branch = master OR tag IS present
+- test
+- name: publish
+  if: branch = master OR tag IS present
 
 jobs:
   include:
-    - stage: test
-      script:
-        - docker build -t $REPO .
-        - docker run $REPO --test
-
-    - stage: publish
-      script:
-        - TAG=$(git describe --tags)
-        - echo $DOCKER_PASSWORD | docker login --username $DOCKER_USERNAME --password-stdin
-        - docker build -t $REPO:$TAG .
-        - docker tag $REPO:$TAG $REPO:latest
-        - docker push $REPO
+  - stage: test
+    script:
+    - echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin
+    - docker build -t $REPO .
+    - docker run $REPO --test
+  - stage: publish
+    script:
+    - TAG=$(git describe --tags)
+    - echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin
+    - docker build -t $REPO:$TAG .
+    - docker tag $REPO:$TAG $REPO:latest
+    - docker push $REPO
 
 notifications:
   slack:
-    secure: "PxvA5zguh3T64J+c7JHnXtKM9jo8S5qIDJ6IT7d2l66xI48Hf3hiM/Tr9C+Duc1krrMViB935AzDFaK5QZPOgzbzHd1AMugLTSD/ds+puimZ8W8gwZVH3MkYyqPXVofCEZaCKPbGOQTQ5Z6wAaGLZ2wuaAwMaqvKi8fMPc6r7M/Ggaagsiw8t9ScRcMTFt2PbmXfdcazIaPigMramLFXDel+AgFW3ay5D9ophs2QsfRlNAxd1OxAHZFIgoimI13H9fM7Efs1TWBywqUVkd9Fsl5aiY5zEcJN7NezgAJrUynL9FJwPBV+NcOAfm/WBqJ82K0zCSE2blhLr2ixVsfhuceEUXVa/2Y1qthOkKFEgggcfnth7D12RjLOY5Qr8J8f9q45A1cTqsiitKS9qfgulcV1fNqho4X9EROrVY20Li9eWNDQOK4EiHclpfnBZ1NVH0DrRt7y19zdyW749RUOy9NO1MMhjl93E6K9KELVGlfCOsm9ZxKGzZsV4XA3nClXlIn7IdE7jlc/bmyC0nWf8HGge8l+HSJp0c4F078VOF5eIq3aNm9H740736ycSr/W6Puj34QblFTslR4/7qCDtfB/Hf7HNyPSK+thiHlNUZa4WeOT7lb/iDHevpCBQ2+HFQFfxwLIFbC+jlZKQfRNHIwoHG5rzCZPf1stUtREKN0="
+    secure: PxvA5zguh3T64J+c7JHnXtKM9jo8S5qIDJ6IT7d2l66xI48Hf3hiM/Tr9C+Duc1krrMViB935AzDFaK5QZPOgzbzHd1AMugLTSD/ds+puimZ8W8gwZVH3MkYyqPXVofCEZaCKPbGOQTQ5Z6wAaGLZ2wuaAwMaqvKi8fMPc6r7M/Ggaagsiw8t9ScRcMTFt2PbmXfdcazIaPigMramLFXDel+AgFW3ay5D9ophs2QsfRlNAxd1OxAHZFIgoimI13H9fM7Efs1TWBywqUVkd9Fsl5aiY5zEcJN7NezgAJrUynL9FJwPBV+NcOAfm/WBqJ82K0zCSE2blhLr2ixVsfhuceEUXVa/2Y1qthOkKFEgggcfnth7D12RjLOY5Qr8J8f9q45A1cTqsiitKS9qfgulcV1fNqho4X9EROrVY20Li9eWNDQOK4EiHclpfnBZ1NVH0DrRt7y19zdyW749RUOy9NO1MMhjl93E6K9KELVGlfCOsm9ZxKGzZsV4XA3nClXlIn7IdE7jlc/bmyC0nWf8HGge8l+HSJp0c4F078VOF5eIq3aNm9H740736ycSr/W6Puj34QblFTslR4/7qCDtfB/Hf7HNyPSK+thiHlNUZa4WeOT7lb/iDHevpCBQ2+HFQFfxwLIFbC+jlZKQfRNHIwoHG5rzCZPf1stUtREKN0=
