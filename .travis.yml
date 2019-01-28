@@ -5,6 +5,7 @@ services:
 
 env:
   global:
+  - REPO=dhlabbasel/ark-resolver
   - secure: SPWW7/NoiFp8HDsp/0ncURaFMzshyi8AlD5GfiarppGAKPZDmQSarv+00b5vkCsHeZB6m4y/GsnzseeQ8w15U/gSqgle0hOIp5cJrnTuo33FlkueTO6Blp1z23lpScOPUu3xts28V0M18Bap/DEjXWKqpLn1QLT4nv4S+tCegU4iHKv+YAPZAMPh95AfI3HxpsrO818mMEdscmnXfM22UFXTBsC+/9fRxT9VRjWcblyLHfbeILmNXebOJBPt813kFSql/GRe4WMs9hKSszZGqiXTTgBrUhjKYyzRH5XaUQ2QwrM+p7ufdcXM171JoGW4eXHQIDPl1GO6YHFKoRN+5+ld1Q0D8Rbczvn0hF1TwIJjC6lEk/Tv0Nvt0OZH06WClWVQ6wRyJt2UIqKH93uY+GKdFRdGGoHrDjiw1hTxoRZpRM/Haw+Nx2REvGUnl1YainKWbHYvOmjuOXE8JrtM1nf/kSzAv5ZPymVUyK8rf/Ke+HXKO31wO/PVcGeVtdgeFgTdDzwsDipxB7eSPcQ12ZRfs+RV1IEl2qHZEFMe1nWirtT/KxiJ6n12R4i+dj6REYFo5zlqFL/YXq+nMAcGsr0NL9MbouwD1tjlCce9bcchqJMJ4jaNrq8f7Vh4ZCVrPVN+LJaBwhZjbC+HWP9eQZsPh29DX+cshHrhmgie4ek=
   - secure: i3SdBQrG7vMRnjQ7Z8nIDcpn8HhCoLv5hD5xRzTjroL/IWN6gOqh2cFXY6DXKhcCZIqSF2vsor1RjyC8unMbuAixuUV1jo+IN7pYPoEnvkLUfzpU//z4xCfVObY8Uh7GIJv88cr1t7o6ZfTeAsnnljICPof4vj2SHmTAuQb+3uSF/zYMNkhB00ZOlyaevgFjjdGSZZbtrNpxpM7fFpMfDd7vym25Qvf8olGCsGRlPcgQZgkxUuxpShWmsOrqxz62xUzOJEdhj7GMI6xSSctSYjjLAkcxQC00P9Wnu3Xw2MhGh34RU2EgwmqdOyLAt5w7vbp65SY4x1dQxsrCyzFSVmT9bfYJA7Byj4YnylGAs87PpoX2vbiC8AxQuL0nW4lj8rwzT301BtDAuzvfU/V7anS+FJU560C+kxpFBVAEGhllWYFqSIng3PM4xco/1cg6nnDJZ4QgfAPxn/Ts9Ke/8N+CpoPHCZxV5kdJzxZTENtmghBI3pO0zrGzRGVzlSnaXjHJwXHKoB048Y2HYS/ic0s7E80G9FRtUDm0zp0DmrNVII1JtdyhSaDVi4zjtbP1yamowazWmwz82ctWkBL5q5C2kf6xlUxpYYZjuRSW0hsRjT8M/6vTQKxymSxufCs5Sg/RJ0ZO5CVTSHe1477qL6WQArUckJZTd5Kw9D97JJs=
 
@@ -17,7 +18,6 @@ jobs:
   include:
   - stage: test
     script:
-    - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
     - docker build -t $REPO .
     - docker run $REPO --test
   - stage: publish
