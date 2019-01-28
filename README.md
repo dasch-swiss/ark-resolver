@@ -42,9 +42,11 @@ including `ArkGitHubSecret`.
 POST /reload
 ```
 
-Accepts a GitHub webhook request in JSON. If the request contains a secret matching
-`ArkGitHubSecret`, reloads the configuration, including the project registry.
-Changes to `ArkInternalHost` and `ArkInternalPort` are not taken into account.
+Accepts a GitHub webhook request in JSON, and validates it according to
+[Securing your webhooks](https://developer.github.com/webhooks/securing/), using
+the secret configured as `ArkGitHubSecret`. If the request is valid, reloads the
+configuration, including the project registry. Changes to `ArkInternalHost` and
+`ArkInternalPort` are not taken into account.
 
 ```
 GET /make_php_ark_url?project_id=PROJECT_ID&resource_id=RESOURCE_ID

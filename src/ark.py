@@ -30,6 +30,8 @@ import configparser
 import traceback
 import os
 from io import StringIO
+import hashlib
+import hmac
 
 from sanic import Sanic, response
 from sanic.log import logger
@@ -76,9 +78,25 @@ async def config(_):
 
 @app.post("/reload")
 async def reload(req):
-    secret = req.json["hook"]["config"]["secret"]
+    # Get the signature submitted with the request.
 
-    if secret == app.config.settings.top_config["ArkGitHubSecret"]:
+    if "X-Hub-Signature" not in req.headers:
+        return response.text("Unauthorized", status=401)
+
+    signature_header = req.headers["X-Hub-Signature"]
+
+    if not signature_header.startswith("sha1="):
+        return response.text("Unauthorized", status=401)
+
+    submitted_signature = signature_header.split('=')[1]
+
+    # Compute a signature for the request using the configured GitHub secret.
+    secret = app.config.settings.top_config["ArkGitHubSecret"]
+    computed_signature = hmac.new(secret.encode(), req.body, hashlib.sha1).hexdigest()
+
+    # If the submitted signature is the same as the computed one, the request is valid.
+    if hmac.compare_digest(submitted_signature, computed_signature):
+        # Reload configuration.
         settings = load_settings(app.config.config_path)
         app.config.settings = settings
         logger.info("Configuration reloaded.")
