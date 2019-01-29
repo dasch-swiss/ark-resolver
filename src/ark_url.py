@@ -37,9 +37,16 @@ class ArkUrlSettings:
         self.project_id_regex = re.compile("^" + self.project_id_pattern + "$")
         self.resource_iri_regex = re.compile("^http://rdfh.ch/" + self.project_id_pattern + "/([A-Za-z0-9_-]+)$")
         self.resource_int_id_factor = 982451653
-        self.ark_path_pattern = r"ark:/" + self.top_config["ArkNaan"] + r"/([0-9]+)(?:/" + self.project_id_pattern + r"(?:/([A-Za-z0-9_=]+)(?:\.([0-9]{8}T[0-9]{15}Z))?)?)?"
+        
+        # Patterns for matching Knora ARK version 1 URLs.
+        self.ark_path_pattern = "ark:/" + self.top_config["ArkNaan"] + "/([0-9]+)(?:/" + self.project_id_pattern + r"(?:/([A-Za-z0-9_=]+)(?:\.([0-9]{8}T[0-9]{15}Z))?)?)?"
         self.ark_path_regex = re.compile("^" + self.ark_path_pattern + "$")
         self.ark_url_regex = re.compile("^https?://" + self.top_config["ArkExternalHost"] + "/" + self.ark_path_pattern + "$")
+
+        # Patterns for matching PHP-SALSAH ARK version 0 URLs.
+        self.v0_ark_path_pattern = "ark:/" + self.top_config["ArkNaan"] + r"/([0-9A-Fa-f]+)-([A-Za-z0-9]+)-[A-Za-z0-9](?:\.([0-9]+))?$"
+        self.v0_ark_path_regex = re.compile("^" + self.v0_ark_path_pattern + "$")
+        self.v0_ark_url_regex = re.compile("^https?://" + self.top_config["ArkExternalHost"] + "/" + self.v0_ark_path_pattern + "$")
 
 
 class ArkUrlException(Exception):
@@ -52,34 +59,77 @@ class ArkUrlInfo:
     def __init__(self, settings, ark_url, path_only=False):
         self.settings = settings
 
+        # Are we matching just the path part of the URL?
         if path_only:
+            # Yes. Is it a version 1 ARK ID?
             match = settings.ark_path_regex.match(ark_url)
+
+            if match is not None:
+                # Yes.
+                self.url_version = int(match.group(1))
+            else:
+                # No. Is it a version 0 ARK ID?
+                match = settings.v0_ark_path_regex.match(ark_url)
+
+                if match is not None:
+                    self.url_version = 0
+
         else:
+            # We are matching a whole URL. Does it contain a version 1 ARK ID?
             match = settings.ark_url_regex.match(ark_url)
+
+            if match is not None:
+                # Yes.
+                self.url_version = int(match.group(1))
+            else:
+                # No. Does it contain a version 0 ARK ID?
+                match = settings.v0_ark_url_regex.match(ark_url)
+
+                if match is not None:
+                    self.url_version = 0
 
         if match is None:
             raise ArkUrlException("Invalid ARK ID: {}".format(ark_url))
 
-        self.url_version = int(match.group(1))
+        # Which version of ARK ID did we match?
+        if self.url_version == settings.knora_ark_version:
+            # Version 1.
+            self.project_id = match.group(2)
+            escaped_resource_id_with_check_digit = match.group(3)
 
-        if self.url_version != settings.knora_ark_version:
-            raise ArkUrlException("Invalid ARK ID: {}".format(ark_url))
+            if escaped_resource_id_with_check_digit is not None:
+                # '-' is escaped as '=' in the resource ID and check digit, because '-' can be ignored in ARK URLs.
+                resource_id_with_check_digit = escaped_resource_id_with_check_digit.replace('=', '-')
 
-        self.project_id = match.group(2)
-        escaped_resource_id_with_check_digit = match.group(3)
+                if not base64url_check_digit.is_valid(resource_id_with_check_digit):
+                    raise ArkUrlException("Invalid ARK ID: {}".format(ark_url))
 
-        if escaped_resource_id_with_check_digit is not None:
-            # '-' is escaped as '=' in the resource ID and check digit, because '-' can be ignored in ARK URLs.
-            resource_id_with_check_digit = escaped_resource_id_with_check_digit.replace('=', '-')
+                self.resource_id = resource_id_with_check_digit[0:-1]
+                self.timestamp = match.group(4)
+            else:
+                self.resource_id = None
+                self.timestamp = None
+        elif self.url_version == 0:
+            # Version 0.
+            self.project_id = match.group(1).upper()
+            self.resource_id = match.group(2)
 
-            if not base64url_check_digit.is_valid(resource_id_with_check_digit):
+            submitted_timestamp = match.group(3)
+
+            if submitted_timestamp is None:
+                self.timestamp = None
+            elif len(submitted_timestamp) == 7:
+                # There's a missing leading zero in the month. This works with PHP-SALSAH but won't work with Knora.
+                self.timestamp = submitted_timestamp[:4] + "0" + submitted_timestamp[4:]
+            else:
+                self.timestamp = submitted_timestamp
+
+            project_config = self.settings.config[self.project_id]
+
+            if not project_config.getboolean("AllowVersion0"):
                 raise ArkUrlException("Invalid ARK ID: {}".format(ark_url))
-
-            self.resource_id = resource_id_with_check_digit[0:-1]
-            self.timestamp = match.group(4)
         else:
-            self.resource_id = None
-            self.timestamp = None
+            raise ArkUrlException("Invalid ARK ID: {}".format(ark_url))
 
         self.template_dict = {
             "url_version": self.url_version,

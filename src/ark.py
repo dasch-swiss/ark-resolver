@@ -214,12 +214,12 @@ def test(settings):
     assert ark_url == "https://ark.example.org/ark:/00000/1/0001/cmfk1DMHRBiR4=_6HXpEFAn.20190118T102919000031660Z"
     print("OK")
 
-    print("generate an ARK URL for a PHP resource without a timestamp: ", end='')
+    print("generate a version 1 ARK URL for a PHP resource without a timestamp: ", end='')
     ark_url = ark_url_formatter.php_resource_to_ark_url(php_resource_id=1, project_id="0803")
     assert ark_url == "https://ark.example.org/ark:/00000/1/0803/751e0b8am"
     print("OK")
 
-    print("generate an ARK URL for a PHP resource with a timestamp: ", end='')
+    print("generate a version 1 ARK URL for a PHP resource with a timestamp: ", end='')
     ark_url = ark_url_formatter.php_resource_to_ark_url(php_resource_id=1, project_id="0803", timestamp="20190118T102919000031660Z")
     assert ark_url == "https://ark.example.org/ark:/00000/1/0803/751e0b8am.20190118T102919000031660Z"
     print("OK")
@@ -254,7 +254,7 @@ def test(settings):
     assert redirect_url == "http://0.0.0.0:3333/v2/resources/http%3A%2F%2Frdfh.ch%2F0001%2Fcmfk1DMHRBiR4-_6HXpEFA?version=20190118T102919000031660Z"
     print("OK")
 
-    print("parse an ARK URL for a PHP resource without a timestamp: ", end='')
+    print("parse a version 1 ARK URL for a PHP resource without a timestamp: ", end='')
     ark_url_info = ArkUrlInfo(settings, "https://ark.example.org/ark:/00000/1/0803/751e0b8am")
     redirect_url = ark_url_info.to_redirect_url()
     assert redirect_url == "http://data.dasch.swiss/resources/1"
@@ -264,6 +264,18 @@ def test(settings):
     ark_url_info = ArkUrlInfo(settings, "https://ark.example.org/ark:/00000/1/0803/751e0b8am.20190118T102919000031660Z")
     redirect_url = ark_url_info.to_redirect_url()
     assert redirect_url == "http://data.dasch.swiss/resources/1?citdate=20190118"
+    print("OK")
+
+    print("parse a version 0 ARK URL for a PHP resource without a timestamp: ", end='')
+    ark_url_info = ArkUrlInfo(settings, "http://ark.example.org/ark:/00000/080e-76bb2132d30d6-0")
+    redirect_url = ark_url_info.to_redirect_url()
+    assert redirect_url == "http://data.dasch.swiss/resources/2126045"
+    print("OK")
+
+    print("parse a version 0 ARK URL for a PHP resource with a timestamp: ", end='')
+    ark_url_info = ArkUrlInfo(settings, "http://ark.example.org/ark:/00000/080e-76bb2132d30d6-0.2019129")
+    redirect_url = ark_url_info.to_redirect_url()
+    assert redirect_url == "http://data.dasch.swiss/resources/2126045?citdate=20190129"
     print("OK")
 
     print("reject an ARK URL that doesn't pass check digit validation: ", end='')
