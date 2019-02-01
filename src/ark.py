@@ -273,9 +273,15 @@ def test(settings):
     print("OK")
 
     print("parse a version 0 ARK URL for a PHP resource with a timestamp: ", end='')
-    ark_url_info = ArkUrlInfo(settings, "http://ark.example.org/ark:/00000/080e-76bb2132d30d6-0.2019129")
+    ark_url_info = ArkUrlInfo(settings, "http://ark.example.org/ark:/00000/080e-76bb2132d30d6-0.20190129")
     redirect_url = ark_url_info.to_redirect_url()
     assert redirect_url == "http://data.dasch.swiss/resources/2126045?citdate=20190129"
+    print("OK")
+
+    print("parse a version 0 ARK URL for a PHP resource with a timestamp that's too short: ", end='')
+    ark_url_info = ArkUrlInfo(settings, "http://ark.example.org/ark:/00000/080e-76bb2132d30d6-0.2019111")
+    redirect_url = ark_url_info.to_redirect_url()
+    assert redirect_url == "http://data.dasch.swiss/resources/2126045"
     print("OK")
 
     print("reject an ARK URL that doesn't pass check digit validation: ", end='')

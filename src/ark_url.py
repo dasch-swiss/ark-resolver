@@ -44,7 +44,7 @@ class ArkUrlSettings:
         self.ark_url_regex = re.compile("^https?://" + self.top_config["ArkExternalHost"] + "/" + self.ark_path_pattern + "$")
 
         # Patterns for matching PHP-SALSAH ARK version 0 URLs.
-        self.v0_ark_path_pattern = "ark:/" + self.top_config["ArkNaan"] + r"/([0-9A-Fa-f]+)-([A-Za-z0-9]+)-[A-Za-z0-9](?:\.([0-9]{7,8}))?$"
+        self.v0_ark_path_pattern = "ark:/" + self.top_config["ArkNaan"] + r"/([0-9A-Fa-f]+)-([A-Za-z0-9]+)-[A-Za-z0-9](?:\.([0-9]{6,8}))?$"
         self.v0_ark_path_regex = re.compile("^" + self.v0_ark_path_pattern + "$")
         self.v0_ark_url_regex = re.compile("^https?://" + self.top_config["ArkExternalHost"] + "/" + self.v0_ark_path_pattern + "$")
 
@@ -116,11 +116,8 @@ class ArkUrlInfo:
 
             submitted_timestamp = match.group(3)
 
-            if submitted_timestamp is None:
+            if submitted_timestamp is None or len(submitted_timestamp) < 8:
                 self.timestamp = None
-            elif len(submitted_timestamp) == 7:
-                # There's a missing leading zero in the month. This works with PHP-SALSAH but won't work with Knora.
-                self.timestamp = submitted_timestamp[:4] + "0" + submitted_timestamp[4:]
             else:
                 self.timestamp = submitted_timestamp
 
