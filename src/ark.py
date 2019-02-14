@@ -210,8 +210,8 @@ def test(settings):
     print("OK")
 
     print("generate an ARK URL for a resource IRI with a timestamp: ", end='')
-    ark_url = ark_url_formatter.resource_iri_to_ark_url(resource_iri=resource_iri, timestamp="20190118T102919000031660Z")
-    assert ark_url == "https://ark.example.org/ark:/00000/1/0001/cmfk1DMHRBiR4=_6HXpEFAn.20190118T102919000031660Z"
+    ark_url = ark_url_formatter.resource_iri_to_ark_url(resource_iri=resource_iri, timestamp="20180604T085622513Z")
+    assert ark_url == "https://ark.example.org/ark:/00000/1/0001/cmfk1DMHRBiR4=_6HXpEFAn.20180604T085622513Z"
     print("OK")
 
     print("generate a version 1 ARK URL for a PHP resource without a timestamp: ", end='')
@@ -220,8 +220,8 @@ def test(settings):
     print("OK")
 
     print("generate a version 1 ARK URL for a PHP resource with a timestamp: ", end='')
-    ark_url = ark_url_formatter.php_resource_to_ark_url(php_resource_id=1, project_id="0803", timestamp="20190118T102919000031660Z")
-    assert ark_url == "https://ark.example.org/ark:/00000/1/0803/751e0b8am.20190118T102919000031660Z"
+    ark_url = ark_url_formatter.php_resource_to_ark_url(php_resource_id=1, project_id="0803", timestamp="20180604T085622513Z")
+    assert ark_url == "https://ark.example.org/ark:/00000/1/0803/751e0b8am.20180604T085622513Z"
     print("OK")
 
     print("parse an ARK URL representing the top-level object: ", end='')
@@ -248,10 +248,16 @@ def test(settings):
     assert redirect_url == "http://0.0.0.0:3333/v2/resources/http%3A%2F%2Frdfh.ch%2F0001%2Fcmfk1DMHRBiR4-_6HXpEFA"
     print("OK")
 
-    print("parse an ARK URL for a Knora resource with a timestamp: ", end='')
-    ark_url_info = ArkUrlInfo(settings, "https://ark.example.org/ark:/00000/1/0001/cmfk1DMHRBiR4=_6HXpEFAn.20190118T102919000031660Z")
+    print("parse an ARK URL for a Knora resource with a timestamp with a fractional part: ", end='')
+    ark_url_info = ArkUrlInfo(settings, "https://ark.example.org/ark:/00000/1/0001/cmfk1DMHRBiR4=_6HXpEFAn.20180604T085622513Z")
     redirect_url = ark_url_info.to_redirect_url()
-    assert redirect_url == "http://0.0.0.0:3333/v2/resources/http%3A%2F%2Frdfh.ch%2F0001%2Fcmfk1DMHRBiR4-_6HXpEFA?version=20190118T102919000031660Z"
+    assert redirect_url == "http://0.0.0.0:3333/v2/resources/http%3A%2F%2Frdfh.ch%2F0001%2Fcmfk1DMHRBiR4-_6HXpEFA?version=20180604T085622513Z"
+    print("OK")
+
+    print("parse an ARK URL for a Knora resource with a timestamp without a fractional part: ", end='')
+    ark_url_info = ArkUrlInfo(settings, "https://ark.example.org/ark:/00000/1/0001/cmfk1DMHRBiR4=_6HXpEFAn.20180604T085622Z")
+    redirect_url = ark_url_info.to_redirect_url()
+    assert redirect_url == "http://0.0.0.0:3333/v2/resources/http%3A%2F%2Frdfh.ch%2F0001%2Fcmfk1DMHRBiR4-_6HXpEFA?version=20180604T085622Z"
     print("OK")
 
     print("parse a version 1 ARK URL for a PHP resource without a timestamp: ", end='')
@@ -261,7 +267,7 @@ def test(settings):
     print("OK")
 
     print("parse an ARK URL for a PHP resource with a timestamp: ", end='')
-    ark_url_info = ArkUrlInfo(settings, "https://ark.example.org/ark:/00000/1/0803/751e0b8am.20190118T102919000031660Z")
+    ark_url_info = ArkUrlInfo(settings, "https://ark.example.org/ark:/00000/1/0803/751e0b8am.20190118T102919Z")
     redirect_url = ark_url_info.to_redirect_url()
     assert redirect_url == "http://data.dasch.swiss/resources/1?citdate=20190118"
     print("OK")
