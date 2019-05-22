@@ -34,12 +34,13 @@ class ArkUrlSettings:
         self.top_config = config["DEFAULT"]
         self.knora_ark_version = 1
         self.project_id_pattern = "([0-9A-F]+)"
+        self.uuid_pattern = "([A-Za-z0-9_=]+)"
         self.project_id_regex = re.compile("^" + self.project_id_pattern + "$")
         self.resource_iri_regex = re.compile("^http://rdfh.ch/" + self.project_id_pattern + "/([A-Za-z0-9_-]+)$")
         self.resource_int_id_factor = 982451653
         
         # Patterns for matching Knora ARK version 1 URLs.
-        self.ark_path_pattern = "ark:/" + self.top_config["ArkNaan"] + "/([0-9]+)(?:/" + self.project_id_pattern + r"(?:/([A-Za-z0-9_=]+)(?:\.([0-9]{8}T[0-9]{6,15}Z))?)?)?"
+        self.ark_path_pattern = "ark:/" + self.top_config["ArkNaan"] + "/([0-9]+)(?:/" + self.project_id_pattern + "(?:/" + self.uuid_pattern + "(?:/" + self.uuid_pattern + r")?(?:\.([0-9]{8}T[0-9]{6,15}Z))?)?)?"
         self.ark_path_regex = re.compile("^" + self.ark_path_pattern + "$")
         self.ark_url_regex = re.compile("^https?://" + self.top_config["ArkExternalHost"] + "/" + self.ark_path_pattern + "$")
 
@@ -98,16 +99,25 @@ class ArkUrlInfo:
             escaped_resource_id_with_check_digit = match.group(3)
 
             if escaped_resource_id_with_check_digit is not None:
-                # '-' is escaped as '=' in the resource ID and check digit, because '-' can be ignored in ARK URLs.
-                resource_id_with_check_digit = escaped_resource_id_with_check_digit.replace('=', '-')
+                self.resource_id = unescape_and_validate_uuid(
+                    ark_url=ark_url,
+                    escaped_uuid=escaped_resource_id_with_check_digit
+                )
 
-                if not base64url_check_digit.is_valid(resource_id_with_check_digit):
-                    raise ArkUrlException("Invalid ARK ID: {}".format(ark_url))
+                escaped_value_id_with_check_digit = match.group(4)
 
-                self.resource_id = resource_id_with_check_digit[0:-1]
-                self.timestamp = match.group(4)
+                if escaped_value_id_with_check_digit is not None:
+                    self.value_id = unescape_and_validate_uuid(
+                        ark_url=ark_url,
+                        escaped_uuid=escaped_value_id_with_check_digit
+                    )
+                else:
+                    self.value_id = None
+
+                self.timestamp = match.group(5)
             else:
                 self.resource_id = None
+                self.value_id = None
                 self.timestamp = None
         elif self.url_version == 0:
             # Version 0.
@@ -153,10 +163,15 @@ class ArkUrlInfo:
 
         if self.resource_id is None:
             request_template = Template(project_config["KnoraProjectRedirectUrl"])
+        elif self.value_id is None:
+            if self.timestamp is None:
+                request_template = Template(project_config["KnoraResourceRedirectUrl"])
+            else:
+                request_template = Template(project_config["KnoraResourceVersionRedirectUrl"])
         elif self.timestamp is None:
-            request_template = Template(project_config["KnoraResourceRedirectUrl"])
+            request_template = Template(project_config["KnoraValueRedirectUrl"])
         else:
-            request_template = Template(project_config["KnoraResourceVersionRedirectUrl"])
+            request_template = Template(project_config["KnoraValueVersionRedirectUrl"])
 
         template_dict = self.template_dict.copy()
         template_dict["host"] = project_config["Host"]
@@ -168,6 +183,9 @@ class ArkUrlInfo:
         project_iri = project_iri_template.substitute(template_dict)
         url_encoded_project_iri = parse.quote(project_iri, safe="")
         template_dict["project_iri"] = url_encoded_project_iri
+
+        if self.value_id is not None:
+            template_dict["value_id"] = self.value_id
 
         return request_template.substitute(template_dict)
 
@@ -189,13 +207,34 @@ class ArkUrlInfo:
         return request_template.substitute(template_dict)
 
 
+# Adds a check digit to a Base64-encoded UUID, and escapes the result.
+def add_check_digit_and_escape(uuid):
+    check_digit = base64url_check_digit.calculate_check_digit(uuid)
+    uuid_with_check_digit = uuid + check_digit
+
+    # Escape '-' as '=' in the resource ID and check digit, because '-' can be ignored in ARK URLs.
+    return uuid_with_check_digit.replace('-', '=')
+
+
+# Unescapes a Base64-encoded UUID, validates its check digit, and returns the unescaped UUID
+# without the check digit.
+def unescape_and_validate_uuid(ark_url, escaped_uuid):
+    # '-' is escaped as '=' in the UUID and check digit, because '-' can be ignored in ARK URLs.
+    unescaped_uuid = escaped_uuid.replace('=', '-')
+
+    if not base64url_check_digit.is_valid(unescaped_uuid):
+        raise ArkUrlException("Invalid ARK ID: {}".format(ark_url))
+
+    return unescaped_uuid[0:-1]
+
+
 # Formats ARK URLs.
 class ArkUrlFormatter:
     def __init__(self, settings):
         self.settings = settings
 
     # Converts a Knora resource IRI to an ARK URL.
-    def resource_iri_to_ark_url(self, resource_iri, timestamp=None):
+    def resource_iri_to_ark_url(self, resource_iri, value_id=None, timestamp=None):
         match = self.settings.resource_iri_regex.match(resource_iri)
 
         if match is None:
@@ -203,15 +242,17 @@ class ArkUrlFormatter:
 
         project_id = match.group(1)
         resource_id = match.group(2)
-        check_digit = base64url_check_digit.calculate_check_digit(resource_id)
-        resource_id_with_check_digit = resource_id + check_digit
+        escaped_resource_id_with_check_digit = add_check_digit_and_escape(resource_id)
 
-        # Escape '-' as '=' in the resource ID and check digit, because '-' can be ignored in ARK URLs.
-        escaped_resource_id_with_check_digit = resource_id_with_check_digit.replace('-', '=')
+        if value_id is not None:
+            escaped_value_id_with_check_digit = add_check_digit_and_escape(value_id)
+        else:
+            escaped_value_id_with_check_digit = None
 
         return self.format_ark_url(
             project_id=project_id,
             resource_id_with_check_digit=escaped_resource_id_with_check_digit,
+            value_id_with_check_digit=escaped_value_id_with_check_digit,
             timestamp=timestamp
         )
 
@@ -224,6 +265,7 @@ class ArkUrlFormatter:
         return self.format_ark_url(
             project_id=project_id,
             resource_id_with_check_digit=resource_id_with_check_digit,
+            value_id_with_check_digit=None,
             timestamp=timestamp
         )
 
@@ -231,6 +273,7 @@ class ArkUrlFormatter:
     def format_ark_url(self,
                        project_id,
                        resource_id_with_check_digit,
+                       value_id_with_check_digit,
                        timestamp):
         if self.settings.top_config.getboolean("ArkHttpsProxy"):
             protocol = "https"
@@ -245,6 +288,10 @@ class ArkUrlFormatter:
             project_id,
             resource_id_with_check_digit
         )
+
+        # If there's a value UUID, add it.
+        if value_id_with_check_digit is not None:
+            url += "/" + value_id_with_check_digit
 
         # If there's a timestamp, add it as an object variant.
         if timestamp is not None:

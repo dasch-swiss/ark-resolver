@@ -205,13 +205,24 @@ def test(settings):
 
     print("generate an ARK URL for a resource IRI without a timestamp: ", end='')
     resource_iri = "http://rdfh.ch/0001/cmfk1DMHRBiR4-_6HXpEFA"
-    ark_url = ark_url_formatter.resource_iri_to_ark_url(resource_iri)
+    ark_url = ark_url_formatter.resource_iri_to_ark_url(resource_iri=resource_iri)
     assert ark_url == "https://ark.example.org/ark:/00000/1/0001/cmfk1DMHRBiR4=_6HXpEFAn"
     print("OK")
 
     print("generate an ARK URL for a resource IRI with a timestamp: ", end='')
     ark_url = ark_url_formatter.resource_iri_to_ark_url(resource_iri=resource_iri, timestamp="20180604T085622513Z")
     assert ark_url == "https://ark.example.org/ark:/00000/1/0001/cmfk1DMHRBiR4=_6HXpEFAn.20180604T085622513Z"
+    print("OK")
+
+    print("generate an ARK URL for a resource IRI and value UUID without a timestamp: ", end='')
+    value_id = "pLlW4ODASumZfZFbJdpw1g"
+    ark_url = ark_url_formatter.resource_iri_to_ark_url(resource_iri=resource_iri, value_id=value_id)
+    assert ark_url == "https://ark.example.org/ark:/00000/1/0001/cmfk1DMHRBiR4=_6HXpEFAn/pLlW4ODASumZfZFbJdpw1gu"
+    print("OK")
+
+    print("generate an ARK URL for a resource IRI and value UUID with a timestamp: ", end='')
+    ark_url = ark_url_formatter.resource_iri_to_ark_url(resource_iri=resource_iri, value_id=value_id, timestamp="20180604T085622513Z")
+    assert ark_url == "https://ark.example.org/ark:/00000/1/0001/cmfk1DMHRBiR4=_6HXpEFAn/pLlW4ODASumZfZFbJdpw1gu.20180604T085622513Z"
     print("OK")
 
     print("generate a version 1 ARK URL for a PHP resource without a timestamp: ", end='')
@@ -258,6 +269,18 @@ def test(settings):
     ark_url_info = ArkUrlInfo(settings, "https://ark.example.org/ark:/00000/1/0001/cmfk1DMHRBiR4=_6HXpEFAn.20180604T085622Z")
     redirect_url = ark_url_info.to_redirect_url()
     assert redirect_url == "http://0.0.0.0:3333/v2/resources/http%3A%2F%2Frdfh.ch%2F0001%2Fcmfk1DMHRBiR4-_6HXpEFA?version=20180604T085622Z"
+    print("OK")
+
+    print("parse an ARK URL for a Knora resource and value UUID without a timestamp: ", end='')
+    ark_url_info = ArkUrlInfo(settings, "https://ark.example.org/ark:/00000/1/0001/cmfk1DMHRBiR4=_6HXpEFAn/pLlW4ODASumZfZFbJdpw1gu")
+    redirect_url = ark_url_info.to_redirect_url()
+    assert redirect_url == "http://0.0.0.0:3333/v2/values/http%3A%2F%2Frdfh.ch%2F0001%2Fcmfk1DMHRBiR4-_6HXpEFA/pLlW4ODASumZfZFbJdpw1g"
+    print("OK")
+
+    print("parse an ARK URL for a Knora resource and value UUID with a timestamp: ", end='')
+    ark_url_info = ArkUrlInfo(settings, "https://ark.example.org/ark:/00000/1/0001/cmfk1DMHRBiR4=_6HXpEFAn/pLlW4ODASumZfZFbJdpw1gu.20180604T085622Z")
+    redirect_url = ark_url_info.to_redirect_url()
+    assert redirect_url == "http://0.0.0.0:3333/v2/values/http%3A%2F%2Frdfh.ch%2F0001%2Fcmfk1DMHRBiR4-_6HXpEFA/pLlW4ODASumZfZFbJdpw1g?version=20180604T085622Z"
     print("OK")
 
     print("parse a version 1 ARK URL for a PHP resource without a timestamp: ", end='')
@@ -316,7 +339,8 @@ def main():
     group.add_argument("-i", "--iri", help="resource IRI")
     group.add_argument("-n", "--number", help="resource number for PHP server")
     group.add_argument("-t", "--test", help="run tests", action="store_true")
-    parser.add_argument("-d", "--date", help="Knora ARK timestamp (with -i or -p)")
+    parser.add_argument("-v", "--value", help="value UUID (with -i)")
+    parser.add_argument("-d", "--date", help="Knora ARK timestamp (with -i or -n)")
     parser.add_argument("-p", "--project", help="project ID (with -n)")
     args = parser.parse_args()
 
@@ -339,7 +363,7 @@ def main():
                 traceback.print_exc()
                 exit(1)
         elif args.iri:
-            print(ArkUrlFormatter(settings).resource_iri_to_ark_url(args.iri, args.date))
+            print(ArkUrlFormatter(settings).resource_iri_to_ark_url(args.iri, args.value, args.date))
         elif args.number:
             print(ArkUrlFormatter(settings).php_resource_to_ark_url(int(args.number), args.project, args.date))
         elif args.ark:
