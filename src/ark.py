@@ -59,8 +59,7 @@ async def make_php_ark_url(req):
     return response.text(ark_url)
 
 
-@app.get("/config")
-async def config(_):
+def get_config():
     # Make a copy of the configuration.
     config_output = StringIO()
     app.config.settings.config.write(config_output)
@@ -73,7 +72,24 @@ async def config(_):
     # Return the result as a string.
     safe_config_output = StringIO()
     safe_config.write(safe_config_output)
-    return response.text(safe_config_output.getvalue())
+    return config_output.getvalue()
+
+
+@app.get("/config")
+async def config_get(_):
+    return response.text(get_config())
+
+
+@app.head("/config")
+async def config_head(_):
+    config_str = get_config()
+
+    headers = {
+        "Content-Length": str(len(config_str)),
+        "Content-Type": "text/plain; charset=utf-8"
+    }
+
+    return response.text("", headers=headers)
 
 
 @app.post("/reload")
