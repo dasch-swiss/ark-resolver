@@ -35,6 +35,7 @@ import hmac
 
 from sanic import Sanic, response
 from sanic.log import logger
+from sanic_cors import CORS, cross_origin
 import requests
 
 import base64url_check_digit
@@ -45,7 +46,7 @@ from ark_url import ArkUrlInfo, ArkUrlFormatter, ArkUrlException, ArkUrlSettings
 # Server implementation.
 
 app = Sanic()
-
+CORS(app)
 
 @app.get("/make_php_ark_url")
 async def make_php_ark_url(req):
