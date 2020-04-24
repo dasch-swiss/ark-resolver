@@ -65,7 +65,7 @@ Docker Hub repository.
 To use, run:
 
 ```bash
-$ docker run dhlab-basel/ark-resolver
+$ docker run daschswiss/ark-resolver
 ```
 
 ## Requirements
