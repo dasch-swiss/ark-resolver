@@ -16,7 +16,7 @@ test: build ## run ark-resolver tests inside docker image
 	docker run $(ARK_RESOLVER_IMAGE) --test
 
 .PHONY: run
-test: build ## run ark-resolver inside docker image
+run: build ## run ark-resolver inside docker image
 	docker run $(ARK_RESOLVER_IMAGE)
 
 .PHONY: publish
