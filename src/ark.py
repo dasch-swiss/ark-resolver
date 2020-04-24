@@ -49,7 +49,7 @@ from ark_url import ArkUrlInfo, ArkUrlFormatter, ArkUrlException, ArkUrlSettings
 app = Sanic()
 CORS(app)
 
-@app.get("/make_php_ark_url", methods=['GET', 'OPTIONS'])
+@app.get("/make_php_ark_url")
 async def make_php_ark_url(req):
     project_id = req.args["project_id"][0]
 
