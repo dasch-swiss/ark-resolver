@@ -262,43 +262,43 @@ def test(settings):
     print("parse an ARK project URL: ", end='')
     ark_url_info = ArkUrlInfo(settings, "https://ark.example.org/ark:/00000/1/0001")
     redirect_url = ark_url_info.to_redirect_url()
-    assert redirect_url == "http://0.0.0.0:3333/admin/projects/http%3A%2F%2Frdfh.ch%2Fprojects%2F0001"
+    assert redirect_url == "http://0.0.0.0:3333/project/0001/info"
     print("OK")
 
     print("parse an ARK URL for a Knora resource without a timestamp: ", end='')
     ark_url_info = ArkUrlInfo(settings, "https://ark.example.org/ark:/00000/1/0001/cmfk1DMHRBiR4=_6HXpEFAn")
     redirect_url = ark_url_info.to_redirect_url()
-    assert redirect_url == "http://0.0.0.0:3333/v2/resources/http%3A%2F%2Frdfh.ch%2F0001%2Fcmfk1DMHRBiR4-_6HXpEFA"
+    assert redirect_url == "http://0.0.0.0:3333/resource/http%3A%2F%2Frdfh.ch%2F0001%2Fcmfk1DMHRBiR4-_6HXpEFA"
     print("OK")
 
     print("parse an ARK HTTP URL for a Knora resource without a timestamp: ", end='')
     ark_url_info = ArkUrlInfo(settings, "http://ark.example.org/ark:/00000/1/0001/cmfk1DMHRBiR4=_6HXpEFAn")
     redirect_url = ark_url_info.to_redirect_url()
-    assert redirect_url == "http://0.0.0.0:3333/v2/resources/http%3A%2F%2Frdfh.ch%2F0001%2Fcmfk1DMHRBiR4-_6HXpEFA"
+    assert redirect_url == "http://0.0.0.0:3333/resource/http%3A%2F%2Frdfh.ch%2F0001%2Fcmfk1DMHRBiR4-_6HXpEFA"
     print("OK")
 
     print("parse an ARK URL for a Knora resource with a timestamp with a fractional part: ", end='')
     ark_url_info = ArkUrlInfo(settings, "https://ark.example.org/ark:/00000/1/0001/cmfk1DMHRBiR4=_6HXpEFAn.20180604T085622513Z")
     redirect_url = ark_url_info.to_redirect_url()
-    assert redirect_url == "http://0.0.0.0:3333/v2/resources/http%3A%2F%2Frdfh.ch%2F0001%2Fcmfk1DMHRBiR4-_6HXpEFA?version=20180604T085622513Z"
+    assert redirect_url == "http://0.0.0.0:3333/resource/http%3A%2F%2Frdfh.ch%2F0001%2Fcmfk1DMHRBiR4-_6HXpEFA?version=20180604T085622513Z"
     print("OK")
 
     print("parse an ARK URL for a Knora resource with a timestamp without a fractional part: ", end='')
     ark_url_info = ArkUrlInfo(settings, "https://ark.example.org/ark:/00000/1/0001/cmfk1DMHRBiR4=_6HXpEFAn.20180604T085622Z")
     redirect_url = ark_url_info.to_redirect_url()
-    assert redirect_url == "http://0.0.0.0:3333/v2/resources/http%3A%2F%2Frdfh.ch%2F0001%2Fcmfk1DMHRBiR4-_6HXpEFA?version=20180604T085622Z"
+    assert redirect_url == "http://0.0.0.0:3333/resource/http%3A%2F%2Frdfh.ch%2F0001%2Fcmfk1DMHRBiR4-_6HXpEFA?version=20180604T085622Z"
     print("OK")
 
     print("parse an ARK URL for a Knora resource and value UUID without a timestamp: ", end='')
     ark_url_info = ArkUrlInfo(settings, "https://ark.example.org/ark:/00000/1/0001/cmfk1DMHRBiR4=_6HXpEFAn/pLlW4ODASumZfZFbJdpw1gu")
     redirect_url = ark_url_info.to_redirect_url()
-    assert redirect_url == "http://0.0.0.0:3333/v2/values/http%3A%2F%2Frdfh.ch%2F0001%2Fcmfk1DMHRBiR4-_6HXpEFA/pLlW4ODASumZfZFbJdpw1g"
+    assert redirect_url == "http://0.0.0.0:3333/value/http%3A%2F%2Frdfh.ch%2F0001%2Fcmfk1DMHRBiR4-_6HXpEFA/pLlW4ODASumZfZFbJdpw1g"
     print("OK")
 
     print("parse an ARK URL for a Knora resource and value UUID with a timestamp: ", end='')
     ark_url_info = ArkUrlInfo(settings, "https://ark.example.org/ark:/00000/1/0001/cmfk1DMHRBiR4=_6HXpEFAn/pLlW4ODASumZfZFbJdpw1gu.20180604T085622Z")
     redirect_url = ark_url_info.to_redirect_url()
-    assert redirect_url == "http://0.0.0.0:3333/v2/values/http%3A%2F%2Frdfh.ch%2F0001%2Fcmfk1DMHRBiR4-_6HXpEFA/pLlW4ODASumZfZFbJdpw1g?version=20180604T085622Z"
+    assert redirect_url == "http://0.0.0.0:3333/value/http%3A%2F%2Frdfh.ch%2F0001%2Fcmfk1DMHRBiR4-_6HXpEFA/pLlW4ODASumZfZFbJdpw1g?version=20180604T085622Z"
     print("OK")
 
     print("parse a version 1 ARK URL for a PHP resource without a timestamp: ", end='')
