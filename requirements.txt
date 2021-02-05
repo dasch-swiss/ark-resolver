@@ -1,3 +1,4 @@
-requests==2.22.0
-sanic==19.9.0
-sanic-cors==0.10.0.post3
+requests==2.25.1
+sanic==20.12.1
+Sanic-Cors==0.10.0.post3
+Sanic-Plugins-Framework==0.9.5

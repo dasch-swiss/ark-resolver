@@ -192,17 +192,21 @@ class ArkUrlInfo:
     def to_php_redirect_url(self, project_config):
         template_dict = self.template_dict.copy()
 
-        if self.timestamp is None:
-            request_template = Template(project_config["PhpResourceRedirectUrl"])
-        else:
-            request_template = Template(project_config["PhpResourceVersionRedirectUrl"])
-
-            # The PHP server only takes timestamps in the format YYYYMMDD
-            template_dict["timestamp"] = self.timestamp[0:8]
-
         template_dict["host"] = project_config["Host"]
-        resource_int_id = (int(self.resource_id, 16) // self.settings.resource_int_id_factor) - 1
-        template_dict["resource_int_id"] = resource_int_id
+
+        if self.resource_id is not None:
+            resource_int_id = (int(self.resource_id, 16) // self.settings.resource_int_id_factor) - 1
+            template_dict["resource_int_id"] = resource_int_id
+
+            if self.timestamp is None:
+                request_template = Template(project_config["PhpResourceRedirectUrl"])
+            else:
+                request_template = Template(project_config["PhpResourceVersionRedirectUrl"])
+
+                # The PHP server only takes timestamps in the format YYYYMMDD
+                template_dict["timestamp"] = self.timestamp[0:8]
+        else:
+            request_template = Template(project_config["KnoraProjectRedirectUrl"])
 
         return request_template.substitute(template_dict)
 
