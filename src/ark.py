@@ -46,7 +46,7 @@ from ark_url import ArkUrlInfo, ArkUrlFormatter, ArkUrlException, ArkUrlSettings
 #################################################################################################
 # Server implementation.
 
-app = Sanic()
+app = Sanic('ark_resolver')
 CORS(app)
 
 @app.get("/make_php_ark_url")
