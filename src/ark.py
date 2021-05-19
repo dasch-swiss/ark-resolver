@@ -331,6 +331,19 @@ def test(settings):
     assert redirect_url == "http://data.dasch.swiss/resources/2126045"
     print("OK")
 
+    print("convert a version 0 ARK URL to a custom resource IRI, and then to a DSP-API redirect URL")
+    ark_url_info = ArkUrlInfo(settings, "http://ark.example.org/ark:/00000/0002-751e0b8a-6.2021519")
+    resource_iri = ark_url_info.to_resource_iri()
+    assert resource_iri == "http://rdfh.ch/0002/751e0b8a"
+    redirect_url = ark_url_info.to_redirect_url()
+    assert redirect_url == "http://data.dasch.swiss/resource/http%3A%2F%2Frdfh.ch%2F0002%2F751e0b8a"
+
+    print("convert a PHP resource ID to the same custom resource IRI, and then to the same DSP-API redirect URL")
+    resource_iri = ArkUrlFormatter(settings).format_resource_iri(1, "0002")
+    assert resource_iri == "http://rdfh.ch/0002/751e0b8a"
+    redirect_url = ark_url_info.to_redirect_url()
+    assert redirect_url == "http://data.dasch.swiss/resource/http%3A%2F%2Frdfh.ch%2F0002%2F751e0b8a"
+
     print("reject an ARK URL that doesn't pass check digit validation: ", end='')
     rejected = False
 
@@ -357,6 +370,7 @@ def main():
     group.add_argument("-i", "--iri", help="resource IRI")
     group.add_argument("-n", "--number", help="resource number for PHP server")
     group.add_argument("-t", "--test", help="run tests", action="store_true")
+    parser.add_argument("-r", "--resource", help="generate resource IRI", action="store_true")
     parser.add_argument("-v", "--value", help="value UUID (with -i)")
     parser.add_argument("-d", "--date", help="Knora ARK timestamp (with -i or -n)")
     parser.add_argument("-p", "--project", help="project ID (with -n)")
@@ -383,9 +397,17 @@ def main():
         elif args.iri:
             print(ArkUrlFormatter(settings).resource_iri_to_ark_url(args.iri, args.value, args.date))
         elif args.number:
-            print(ArkUrlFormatter(settings).php_resource_to_ark_url(int(args.number), args.project, args.date))
+            if args.project is None:
+                raise ArkUrlException("Project ID is required with resource number")
+            elif args.resource:
+                print(ArkUrlFormatter(settings).format_resource_iri(int(args.number), args.project))
+            else:
+                print(ArkUrlFormatter(settings).php_resource_to_ark_url(int(args.number), args.project))
         elif args.ark:
-            print(ArkUrlInfo(settings, args.ark).to_redirect_url())
+            if args.resource:
+                print(ArkUrlInfo(settings, args.ark).to_resource_iri())
+            else:
+                print(ArkUrlInfo(settings, args.ark).to_redirect_url())
         else:
             parser.print_help()
     except ArkUrlException as ex:

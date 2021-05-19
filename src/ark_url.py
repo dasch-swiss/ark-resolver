@@ -123,6 +123,7 @@ class ArkUrlInfo:
             # Version 0.
             self.project_id = match.group(1).upper()
             self.resource_id = match.group(2)
+            self.value_id = None
 
             submitted_timestamp = match.group(3)
 
@@ -156,6 +157,15 @@ class ArkUrlInfo:
                 return self.to_php_redirect_url(project_config)
             else:
                 return self.to_knora_redirect_url(project_config)
+
+    def to_resource_iri(self):
+        project_config = self.settings.config[self.project_id]
+        resource_iri_template = Template(project_config["KnoraResourceIri"])
+
+        template_dict = self.template_dict.copy()
+        template_dict["host"] = project_config["Host"]
+
+        return resource_iri_template.substitute(template_dict)
 
     def to_knora_redirect_url(self, project_config):
         resource_iri_template = Template(project_config["KnoraResourceIri"])
@@ -302,3 +312,15 @@ class ArkUrlFormatter:
             url += "." + timestamp
 
         return url
+
+    def format_resource_iri(self, php_resource_id, project_id):
+        knora_resource_id = format((php_resource_id + 1) * self.settings.resource_int_id_factor, 'x')
+        project_config = self.settings.config[project_id]
+        resource_iri_template = Template(project_config["KnoraResourceIri"])
+
+        template_dict = {
+            "project_id": project_id,
+            "resource_id": knora_resource_id
+        }
+
+        return resource_iri_template.substitute(template_dict)
