@@ -29,6 +29,15 @@ Prerequisites:
 - [Sanic](https://sanic.readthedocs.io/en/latest/)
 - [Requests](http://docs.python-requests.org/en/master/)
 
+## Converting an ARK URL from the old SALSAH to a custom resource IRI for import
+
+```
+$ ./ark.py -r -a http://ark.example.org/ark:/00000/0002-751e0b8a-6.2021519
+http://rdfh.ch/0002/751e0b8a
+$ ./ark.py -r -p 080E -n 1                                                
+http://rdfh.ch/080E/751e0b8a
+```
+
 ## Server routes
 
 ```
