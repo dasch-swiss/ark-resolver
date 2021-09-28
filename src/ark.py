@@ -2,24 +2,24 @@
 
 # Copyright @ 2015-2021 Data and Service Center for the Humanities (DaSCH)
 #
-# This file is part of Knora.
+# This file is part of DSP.
 #
-# Knora is free software: you can redistribute it and/or modify
+# DSP is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as published
 # by the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# Knora is distributed in the hope that it will be useful,
+# DSP is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU Affero General Public License for more details.
 #
 # You should have received a copy of the GNU Affero General Public
-# License along with Knora.  If not, see <http://www.gnu.org/licenses/>.
+# License along with DSP.  If not, see <http://www.gnu.org/licenses/>.
 
 
 #################################################################################################
-# Knora ARK redirect server and conversion utility.
+# DSP ARK redirect server and conversion utility.
 #
 # For help on command-line options, run with --help.
 #################################################################################################
@@ -265,37 +265,37 @@ def test(settings):
     assert redirect_url == "http://0.0.0.0:3333/project/0001/info"
     print("OK")
 
-    print("parse an ARK URL for a Knora resource without a timestamp: ", end='')
+    print("parse an ARK URL for a DSP resource without a timestamp: ", end='')
     ark_url_info = ArkUrlInfo(settings, "https://ark.example.org/ark:/00000/1/0001/cmfk1DMHRBiR4=_6HXpEFAn")
     redirect_url = ark_url_info.to_redirect_url()
     assert redirect_url == "http://0.0.0.0:3333/resource/http%3A%2F%2Frdfh.ch%2F0001%2Fcmfk1DMHRBiR4-_6HXpEFA"
     print("OK")
 
-    print("parse an ARK HTTP URL for a Knora resource without a timestamp: ", end='')
+    print("parse an ARK HTTP URL for a DSP resource without a timestamp: ", end='')
     ark_url_info = ArkUrlInfo(settings, "http://ark.example.org/ark:/00000/1/0001/cmfk1DMHRBiR4=_6HXpEFAn")
     redirect_url = ark_url_info.to_redirect_url()
     assert redirect_url == "http://0.0.0.0:3333/resource/http%3A%2F%2Frdfh.ch%2F0001%2Fcmfk1DMHRBiR4-_6HXpEFA"
     print("OK")
 
-    print("parse an ARK URL for a Knora resource with a timestamp with a fractional part: ", end='')
+    print("parse an ARK URL for a DSP resource with a timestamp with a fractional part: ", end='')
     ark_url_info = ArkUrlInfo(settings, "https://ark.example.org/ark:/00000/1/0001/cmfk1DMHRBiR4=_6HXpEFAn.20180604T085622513Z")
     redirect_url = ark_url_info.to_redirect_url()
     assert redirect_url == "http://0.0.0.0:3333/resource/http%3A%2F%2Frdfh.ch%2F0001%2Fcmfk1DMHRBiR4-_6HXpEFA?version=20180604T085622513Z"
     print("OK")
 
-    print("parse an ARK URL for a Knora resource with a timestamp without a fractional part: ", end='')
+    print("parse an ARK URL for a DSP resource with a timestamp without a fractional part: ", end='')
     ark_url_info = ArkUrlInfo(settings, "https://ark.example.org/ark:/00000/1/0001/cmfk1DMHRBiR4=_6HXpEFAn.20180604T085622Z")
     redirect_url = ark_url_info.to_redirect_url()
     assert redirect_url == "http://0.0.0.0:3333/resource/http%3A%2F%2Frdfh.ch%2F0001%2Fcmfk1DMHRBiR4-_6HXpEFA?version=20180604T085622Z"
     print("OK")
 
-    print("parse an ARK URL for a Knora resource and value UUID without a timestamp: ", end='')
+    print("parse an ARK URL for a DSP resource and value UUID without a timestamp: ", end='')
     ark_url_info = ArkUrlInfo(settings, "https://ark.example.org/ark:/00000/1/0001/cmfk1DMHRBiR4=_6HXpEFAn/pLlW4ODASumZfZFbJdpw1gu")
     redirect_url = ark_url_info.to_redirect_url()
     assert redirect_url == "http://0.0.0.0:3333/value/http%3A%2F%2Frdfh.ch%2F0001%2Fcmfk1DMHRBiR4-_6HXpEFA/pLlW4ODASumZfZFbJdpw1g"
     print("OK")
 
-    print("parse an ARK URL for a Knora resource and value UUID with a timestamp: ", end='')
+    print("parse an ARK URL for a DSP resource and value UUID with a timestamp: ", end='')
     ark_url_info = ArkUrlInfo(settings, "https://ark.example.org/ark:/00000/1/0001/cmfk1DMHRBiR4=_6HXpEFAn/pLlW4ODASumZfZFbJdpw1gu.20180604T085622Z")
     redirect_url = ark_url_info.to_redirect_url()
     assert redirect_url == "http://0.0.0.0:3333/value/http%3A%2F%2Frdfh.ch%2F0001%2Fcmfk1DMHRBiR4-_6HXpEFA/pLlW4ODASumZfZFbJdpw1g?version=20180604T085622Z"
@@ -362,7 +362,7 @@ def test(settings):
 def main():
     # Parse command-line arguments.
     default_config_path = "ark-config.ini"
-    parser = argparse.ArgumentParser(description="Convert between Knora resource IRIs and ARK URLs.")
+    parser = argparse.ArgumentParser(description="Convert between DSP resource IRIs and ARK URLs.")
     parser.add_argument("-c", "--config", help="config file (default {})".format(default_config_path))
     group = parser.add_mutually_exclusive_group()
     group.add_argument("-s", "--server", help="start server", action="store_true")
@@ -372,7 +372,7 @@ def main():
     group.add_argument("-t", "--test", help="run tests", action="store_true")
     parser.add_argument("-r", "--resource", help="generate resource IRI", action="store_true")
     parser.add_argument("-v", "--value", help="value UUID (with -i)")
-    parser.add_argument("-d", "--date", help="Knora ARK timestamp (with -i or -n)")
+    parser.add_argument("-d", "--date", help="DSP ARK timestamp (with -i or -n)")
     parser.add_argument("-p", "--project", help="project ID (with -n)")
     args = parser.parse_args()
 

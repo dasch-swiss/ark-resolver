@@ -2,20 +2,20 @@
 
 # Copyright @ 2015-2021 Data and Service Center for the Humanities (DaSCH)
 #
-# This file is part of Knora.
+# This file is part of DSP.
 #
-# Knora is free software: you can redistribute it and/or modify
+# DSP is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as published
 # by the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# Knora is distributed in the hope that it will be useful,
+# DSP is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU Affero General Public License for more details.
 #
 # You should have received a copy of the GNU Affero General Public
-# License along with Knora.  If not, see <http://www.gnu.org/licenses/>.
+# License along with DSP.  If not, see <http://www.gnu.org/licenses/>.
 
 
 import re
@@ -26,20 +26,20 @@ import base64url_check_digit
 
 
 #################################################################################################
-# Tools for generating and parsing Knora ARK URLs.
+# Tools for generating and parsing DSP ARK URLs.
 
 class ArkUrlSettings:
     def __init__(self, config):
         self.config = config
         self.top_config = config["DEFAULT"]
-        self.knora_ark_version = 1
+        self.dsp_ark_version = 1
         self.project_id_pattern = "([0-9A-F]+)"
         self.uuid_pattern = "([A-Za-z0-9_=]+)"
         self.project_id_regex = re.compile("^" + self.project_id_pattern + "$")
         self.resource_iri_regex = re.compile("^http://rdfh.ch/" + self.project_id_pattern + "/([A-Za-z0-9_-]+)$")
         self.resource_int_id_factor = 982451653
         
-        # Patterns for matching Knora ARK version 1 URLs.
+        # Patterns for matching DSP ARK version 1 URLs.
         self.ark_path_pattern = "ark:/" + self.top_config["ArkNaan"] + "/([0-9]+)(?:/" + self.project_id_pattern + "(?:/" + self.uuid_pattern + "(?:/" + self.uuid_pattern + r")?(?:\.([0-9]{8}T[0-9]{6,15}Z))?)?)?"
         self.ark_path_regex = re.compile("^" + self.ark_path_pattern + "$")
         self.ark_url_regex = re.compile("^https?://" + self.top_config["ArkExternalHost"] + "/" + self.ark_path_pattern + "$")
@@ -55,7 +55,7 @@ class ArkUrlException(Exception):
         self.message = message
 
 
-# Represents the information retrieved from a Knora ARK URL.
+# Represents the information retrieved from a DSP ARK URL.
 class ArkUrlInfo:
     def __init__(self, settings, ark_url, path_only=False):
         self.settings = settings
@@ -93,7 +93,7 @@ class ArkUrlInfo:
             raise ArkUrlException("Invalid ARK ID: {}".format(ark_url))
 
         # Which version of ARK ID did we match?
-        if self.url_version == settings.knora_ark_version:
+        if self.url_version == settings.dsp_ark_version:
             # Version 1.
             self.project_id = match.group(2)
             escaped_resource_id_with_check_digit = match.group(3)
@@ -156,32 +156,32 @@ class ArkUrlInfo:
             if project_config.getboolean("UsePhp"):
                 return self.to_php_redirect_url(project_config)
             else:
-                return self.to_knora_redirect_url(project_config)
+                return self.to_dsp_redirect_url(project_config)
 
     def to_resource_iri(self):
         project_config = self.settings.config[self.project_id]
-        resource_iri_template = Template(project_config["KnoraResourceIri"])
+        resource_iri_template = Template(project_config["DSPResourceIri"])
 
         template_dict = self.template_dict.copy()
         template_dict["host"] = project_config["Host"]
 
         return resource_iri_template.substitute(template_dict)
 
-    def to_knora_redirect_url(self, project_config):
-        resource_iri_template = Template(project_config["KnoraResourceIri"])
-        project_iri_template = Template(project_config["KnoraProjectIri"])
+    def to_dsp_redirect_url(self, project_config):
+        resource_iri_template = Template(project_config["DSPResourceIri"])
+        project_iri_template = Template(project_config["DSPProjectIri"])
 
         if self.resource_id is None:
-            request_template = Template(project_config["KnoraProjectRedirectUrl"])
+            request_template = Template(project_config["DSPProjectRedirectUrl"])
         elif self.value_id is None:
             if self.timestamp is None:
-                request_template = Template(project_config["KnoraResourceRedirectUrl"])
+                request_template = Template(project_config["DSPResourceRedirectUrl"])
             else:
-                request_template = Template(project_config["KnoraResourceVersionRedirectUrl"])
+                request_template = Template(project_config["DSPResourceVersionRedirectUrl"])
         elif self.timestamp is None:
-            request_template = Template(project_config["KnoraValueRedirectUrl"])
+            request_template = Template(project_config["DSPValueRedirectUrl"])
         else:
-            request_template = Template(project_config["KnoraValueVersionRedirectUrl"])
+            request_template = Template(project_config["DSPValueVersionRedirectUrl"])
 
         template_dict = self.template_dict.copy()
         template_dict["host"] = project_config["Host"]
@@ -216,7 +216,7 @@ class ArkUrlInfo:
                 # The PHP server only takes timestamps in the format YYYYMMDD
                 template_dict["timestamp"] = self.timestamp[0:8]
         else:
-            request_template = Template(project_config["KnoraProjectRedirectUrl"])
+            request_template = Template(project_config["DSPProjectRedirectUrl"])
 
         return request_template.substitute(template_dict)
 
@@ -247,7 +247,7 @@ class ArkUrlFormatter:
     def __init__(self, settings):
         self.settings = settings
 
-    # Converts a Knora resource IRI to an ARK URL.
+    # Converts a DSP resource IRI to an ARK URL.
     def resource_iri_to_ark_url(self, resource_iri, value_id=None, timestamp=None):
         match = self.settings.resource_iri_regex.match(resource_iri)
 
@@ -272,9 +272,9 @@ class ArkUrlFormatter:
 
     # Converts information about a PHP resource to an ARK URL.
     def php_resource_to_ark_url(self, php_resource_id, project_id, timestamp=None):
-        knora_resource_id = format((php_resource_id + 1) * self.settings.resource_int_id_factor, 'x')
-        check_digit = base64url_check_digit.calculate_check_digit(knora_resource_id)
-        resource_id_with_check_digit = knora_resource_id + check_digit
+        dsp_resource_id = format((php_resource_id + 1) * self.settings.resource_int_id_factor, 'x')
+        check_digit = base64url_check_digit.calculate_check_digit(dsp_resource_id)
+        resource_id_with_check_digit = dsp_resource_id + check_digit
 
         return self.format_ark_url(
             project_id=project_id,
@@ -283,7 +283,7 @@ class ArkUrlFormatter:
             timestamp=timestamp
         )
 
-    # Formats a Knora ARK URL.
+    # Formats a DSP ARK URL.
     def format_ark_url(self,
                        project_id,
                        resource_id_with_check_digit,
@@ -298,7 +298,7 @@ class ArkUrlFormatter:
             protocol,
             self.settings.top_config["ArkExternalHost"],
             self.settings.top_config["ArkNaan"],
-            self.settings.knora_ark_version,
+            self.settings.dsp_ark_version,
             project_id,
             resource_id_with_check_digit
         )
@@ -314,13 +314,13 @@ class ArkUrlFormatter:
         return url
 
     def format_resource_iri(self, php_resource_id, project_id):
-        knora_resource_id = format((php_resource_id + 1) * self.settings.resource_int_id_factor, 'x')
+        dsp_resource_id = format((php_resource_id + 1) * self.settings.resource_int_id_factor, 'x')
         project_config = self.settings.config[project_id]
-        resource_iri_template = Template(project_config["KnoraResourceIri"])
+        resource_iri_template = Template(project_config["DSPResourceIri"])
 
         template_dict = {
             "project_id": project_id,
-            "resource_id": knora_resource_id
+            "resource_id": dsp_resource_id
         }
 
         return resource_iri_template.substitute(template_dict)
