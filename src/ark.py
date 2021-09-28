@@ -331,18 +331,20 @@ def test(settings):
     assert redirect_url == "http://data.dasch.swiss/resources/2126045"
     print("OK")
 
-    print("convert a version 0 ARK URL to a custom resource IRI, and then to a DSP-API redirect URL")
+    print("convert a version 0 ARK URL to a custom resource IRI, and then to a DSP-API redirect URL: ", end='')
     ark_url_info = ArkUrlInfo(settings, "http://ark.example.org/ark:/00000/0002-751e0b8a-6.2021519")
     resource_iri = ark_url_info.to_resource_iri()
     assert resource_iri == "http://rdfh.ch/0002/751e0b8a"
     redirect_url = ark_url_info.to_redirect_url()
     assert redirect_url == "http://data.dasch.swiss/resource/http%3A%2F%2Frdfh.ch%2F0002%2F751e0b8a"
+    print("OK")
 
-    print("convert a PHP resource ID to the same custom resource IRI, and then to the same DSP-API redirect URL")
+    print("convert a PHP resource ID to the same custom resource IRI, and then to the same DSP-API redirect URL:", end='')
     resource_iri = ArkUrlFormatter(settings).format_resource_iri(1, "0002")
     assert resource_iri == "http://rdfh.ch/0002/751e0b8a"
     redirect_url = ark_url_info.to_redirect_url()
     assert redirect_url == "http://data.dasch.swiss/resource/http%3A%2F%2Frdfh.ch%2F0002%2F751e0b8a"
+    print("OK")
 
     print("reject an ARK URL that doesn't pass check digit validation: ", end='')
     rejected = False
