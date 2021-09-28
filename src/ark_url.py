@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# Copyright @ 2015-2019 the contributors (see Contributors.md).
+# Copyright @ 2015-2021 Data and Service Center for the Humanities (DaSCH)
 #
 # This file is part of Knora.
 #
