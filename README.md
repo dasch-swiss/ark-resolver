@@ -13,7 +13,12 @@ The program `ark.py` has two modes of operation:
   redirect URL, as well as the whole URL template, can be configured per
   project.
 
-- It can also be used as a command-line tool for converting between
+  To start the ark-resolver as server, type:
+  ```bash
+  python ark.py -s
+  ```
+
+- The ark-resolver can also be used as a command-line tool for converting between
   resource IRIs and ARK URLs, using the same configuration file.
 
 For usage information, run `./ark.py --help`, and see the sample configuration

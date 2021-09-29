@@ -11,3 +11,5 @@ COPY src/ /app
 WORKDIR /app
 
 ENTRYPOINT ["python", "./ark.py"]
+
+CMD ["-s"]
