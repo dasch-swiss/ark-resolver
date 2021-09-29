@@ -14,6 +14,7 @@ rfc3986==1.5.0
 sanic==20.12.1
 Sanic-Cors==0.10.0.post3
 Sanic-Plugins-Framework==0.9.5
+sanic-routing==0.7.1
 sniffio==1.2.0
 toml==0.10.2
 types-requests==2.25.9
