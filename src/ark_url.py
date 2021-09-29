@@ -171,20 +171,24 @@ class ArkUrlInfo:
         resource_iri_template = Template(project_config["DSPResourceIri"])
         project_iri_template = Template(project_config["DSPProjectIri"])
 
+        template_dict = self.template_dict.copy()
+        template_dict["host"] = project_config["Host"]
+
+        # it's a project
         if self.resource_id is None:
             request_template = Template(project_config["DSPProjectRedirectUrl"])
+            template_dict["project_host"] = project_config["ProjectHost"]
+        # it's a resource
         elif self.value_id is None:
             if self.timestamp is None:
                 request_template = Template(project_config["DSPResourceRedirectUrl"])
             else:
                 request_template = Template(project_config["DSPResourceVersionRedirectUrl"])
+        # it's a value
         elif self.timestamp is None:
             request_template = Template(project_config["DSPValueRedirectUrl"])
         else:
             request_template = Template(project_config["DSPValueVersionRedirectUrl"])
-
-        template_dict = self.template_dict.copy()
-        template_dict["host"] = project_config["Host"]
 
         resource_iri = resource_iri_template.substitute(template_dict)
         url_encoded_resource_iri = parse.quote(resource_iri, safe="")

@@ -156,6 +156,7 @@ def load_settings(config_path):
         "ArkExternalHost": os.environ.get("ARK_EXTERNAL_HOST", "ark.example.org"),
         "ArkInternalHost": os.environ.get("ARK_INTERNAL_HOST", "0.0.0.0"),
         "ArkInternalPort": os.environ.get("ARK_INTERNAL_PORT", "3336"),
+        "ArkProjectHost": os.environ.get("ARK_PROJECT_HOST", "meta.dasch.swiss"),
         "ArkNaan": os.environ.get("ARK_NAAN", "00000"),
         "ArkHttpsProxy":  os.environ.get("ARK_HTTPS_PROXY", "true"),
         "ArkRegistry": os.environ.get("ARK_REGISTRY", "ark-registry.ini"),
@@ -259,10 +260,16 @@ def test(settings):
     assert redirect_url == "http://dasch.swiss"
     print("OK")
 
-    print("parse an ARK project URL: ", end='')
-    ark_url_info = ArkUrlInfo(settings, "https://ark.example.org/ark:/00000/1/0001")
+    print("parse an ARK URL for a project with default project host, i.e. without specified project host: ", end='')
+    ark_url_info = ArkUrlInfo(settings, "https://ark.example.org/ark:/00000/1/0003")
     redirect_url = ark_url_info.to_redirect_url()
-    assert redirect_url == "http://0.0.0.0:3333/project/0001/info"
+    assert redirect_url == "http://meta.dasch.swiss/projects/0003"
+    print("OK")
+
+    print("parse an ARK URL for a project with a specific project host: ", end='')
+    ark_url_info = ArkUrlInfo(settings, "https://ark.example.org/ark:/00000/1/0004")
+    redirect_url = ark_url_info.to_redirect_url()
+    assert redirect_url == "http://other-meta.dasch.swiss/projects/0004"
     print("OK")
 
     print("parse an ARK URL for a DSP resource without a timestamp: ", end='')
