@@ -27,27 +27,25 @@
 
 import argparse
 import configparser
-import traceback
-import os
-from io import StringIO
 import hashlib
 import hmac
+import os
+from io import StringIO
 
-from sanic import Sanic, response
-from sanic.response import text
-from sanic.log import logger
-from sanic_cors import CORS, cross_origin
 import requests
+from sanic import Sanic, response
+from sanic.log import logger
+from sanic_cors import CORS
 
 import base64url_check_digit
 from ark_url import ArkUrlInfo, ArkUrlFormatter, ArkUrlException, ArkUrlSettings
-
 
 #################################################################################################
 # Server implementation.
 
 app = Sanic('ark_resolver')
 CORS(app)
+
 
 @app.get("/make_php_ark_url")
 async def make_php_ark_url(req):
@@ -157,7 +155,7 @@ def load_settings(config_path):
         "ArkInternalHost": os.environ.get("ARK_INTERNAL_HOST", "0.0.0.0"),
         "ArkInternalPort": os.environ.get("ARK_INTERNAL_PORT", "3336"),
         "ArkNaan": os.environ.get("ARK_NAAN", "00000"),
-        "ArkHttpsProxy":  os.environ.get("ARK_HTTPS_PROXY", "true"),
+        "ArkHttpsProxy": os.environ.get("ARK_HTTPS_PROXY", "true"),
         "ArkRegistry": os.environ.get("ARK_REGISTRY", "ark-registry.ini"),
         "ArkGitHubSecret": os.environ.get("ARK_GITHUB_SECRET", "")
     }
@@ -176,192 +174,8 @@ def load_settings(config_path):
         config.read_file(open(registry_path))
 
     settings = ArkUrlSettings(config)
+
     return settings
-
-
-#################################################################################################
-# Automated tests.
-
-def test(settings):
-    ark_url_formatter = ArkUrlFormatter(settings)
-    correct_resource_id = "cmfk1DMHRBiR4-_6HXpEFA"
-
-    print("reject a string without a check digit: ", end='')
-    assert not base64url_check_digit.is_valid(correct_resource_id)
-    print("OK")
-
-    print("calculate a check digit for a string and validate it: ", end='')
-    correct_resource_id_check_digit = "n"
-    check_digit = base64url_check_digit.calculate_check_digit(correct_resource_id)
-    assert check_digit == correct_resource_id_check_digit
-    correct_resource_id_with_correct_check_digit = correct_resource_id + check_digit
-    assert base64url_check_digit.is_valid(correct_resource_id_with_correct_check_digit)
-    print("OK")
-
-    print("reject a string with an incorrect check digit: ", end='')
-    correct_resource_id_with_incorrect_check_digit = correct_resource_id + "m"
-    assert not base64url_check_digit.is_valid(correct_resource_id_with_incorrect_check_digit)
-    print("OK")
-
-    print("reject a string with a missing character: ", end='')
-    resource_id_with_missing_character = "cmfk1DMHRBiR4-6HXpEFA"
-    resource_id_with_missing_character_and_correct_check_digit = resource_id_with_missing_character + correct_resource_id_check_digit
-    assert not base64url_check_digit.is_valid(resource_id_with_missing_character_and_correct_check_digit)
-    print("OK")
-
-    print("reject a string with an incorrect character: ", end='')
-    resource_id_with_incorrect_character = "cmfk1DMHRBir4-_6HXpEFA"
-    resource_id_with_incorrect_character_and_correct_check_digit = resource_id_with_incorrect_character + correct_resource_id_check_digit
-    assert not base64url_check_digit.is_valid(resource_id_with_incorrect_character_and_correct_check_digit)
-    print("OK")
-
-    print("reject a string with swapped characters: ", end='')
-    resource_id_with_swapped_characters = "cmfk1DMHRBiR4_-6HXpEFA"
-    resource_id_with_swapped_characters_and_correct_check_digit = resource_id_with_swapped_characters + correct_resource_id_check_digit
-    assert not base64url_check_digit.is_valid(resource_id_with_swapped_characters_and_correct_check_digit)
-    print("OK")
-
-    print("generate an ARK URL for a resource IRI without a timestamp: ", end='')
-    resource_iri = "http://rdfh.ch/0001/cmfk1DMHRBiR4-_6HXpEFA"
-    ark_url = ark_url_formatter.resource_iri_to_ark_url(resource_iri=resource_iri)
-    assert ark_url == "https://ark.example.org/ark:/00000/1/0001/cmfk1DMHRBiR4=_6HXpEFAn"
-    print("OK")
-
-    print("generate an ARK URL for a resource IRI with a timestamp: ", end='')
-    ark_url = ark_url_formatter.resource_iri_to_ark_url(resource_iri=resource_iri, timestamp="20180604T085622513Z")
-    assert ark_url == "https://ark.example.org/ark:/00000/1/0001/cmfk1DMHRBiR4=_6HXpEFAn.20180604T085622513Z"
-    print("OK")
-
-    print("generate an ARK URL for a resource IRI and value UUID without a timestamp: ", end='')
-    value_id = "pLlW4ODASumZfZFbJdpw1g"
-    ark_url = ark_url_formatter.resource_iri_to_ark_url(resource_iri=resource_iri, value_id=value_id)
-    assert ark_url == "https://ark.example.org/ark:/00000/1/0001/cmfk1DMHRBiR4=_6HXpEFAn/pLlW4ODASumZfZFbJdpw1gu"
-    print("OK")
-
-    print("generate an ARK URL for a resource IRI and value UUID with a timestamp: ", end='')
-    ark_url = ark_url_formatter.resource_iri_to_ark_url(resource_iri=resource_iri, value_id=value_id, timestamp="20180604T085622513Z")
-    assert ark_url == "https://ark.example.org/ark:/00000/1/0001/cmfk1DMHRBiR4=_6HXpEFAn/pLlW4ODASumZfZFbJdpw1gu.20180604T085622513Z"
-    print("OK")
-
-    print("generate a version 1 ARK URL for a PHP resource without a timestamp: ", end='')
-    ark_url = ark_url_formatter.php_resource_to_ark_url(php_resource_id=1, project_id="0803")
-    assert ark_url == "https://ark.example.org/ark:/00000/1/0803/751e0b8am"
-    print("OK")
-
-    print("generate a version 1 ARK URL for a PHP resource with a timestamp: ", end='')
-    ark_url = ark_url_formatter.php_resource_to_ark_url(php_resource_id=1, project_id="0803", timestamp="20180604T085622513Z")
-    assert ark_url == "https://ark.example.org/ark:/00000/1/0803/751e0b8am.20180604T085622513Z"
-    print("OK")
-
-    print("parse an ARK URL representing the top-level object: ", end='')
-    ark_url_info = ArkUrlInfo(settings, "https://ark.example.org/ark:/00000/1")
-    redirect_url = ark_url_info.to_redirect_url()
-    assert redirect_url == "http://dasch.swiss"
-    print("OK")
-
-    print("parse an ARK URL for a project with default project host, i.e. without specified project host: ", end='')
-    ark_url_info = ArkUrlInfo(settings, "https://ark.example.org/ark:/00000/1/0003")
-    redirect_url = ark_url_info.to_redirect_url()
-    assert redirect_url == "http://meta.dasch.swiss/projects/0003"
-    print("OK")
-
-    print("parse an ARK URL for a project with a specific project host: ", end='')
-    ark_url_info = ArkUrlInfo(settings, "https://ark.example.org/ark:/00000/1/0004")
-    redirect_url = ark_url_info.to_redirect_url()
-    assert redirect_url == "http://other-meta.dasch.swiss/projects/0004"
-    print("OK")
-
-    print("parse an ARK URL for a DSP resource without a timestamp: ", end='')
-    ark_url_info = ArkUrlInfo(settings, "https://ark.example.org/ark:/00000/1/0001/cmfk1DMHRBiR4=_6HXpEFAn")
-    redirect_url = ark_url_info.to_redirect_url()
-    assert redirect_url == "http://0.0.0.0:3333/resource/http%3A%2F%2Frdfh.ch%2F0001%2Fcmfk1DMHRBiR4-_6HXpEFA"
-    print("OK")
-
-    print("parse an ARK HTTP URL for a DSP resource without a timestamp: ", end='')
-    ark_url_info = ArkUrlInfo(settings, "http://ark.example.org/ark:/00000/1/0001/cmfk1DMHRBiR4=_6HXpEFAn")
-    redirect_url = ark_url_info.to_redirect_url()
-    assert redirect_url == "http://0.0.0.0:3333/resource/http%3A%2F%2Frdfh.ch%2F0001%2Fcmfk1DMHRBiR4-_6HXpEFA"
-    print("OK")
-
-    print("parse an ARK URL for a DSP resource with a timestamp with a fractional part: ", end='')
-    ark_url_info = ArkUrlInfo(settings, "https://ark.example.org/ark:/00000/1/0001/cmfk1DMHRBiR4=_6HXpEFAn.20180604T085622513Z")
-    redirect_url = ark_url_info.to_redirect_url()
-    assert redirect_url == "http://0.0.0.0:3333/resource/http%3A%2F%2Frdfh.ch%2F0001%2Fcmfk1DMHRBiR4-_6HXpEFA?version=20180604T085622513Z"
-    print("OK")
-
-    print("parse an ARK URL for a DSP resource with a timestamp without a fractional part: ", end='')
-    ark_url_info = ArkUrlInfo(settings, "https://ark.example.org/ark:/00000/1/0001/cmfk1DMHRBiR4=_6HXpEFAn.20180604T085622Z")
-    redirect_url = ark_url_info.to_redirect_url()
-    assert redirect_url == "http://0.0.0.0:3333/resource/http%3A%2F%2Frdfh.ch%2F0001%2Fcmfk1DMHRBiR4-_6HXpEFA?version=20180604T085622Z"
-    print("OK")
-
-    print("parse an ARK URL for a DSP resource and value UUID without a timestamp: ", end='')
-    ark_url_info = ArkUrlInfo(settings, "https://ark.example.org/ark:/00000/1/0001/cmfk1DMHRBiR4=_6HXpEFAn/pLlW4ODASumZfZFbJdpw1gu")
-    redirect_url = ark_url_info.to_redirect_url()
-    assert redirect_url == "http://0.0.0.0:3333/value/http%3A%2F%2Frdfh.ch%2F0001%2Fcmfk1DMHRBiR4-_6HXpEFA/pLlW4ODASumZfZFbJdpw1g"
-    print("OK")
-
-    print("parse an ARK URL for a DSP resource and value UUID with a timestamp: ", end='')
-    ark_url_info = ArkUrlInfo(settings, "https://ark.example.org/ark:/00000/1/0001/cmfk1DMHRBiR4=_6HXpEFAn/pLlW4ODASumZfZFbJdpw1gu.20180604T085622Z")
-    redirect_url = ark_url_info.to_redirect_url()
-    assert redirect_url == "http://0.0.0.0:3333/value/http%3A%2F%2Frdfh.ch%2F0001%2Fcmfk1DMHRBiR4-_6HXpEFA/pLlW4ODASumZfZFbJdpw1g?version=20180604T085622Z"
-    print("OK")
-
-    print("parse a version 1 ARK URL for a PHP resource without a timestamp: ", end='')
-    ark_url_info = ArkUrlInfo(settings, "https://ark.example.org/ark:/00000/1/0803/751e0b8am")
-    redirect_url = ark_url_info.to_redirect_url()
-    assert redirect_url == "http://data.dasch.swiss/resources/1"
-    print("OK")
-
-    print("parse an ARK URL for a PHP resource with a timestamp: ", end='')
-    ark_url_info = ArkUrlInfo(settings, "https://ark.example.org/ark:/00000/1/0803/751e0b8am.20190118T102919Z")
-    redirect_url = ark_url_info.to_redirect_url()
-    assert redirect_url == "http://data.dasch.swiss/resources/1?citdate=20190118"
-    print("OK")
-
-    print("parse a version 0 ARK URL for a PHP resource without a timestamp: ", end='')
-    ark_url_info = ArkUrlInfo(settings, "http://ark.example.org/ark:/00000/080e-76bb2132d30d6-0")
-    redirect_url = ark_url_info.to_redirect_url()
-    assert redirect_url == "http://data.dasch.swiss/resources/2126045"
-    print("OK")
-
-    print("parse a version 0 ARK URL for a PHP resource with a timestamp: ", end='')
-    ark_url_info = ArkUrlInfo(settings, "http://ark.example.org/ark:/00000/080e-76bb2132d30d6-0.20190129")
-    redirect_url = ark_url_info.to_redirect_url()
-    assert redirect_url == "http://data.dasch.swiss/resources/2126045?citdate=20190129"
-    print("OK")
-
-    print("parse a version 0 ARK URL for a PHP resource with a timestamp that's too short: ", end='')
-    ark_url_info = ArkUrlInfo(settings, "http://ark.example.org/ark:/00000/080e-76bb2132d30d6-0.2019111")
-    redirect_url = ark_url_info.to_redirect_url()
-    assert redirect_url == "http://data.dasch.swiss/resources/2126045"
-    print("OK")
-
-    print("convert a version 0 ARK URL to a custom resource IRI, and then to a DSP-API redirect URL: ", end='')
-    ark_url_info = ArkUrlInfo(settings, "http://ark.example.org/ark:/00000/0002-751e0b8a-6.2021519")
-    resource_iri = ark_url_info.to_resource_iri()
-    assert resource_iri == "http://rdfh.ch/0002/751e0b8a"
-    redirect_url = ark_url_info.to_redirect_url()
-    assert redirect_url == "http://data.dasch.swiss/resource/http%3A%2F%2Frdfh.ch%2F0002%2F751e0b8a"
-    print("OK")
-
-    print("convert a PHP resource ID to the same custom resource IRI, and then to the same DSP-API redirect URL:", end='')
-    resource_iri = ArkUrlFormatter(settings).format_resource_iri(1, "0002")
-    assert resource_iri == "http://rdfh.ch/0002/751e0b8a"
-    redirect_url = ark_url_info.to_redirect_url()
-    assert redirect_url == "http://data.dasch.swiss/resource/http%3A%2F%2Frdfh.ch%2F0002%2F751e0b8a"
-    print("OK")
-
-    print("reject an ARK URL that doesn't pass check digit validation: ", end='')
-    rejected = False
-
-    try:
-        ArkUrlInfo(settings, "https://ark.example.org/ark:/00000/1/0001/cmfk1DMHRBir4=_6HXpEFAn")
-    except ArkUrlException:
-        rejected = True
-
-    assert rejected
-    print("OK")
 
 
 #################################################################################################
@@ -377,7 +191,6 @@ def main():
     group.add_argument("-a", "--ark", help="ARK URL")
     group.add_argument("-i", "--iri", help="resource IRI")
     group.add_argument("-n", "--number", help="resource number for PHP server")
-    group.add_argument("-t", "--test", help="run tests", action="store_true")
     parser.add_argument("-r", "--resource", help="generate resource IRI", action="store_true")
     parser.add_argument("-v", "--value", help="value UUID (with -i)")
     parser.add_argument("-d", "--date", help="DSP ARK timestamp (with -i or -n)")
@@ -396,12 +209,6 @@ def main():
 
         if args.server:
             server(settings)
-        elif args.test:
-            try:
-                test(settings)
-            except Exception:
-                traceback.print_exc()
-                exit(1)
         elif args.iri:
             print(ArkUrlFormatter(settings).resource_iri_to_ark_url(args.iri, args.value, args.date))
         elif args.number:
