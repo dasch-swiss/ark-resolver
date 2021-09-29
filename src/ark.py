@@ -156,7 +156,6 @@ def load_settings(config_path):
         "ArkExternalHost": os.environ.get("ARK_EXTERNAL_HOST", "ark.example.org"),
         "ArkInternalHost": os.environ.get("ARK_INTERNAL_HOST", "0.0.0.0"),
         "ArkInternalPort": os.environ.get("ARK_INTERNAL_PORT", "3336"),
-        "ArkProjectHost": os.environ.get("ARK_PROJECT_HOST", "meta.dasch.swiss"),
         "ArkNaan": os.environ.get("ARK_NAAN", "00000"),
         "ArkHttpsProxy":  os.environ.get("ARK_HTTPS_PROXY", "true"),
         "ArkRegistry": os.environ.get("ARK_REGISTRY", "ark-registry.ini"),
