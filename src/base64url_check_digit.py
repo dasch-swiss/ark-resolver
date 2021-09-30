@@ -98,5 +98,3 @@ def to_check_digit(char_value):
         raise CheckDigitException("Invalid character value: {}".format(char_value))
 
     return base64url_alphabet[char_value]
-
-

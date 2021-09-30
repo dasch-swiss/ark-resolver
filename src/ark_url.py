@@ -19,8 +19,8 @@
 
 
 import re
-from urllib import parse
 from string import Template
+from urllib import parse
 
 import base64url_check_digit
 
@@ -29,6 +29,10 @@ import base64url_check_digit
 # Tools for generating and parsing DSP ARK URLs.
 
 class ArkUrlSettings:
+    """
+    Settings used for the validation of values used in the context of ARK URLs
+    """
+
     def __init__(self, config):
         self.config = config
         self.top_config = config["DEFAULT"]
@@ -38,29 +42,41 @@ class ArkUrlSettings:
         self.project_id_regex = re.compile("^" + self.project_id_pattern + "$")
         self.resource_iri_regex = re.compile("^http://rdfh.ch/" + self.project_id_pattern + "/([A-Za-z0-9_-]+)$")
         self.resource_int_id_factor = 982451653
-        
+
         # Patterns for matching DSP ARK version 1 URLs.
-        self.ark_path_pattern = "ark:/" + self.top_config["ArkNaan"] + "/([0-9]+)(?:/" + self.project_id_pattern + "(?:/" + self.uuid_pattern + "(?:/" + self.uuid_pattern + r")?(?:\.([0-9]{8}T[0-9]{6,15}Z))?)?)?"
+        self.ark_path_pattern = "ark:/" + self.top_config[
+            "ArkNaan"] + "/([0-9]+)(?:/" + self.project_id_pattern + "(?:/" + self.uuid_pattern + "(?:/" + self.uuid_pattern + r")?(?:\.([0-9]{8}T[0-9]{6,15}Z))?)?)?"
         self.ark_path_regex = re.compile("^" + self.ark_path_pattern + "$")
-        self.ark_url_regex = re.compile("^https?://" + self.top_config["ArkExternalHost"] + "/" + self.ark_path_pattern + "$")
+        self.ark_url_regex = re.compile(
+            "^https?://" + self.top_config["ArkExternalHost"] + "/" + self.ark_path_pattern + "$")
 
         # Patterns for matching PHP-SALSAH ARK version 0 URLs.
-        self.v0_ark_path_pattern = "ark:/" + self.top_config["ArkNaan"] + r"/([0-9A-Fa-f]+)-([A-Za-z0-9]+)-[A-Za-z0-9](?:\.([0-9]{6,8}))?"
+        self.v0_ark_path_pattern = "ark:/" + self.top_config[
+            "ArkNaan"] + r"/([0-9A-Fa-f]+)-([A-Za-z0-9]+)-[A-Za-z0-9](?:\.([0-9]{6,8}))?"
         self.v0_ark_path_regex = re.compile("^" + self.v0_ark_path_pattern + "$")
-        self.v0_ark_url_regex = re.compile("^https?://" + self.top_config["ArkExternalHost"] + "/" + self.v0_ark_path_pattern + "$")
+        self.v0_ark_url_regex = re.compile(
+            "^https?://" + self.top_config["ArkExternalHost"] + "/" + self.v0_ark_path_pattern + "$")
 
 
 class ArkUrlException(Exception):
+    """
+    Exception used in the context of ARK URLs
+    """
+
     def __init__(self, message):
         self.message = message
 
 
-# Represents the information retrieved from a DSP ARK URL.
 class ArkUrlInfo:
+    """
+    Represents the information retrieved from a DSP ARK URL.
+    """
+
     def __init__(self, settings, ark_url, path_only=False):
         self.settings = settings
 
         # Are we matching just the path part of the URL?
+        # TODO: path_only=True should be tested in unit tests
         if path_only:
             # Yes. Is it a version 1 ARK ID?
             match = settings.ark_path_regex.match(ark_url)
@@ -146,19 +162,28 @@ class ArkUrlInfo:
             "timestamp": self.timestamp
         }
 
-    # Converts an ARK URL to the URL that the client should be redirected to.
-    def to_redirect_url(self):
+    def to_redirect_url(self) -> str:
+        """
+        Checks if self is the top level object which is redirected to TopLevelObjectURL. If not, returns the
+        redirect URL of either a PHP-SALSAH or DSP object.
+        """
         if self.project_id is None:
+            # return the redirect URL of the top level object
             return self.settings.top_config["TopLevelObjectUrl"]
         else:
             project_config = self.settings.config[self.project_id]
 
             if project_config.getboolean("UsePhp"):
+                # return the redirect URL of a PHP-SALSAH object
                 return self.to_php_redirect_url(project_config)
             else:
+                # return the redirect URL of a DSP object
                 return self.to_dsp_redirect_url(project_config)
 
-    def to_resource_iri(self):
+    def to_resource_iri(self) -> str:
+        """
+        Converts an ARK URL to a DSP resource IRI.
+        """
         project_config = self.settings.config[self.project_id]
         resource_iri_template = Template(project_config["DSPResourceIri"])
 
@@ -167,7 +192,11 @@ class ArkUrlInfo:
 
         return resource_iri_template.substitute(template_dict)
 
-    def to_dsp_redirect_url(self, project_config):
+    def to_dsp_redirect_url(self, project_config) -> str:
+        """
+        In case it's called on a DSP object, converts an ARK URL to the URL that the client should be redirected to
+        according to its type (project, resource, or value)
+        """
         resource_iri_template = Template(project_config["DSPResourceIri"])
         project_iri_template = Template(project_config["DSPProjectIri"])
 
@@ -185,29 +214,33 @@ class ArkUrlInfo:
             else:
                 request_template = Template(project_config["DSPResourceVersionRedirectUrl"])
         # it's a value
-        elif self.timestamp is None:
-            request_template = Template(project_config["DSPValueRedirectUrl"])
-        else:
-            request_template = Template(project_config["DSPValueVersionRedirectUrl"])
+        elif self.value_id is not None:
+            template_dict["value_id"] = self.value_id
+            if self.timestamp is None:
+                request_template = Template(project_config["DSPValueRedirectUrl"])
+            else:
+                request_template = Template(project_config["DSPValueVersionRedirectUrl"])
 
+        # add the DSP resource IRI to the template_dict
         resource_iri = resource_iri_template.substitute(template_dict)
         url_encoded_resource_iri = parse.quote(resource_iri, safe="")
         template_dict["resource_iri"] = url_encoded_resource_iri
 
+        # add the DSP project IRI to the template_dict
         project_iri = project_iri_template.substitute(template_dict)
         url_encoded_project_iri = parse.quote(project_iri, safe="")
         template_dict["project_iri"] = url_encoded_project_iri
 
-        if self.value_id is not None:
-            template_dict["value_id"] = self.value_id
-
         return request_template.substitute(template_dict)
 
-    def to_php_redirect_url(self, project_config):
+    def to_php_redirect_url(self, project_config) -> str:
+        """
+        In case it's called on a PHP-SALSAH object, converts the ARK URL to the URL that the client should be redirected to.
+        """
         template_dict = self.template_dict.copy()
-
         template_dict["host"] = project_config["Host"]
 
+        # it's a resource
         if self.resource_id is not None:
             resource_int_id = (int(self.resource_id, 16) // self.settings.resource_int_id_factor) - 1
             template_dict["resource_int_id"] = resource_int_id
@@ -219,14 +252,17 @@ class ArkUrlInfo:
 
                 # The PHP server only takes timestamps in the format YYYYMMDD
                 template_dict["timestamp"] = self.timestamp[0:8]
+        # it's a project
         else:
             request_template = Template(project_config["DSPProjectRedirectUrl"])
 
         return request_template.substitute(template_dict)
 
 
-# Adds a check digit to a Base64-encoded UUID, and escapes the result.
-def add_check_digit_and_escape(uuid):
+def add_check_digit_and_escape(uuid) -> str:
+    """
+    Adds a check digit to a Base64-encoded UUID, and escapes the result.
+    """
     check_digit = base64url_check_digit.calculate_check_digit(uuid)
     uuid_with_check_digit = uuid + check_digit
 
@@ -234,9 +270,10 @@ def add_check_digit_and_escape(uuid):
     return uuid_with_check_digit.replace('-', '=')
 
 
-# Unescapes a Base64-encoded UUID, validates its check digit, and returns the unescaped UUID
-# without the check digit.
-def unescape_and_validate_uuid(ark_url, escaped_uuid):
+def unescape_and_validate_uuid(ark_url, escaped_uuid) -> str:
+    """
+    Unescapes a Base64-encoded UUID, validates its check digit, and returns the unescaped UUID without the check digit.
+    """
     # '-' is escaped as '=' in the UUID and check digit, because '-' can be ignored in ARK URLs.
     unescaped_uuid = escaped_uuid.replace('=', '-')
 
@@ -246,13 +283,19 @@ def unescape_and_validate_uuid(ark_url, escaped_uuid):
     return unescaped_uuid[0:-1]
 
 
-# Formats ARK URLs.
 class ArkUrlFormatter:
+    """
+    Handles formatting of PHP-SALSAH object IDs and DSP resource IRIs into ARK URLs
+    """
+
     def __init__(self, settings):
         self.settings = settings
 
-    # Converts a DSP resource IRI to an ARK URL.
-    def resource_iri_to_ark_url(self, resource_iri, value_id=None, timestamp=None):
+    def resource_iri_to_ark_url(self, resource_iri, value_id=None, timestamp=None) -> str:
+        """
+        Converts a DSP resource IRI to an ARK URL.
+        """
+        # checks if given resource IRI is valid and matches (i.e. tokenizes) it into project_id and resource_id
         match = self.settings.resource_iri_regex.match(resource_iri)
 
         if match is None:
@@ -262,11 +305,13 @@ class ArkUrlFormatter:
         resource_id = match.group(2)
         escaped_resource_id_with_check_digit = add_check_digit_and_escape(resource_id)
 
+        # checks if there is a value_id
         if value_id is not None:
             escaped_value_id_with_check_digit = add_check_digit_and_escape(value_id)
         else:
             escaped_value_id_with_check_digit = None
 
+        # formats and returns the ARK URL
         return self.format_ark_url(
             project_id=project_id,
             resource_id_with_check_digit=escaped_resource_id_with_check_digit,
@@ -274,12 +319,15 @@ class ArkUrlFormatter:
             timestamp=timestamp
         )
 
-    # Converts information about a PHP resource to an ARK URL.
-    def php_resource_to_ark_url(self, php_resource_id, project_id, timestamp=None):
+    def php_resource_to_ark_url(self, php_resource_id, project_id, timestamp=None) -> str:
+        """
+        Converts a PHP-SALSAH resource ID to an ARK URL.
+        """
         dsp_resource_id = format((php_resource_id + 1) * self.settings.resource_int_id_factor, 'x')
         check_digit = base64url_check_digit.calculate_check_digit(dsp_resource_id)
         resource_id_with_check_digit = dsp_resource_id + check_digit
 
+        # formats and returns the ARK URL
         return self.format_ark_url(
             project_id=project_id,
             resource_id_with_check_digit=resource_id_with_check_digit,
@@ -287,12 +335,14 @@ class ArkUrlFormatter:
             timestamp=timestamp
         )
 
-    # Formats a DSP ARK URL.
     def format_ark_url(self,
                        project_id,
                        resource_id_with_check_digit,
                        value_id_with_check_digit,
-                       timestamp):
+                       timestamp) -> str:
+        """
+        Formats and returns a DSP ARK URL from the given parameters and configuration.
+        """
         if self.settings.top_config.getboolean("ArkHttpsProxy"):
             protocol = "https"
         else:
@@ -317,7 +367,19 @@ class ArkUrlFormatter:
 
         return url
 
-    def format_resource_iri(self, php_resource_id, project_id):
+
+class ResourceIriFormatter:
+    """
+    Handles formatting of PHP-SALSAH object IDs and DSP resource IRIs
+    """
+
+    def __init__(self, settings):
+        self.settings = settings
+
+    def format_resource_iri(self, php_resource_id, project_id) -> str:
+        """
+        Returns the DSP resource IRI from a given PHP-SALSAH object ID.
+        """
         dsp_resource_id = format((php_resource_id + 1) * self.settings.resource_int_id_factor, 'x')
         project_config = self.settings.config[project_id]
         resource_iri_template = Template(project_config["DSPResourceIri"])

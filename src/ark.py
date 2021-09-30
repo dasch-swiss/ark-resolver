@@ -38,7 +38,7 @@ from sanic.log import logger
 from sanic_cors import CORS
 
 import base64url_check_digit
-from ark_url import ArkUrlInfo, ArkUrlFormatter, ArkUrlException, ArkUrlSettings
+from ark_url import ArkUrlInfo, ArkUrlFormatter, ArkUrlException, ArkUrlSettings, ResourceIriFormatter
 
 #################################################################################################
 # Server implementation.
@@ -48,7 +48,10 @@ CORS(app)
 
 
 @app.get("/make_php_ark_url")
-async def make_php_ark_url(req):
+async def make_php_ark_url(req) -> str:
+    """
+    Returns an ARK URL from a given PHP resource
+    """
     project_id = req.args["project_id"][0]
 
     if app.config.settings.project_id_regex.match(project_id) is None:
@@ -59,7 +62,10 @@ async def make_php_ark_url(req):
     return response.text(ark_url)
 
 
-def get_config():
+def get_config() -> str:
+    """
+    Returns the app's configuration
+    """
     # Make a copy of the configuration.
     config_output = StringIO()
     app.config.settings.config.write(config_output)
@@ -76,12 +82,18 @@ def get_config():
 
 
 @app.get("/config")
-async def config_get(_):
+async def config_get(_) -> str:
+    """
+    Returns the app's configuration
+    """
     return response.text(get_config())
 
 
 @app.head("/config")
-async def config_head(_):
+async def config_head(_) -> str:
+    """
+    Returns only the head of the config response
+    """
     config_str = get_config()
 
     headers = {
@@ -93,9 +105,11 @@ async def config_head(_):
 
 
 @app.post("/reload")
-async def reload(req):
+async def reload(req) -> str:
+    """
+    Requests a reload of the configuration. Checks if the request is authorized.
+    """
     # Get the signature submitted with the request.
-
     if "X-Hub-Signature" not in req.headers:
         return response.text("Unauthorized", status=401)
 
@@ -122,7 +136,10 @@ async def reload(req):
 
 
 @app.get('/<path:path>')
-async def catch_all(_, path=""):
+async def catch_all(_, path="") -> str:
+    """
+    Catch all URL. Tries to redirect the given ARK ID.
+    """
     try:
         redirect_url = ArkUrlInfo(settings=app.config.settings, ark_url=path, path_only=True).to_redirect_url()
     except ArkUrlException as ex:
@@ -137,7 +154,10 @@ async def catch_all(_, path=""):
     return response.redirect(redirect_url)
 
 
-def server(settings):
+def server(settings) -> None:
+    """
+    Starts the app as server with the given settings.
+    """
     app.config.settings = settings
     app.run(host=settings.top_config["ArkInternalHost"], port=settings.top_config.getint("ArkInternalPort"))
 
@@ -145,8 +165,10 @@ def server(settings):
 #################################################################################################
 # Loading of config and registry files.
 
-# Loads configuration and returns an ArkUrlSettings.
-def load_settings(config_path):
+def load_settings(config_path: str) -> ArkUrlSettings:
+    """
+    Loads configuration from given path and returns an ArkUrlSettings.
+    """
     app.config.config_path = config_path
 
     # Default configuration from environment variables.
@@ -161,7 +183,6 @@ def load_settings(config_path):
     }
 
     # Read the config and registry files.
-
     config = configparser.ConfigParser(defaults=environment_vars)
     config.read_file(open(config_path))
 
@@ -181,8 +202,11 @@ def load_settings(config_path):
 #################################################################################################
 # Command-line invocation.
 
-def main():
-    # Parse command-line arguments.
+def main() -> None:
+    """
+    Main method for app started as CLI
+    """
+    # parses the command-line arguments
     default_config_path = "ark-config.ini"
     parser = argparse.ArgumentParser(description="Convert between DSP resource IRIs and ARK URLs.")
     parser.add_argument("-c", "--config", help="config file (default {})".format(default_config_path))
@@ -197,8 +221,7 @@ def main():
     parser.add_argument("-p", "--project", help="project ID (with -n)")
     args = parser.parse_args()
 
-    # Read the config and registry files.
-
+    # reads the config and registry files
     if args.config is not None:
         config_path = args.config
     else:
@@ -208,20 +231,26 @@ def main():
         settings = load_settings(config_path)
 
         if args.server:
+            # starts the app as server
             server(settings)
         elif args.iri:
+            # prints the converted ARK URL from a given resource IRI
             print(ArkUrlFormatter(settings).resource_iri_to_ark_url(args.iri, args.value, args.date))
         elif args.number:
             if args.project is None:
                 raise ArkUrlException("Project ID is required with resource number")
             elif args.resource:
-                print(ArkUrlFormatter(settings).format_resource_iri(int(args.number), args.project))
+                # prints the DSP resource IRI from a given PHP resource IRI
+                print(ResourceIriFormatter(settings).format_resource_iri(int(args.number), args.project))
             else:
+                # prints the converted ARK URL from a given PHP resource IRI
                 print(ArkUrlFormatter(settings).php_resource_to_ark_url(int(args.number), args.project))
         elif args.ark:
             if args.resource:
+                # prints the converted DSP resource IRI from a given ARK URL
                 print(ArkUrlInfo(settings, args.ark).to_resource_iri())
             else:
+                # prints the converted DSP URL from a given ARK URL
                 print(ArkUrlInfo(settings, args.ark).to_redirect_url())
         else:
             parser.print_help()
