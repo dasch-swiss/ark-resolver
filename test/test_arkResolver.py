@@ -3,7 +3,6 @@ import pickle
 import unittest
 
 from src import base64url_check_digit
-from src.ark import load_settings
 from src.ark_url import ArkUrlFormatter, ArkUrlInfo, ArkUrlException
 
 
@@ -11,6 +10,9 @@ class TestArkResolver(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        """
+        loads the settings from a pickle file
+        """
         with open(os.path.join('test', 'settings.pkl'), 'rb') as mock_settings:
             cls.settings = pickle.load(mock_settings)
 
