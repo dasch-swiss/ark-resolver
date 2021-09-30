@@ -240,10 +240,10 @@ def main() -> None:
             if args.project is None:
                 raise ArkUrlException("Project ID is required with resource number")
             elif args.resource:
-                # prints the DSP resource IRI from a given PHP resource IRI
+                # prints the DSP resource IRI from a given PHP-SALSAH object ID
                 print(ResourceIriFormatter(settings).format_resource_iri(int(args.number), args.project))
             else:
-                # prints the converted ARK URL from a given PHP resource IRI
+                # prints the converted ARK URL from a given PHP-SALSAH object ID
                 print(ArkUrlFormatter(settings).php_resource_to_ark_url(int(args.number), args.project))
         elif args.ark:
             if args.resource:

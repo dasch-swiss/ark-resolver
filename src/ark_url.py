@@ -235,7 +235,8 @@ class ArkUrlInfo:
 
     def to_php_redirect_url(self, project_config) -> str:
         """
-        In case it's called on a PHP-SALSAH object, converts the ARK URL to the URL that the client should be redirected to.
+        In case it's called on a PHP-SALSAH object, converts the ARK URL to the URL that the client should be
+        redirected to.
         """
         template_dict = self.template_dict.copy()
         template_dict["host"] = project_config["Host"]

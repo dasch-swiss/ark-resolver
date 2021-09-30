@@ -128,40 +128,40 @@ class TestArkResolver(unittest.TestCase):
         redirect_url = ark_url_info.to_redirect_url()
         assert redirect_url == "http://0.0.0.0:3333/value/http%3A%2F%2Frdfh.ch%2F0001%2Fcmfk1DMHRBiR4-_6HXpEFA/pLlW4ODASumZfZFbJdpw1g?version=20180604T085622Z"
 
-        # parse a version 1 ARK URL of a PHP resource without a timestamp
+        # parse a version 1 ARK URL of a PHP-SALSAH resource without a timestamp
         ark_url_info = ArkUrlInfo(self.settings, "https://ark.example.org/ark:/00000/1/0803/751e0b8am")
         redirect_url = ark_url_info.to_redirect_url()
         assert redirect_url == "http://data.dasch.swiss/resources/1"
 
-        # parse an ARK URL of a PHP resource with a timestamp
+        # parse an ARK URL of a PHP-SALSAH resource with a timestamp
         ark_url_info = ArkUrlInfo(self.settings, "https://ark.example.org/ark:/00000/1/0803/751e0b8am.20190118T102919Z")
         redirect_url = ark_url_info.to_redirect_url()
         assert redirect_url == "http://data.dasch.swiss/resources/1?citdate=20190118"
 
-        # parse a version 0 ARK URL of a PHP resource without a timestamp
+        # parse a version 0 ARK URL of a PHP-SALSAH resource without a timestamp
         ark_url_info = ArkUrlInfo(self.settings, "http://ark.example.org/ark:/00000/080e-76bb2132d30d6-0")
         redirect_url = ark_url_info.to_redirect_url()
         assert redirect_url == "http://data.dasch.swiss/resources/2126045"
 
-        # parse a version 0 ARK URL of a PHP resource with a timestamp
+        # parse a version 0 ARK URL of a PHP-SALSAH resource with a timestamp
         ark_url_info = ArkUrlInfo(self.settings, "http://ark.example.org/ark:/00000/080e-76bb2132d30d6-0.20190129")
         redirect_url = ark_url_info.to_redirect_url()
         assert redirect_url == "http://data.dasch.swiss/resources/2126045?citdate=20190129"
 
-        # parse a version 0 ARK URL of a PHP resource with a timestamp that's too short
+        # parse a version 0 ARK URL of a PHP-SALSAH resource with a timestamp that's too short
         ark_url_info = ArkUrlInfo(self.settings, "http://ark.example.org/ark:/00000/080e-76bb2132d30d6-0.2019111")
         redirect_url = ark_url_info.to_redirect_url()
         assert redirect_url == "http://data.dasch.swiss/resources/2126045"
 
     def test_convert_arks(self):
-        # convert a version 0 ARK URL to a custom resource IRI, and then to a DSP-API redirect URL
+        # convert a version 0 ARK URL to a custom DSP resource IRI, and then to a redirect URL
         ark_url_info = ArkUrlInfo(self.settings, "http://ark.example.org/ark:/00000/0002-751e0b8a-6.2021519")
         resource_iri = ark_url_info.to_resource_iri()
         assert resource_iri == "http://rdfh.ch/0002/751e0b8a"
         redirect_url = ark_url_info.to_redirect_url()
         assert redirect_url == "http://data.dasch.swiss/resource/http%3A%2F%2Frdfh.ch%2F0002%2F751e0b8a"
 
-        # convert a PHP resource ID to the same custom resource IRI, and then to the same DSP-API redirect URL:
+        # convert a PHP-SALSAH object ID to the same custom DSP resource IRI, and then to the same redirect URL:
         resource_iri = ResourceIriFormatter(self.settings).format_resource_iri(1, "0002")
         assert resource_iri == "http://rdfh.ch/0002/751e0b8a"
         redirect_url = ark_url_info.to_redirect_url()
@@ -169,14 +169,8 @@ class TestArkResolver(unittest.TestCase):
 
         # reject an ARK URL that doesn't pass check digit validation
         rejected = False
-
         try:
             ArkUrlInfo(self.settings, "https://ark.example.org/ark:/00000/1/0001/cmfk1DMHRBir4=_6HXpEFAn")
         except ArkUrlException:
             rejected = True
-
         assert rejected
-
-
-if __name__ == '__main__':
-    unittest.main()
