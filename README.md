@@ -1,25 +1,30 @@
-# The Knora ARK Resolver
+# The DSP ARK Resolver
 
 Resolves [ARK](https://tools.ietf.org/html/draft-kunze-ark-18) URLs referring to
-resources in [Knora](http://www.knora.org) repositories.
+resources in [DSP](https://dsp.dasch.swiss/) (formerly called Knora) repositories.
 
 ## Modes of operation
 
 The program `ark.py` has two modes of operation:
 
-- When run as an HTTP server, it resolves Knora ARK URLs by redirecting
+- When run as an HTTP server, it resolves DSP ARK URLs by redirecting
   to the actual location of each resource. Redirect URLs are generated
   from templates in a configuration file. The hostname used in the
   redirect URL, as well as the whole URL template, can be configured per
   project.
 
-- It can also be used as a command-line tool for converting between
+  To start the ark-resolver as server, type:
+  ```bash
+  python ark.py -s
+  ```
+
+- The ark-resolver can also be used as a command-line tool for converting between
   resource IRIs and ARK URLs, using the same configuration file.
 
 For usage information, run `./ark.py --help`, and see the sample configuration
 file `ark-config.ini` and the sample project registry file `ark-registry.ini`.
 
-In the sample registry file, the redirect URLs are Knora API URLs,
+In the sample registry file, the redirect URLs are DSP API URLs,
 but it is recommended that in production, redirect URLs should refer to
 human-readable representations provided by a user interface.
 
@@ -29,7 +34,7 @@ Prerequisites:
 - [Sanic](https://sanic.readthedocs.io/en/latest/)
 - [Requests](http://docs.python-requests.org/en/master/)
 
-## Converting an ARK URL from the old SALSAH to a custom resource IRI for import
+## Converting an ARK URL from a project on salsah.org to a custom resource IRI for import into DSP
 
 ```
 $ ./ark.py -r -a http://ark.example.org/ark:/00000/0002-751e0b8a-6.2021519
@@ -68,7 +73,7 @@ All other GET requests are interpreted as ARK URLs.
 
 ## Using Docker
 
-Images are published to the [dhlab-basel/ark-resolver](https://cloud.docker.com/u/dhlabbasel/repository/docker/dhlabbasel/ark-resolver)
+Images are published to the [daschswiss/ark-resolver](https://hub.docker.com/r/daschswiss/ark-resolver)
 Docker Hub repository.
 
 To use, run:
@@ -85,8 +90,7 @@ To install the requirements:
 $ pip3 install -r requirements.txt
 ```
 
-
-To generate a "requirements" file (usually requirements.txt), that you commit with your project, do:
+To generate the requirements file (requirements.txt), that you commit with the project, do:
 
 ```bash
 $ pip3 freeze > requirements.txt

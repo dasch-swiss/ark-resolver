@@ -12,8 +12,10 @@ build: ## build and publish ark-resolver docker image locally
 	docker build -t $(ARK_RESOLVER_IMAGE) -t $(REPO_PREFIX)/$(ARK_RESOLVER_REPO):latest .
 
 .PHONY: test
-test: build ## run ark-resolver tests inside docker image
-	docker run $(ARK_RESOLVER_IMAGE) --test
+test: ## run ark-resolver unit tests
+	python3 -m pip install --upgrade pip
+	pip3 install -r requirements.txt
+	python3 -m unittest
 
 .PHONY: run
 run: build ## run ark-resolver inside docker image

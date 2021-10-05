@@ -1,21 +1,21 @@
 #!/usr/bin/env python3
 
-# Copyright @ 2015-2019 the contributors (see Contributors.md).
+# Copyright @ 2015-2021 Data and Service Center for the Humanities (DaSCH)
 #
-# This file is part of Knora.
+# This file is part of DSP.
 #
-# Knora is free software: you can redistribute it and/or modify
+# DSP is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as published
 # by the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# Knora is distributed in the hope that it will be useful,
+# DSP is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU Affero General Public License for more details.
 #
 # You should have received a copy of the GNU Affero General Public
-# License along with Knora.  If not, see <http://www.gnu.org/licenses/>.
+# License along with DSP.  If not, see <http://www.gnu.org/licenses/>.
 
 
 #################################################################################################
@@ -98,5 +98,3 @@ def to_check_digit(char_value):
         raise CheckDigitException("Invalid character value: {}".format(char_value))
 
     return base64url_alphabet[char_value]
-
-
