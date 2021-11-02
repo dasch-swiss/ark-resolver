@@ -9,9 +9,9 @@ idna==2.10
 multidict==5.1.0
 requests==2.25.1
 rfc3986==1.5.0
-sanic==20.12.1
+sanic==21.9.1
 Sanic-Cors==0.10.0.post3
-Sanic-Plugins-Framework==0.9.5
+Sanic-Plugins-Framework==0.9.4.post1
 sanic-routing==0.7.1
 sniffio==1.2.0
 toml==0.10.2
@@ -20,4 +20,4 @@ typing-extensions==3.10.0.2
 ujson==4.2.0
 urllib3==1.26.7
 uvloop==0.16.0
-websockets==8.1
+websockets==10.0
