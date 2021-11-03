@@ -33,7 +33,7 @@ import os
 from io import StringIO
 
 import requests
-from sanic import Sanic, response
+from sanic import Sanic, response, HTTPResponse
 from sanic.log import logger
 from sanic_cors import CORS
 
@@ -48,7 +48,7 @@ CORS(app)
 
 
 @app.get("/make_php_ark_url")
-async def make_php_ark_url(req) -> str:
+async def make_php_ark_url(req) -> HTTPResponse:
     """
     Returns an ARK URL from a given PHP resource
     """
@@ -82,7 +82,7 @@ def get_config() -> str:
 
 
 @app.get("/config")
-async def config_get(_) -> str:
+async def config_get(_) -> HTTPResponse:
     """
     Returns the app's configuration
     """
@@ -90,7 +90,7 @@ async def config_get(_) -> str:
 
 
 @app.head("/config")
-async def config_head(_) -> str:
+async def config_head(_) -> HTTPResponse:
     """
     Returns only the head of the config response
     """
@@ -105,7 +105,7 @@ async def config_head(_) -> str:
 
 
 @app.post("/reload")
-async def reload(req) -> str:
+async def reload(req) -> HTTPResponse:
     """
     Requests a reload of the configuration. Checks if the request is authorized.
     """
@@ -136,7 +136,7 @@ async def reload(req) -> str:
 
 
 @app.get('/<path:path>')
-async def catch_all(_, path="") -> str:
+async def catch_all(_, path="") -> HTTPResponse:
     """
     Catch all URL. Tries to redirect the given ARK ID.
     """
