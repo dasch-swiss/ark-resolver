@@ -8,6 +8,8 @@ from src.ark_url import ArkUrlFormatter, ArkUrlInfo, ArkUrlException, ResourceIr
 
 class TestArkResolver(unittest.TestCase):
 
+    settings = None
+
     @classmethod
     def setUpClass(cls):
         """
@@ -78,12 +80,13 @@ class TestArkResolver(unittest.TestCase):
                                                             timestamp="20180604T085622513Z")
         assert ark_url == "https://ark.example.org/ark:/00000/1/0803/751e0b8am.20180604T085622513Z"
 
-    def test_ark_url_info(self):
+    def test_ark_url_info_redirect_top_level_object(self):
         # parse an ARK URL representing the top-level object
         ark_url_info = ArkUrlInfo(self.settings, "https://ark.example.org/ark:/00000/1")
         redirect_url = ark_url_info.to_redirect_url()
         assert redirect_url == "http://dasch.swiss"
 
+    def test_ark_url_info_redirect_project(self):
         # parse an ARK URL of a project with default project host, i.e. without specified project host
         ark_url_info = ArkUrlInfo(self.settings, "https://ark.example.org/ark:/00000/1/0003")
         redirect_url = ark_url_info.to_redirect_url()
@@ -94,6 +97,7 @@ class TestArkResolver(unittest.TestCase):
         redirect_url = ark_url_info.to_redirect_url()
         assert redirect_url == "http://other-meta.dasch.swiss/projects/0004"
 
+    def test_ark_url_info_redirect_resource(self):
         # parse an ARK URL of a DSP resource without a timestamp
         ark_url_info = ArkUrlInfo(self.settings, "https://ark.example.org/ark:/00000/1/0001/cmfk1DMHRBiR4=_6HXpEFAn")
         redirect_url = ark_url_info.to_redirect_url()
@@ -128,6 +132,20 @@ class TestArkResolver(unittest.TestCase):
         redirect_url = ark_url_info.to_redirect_url()
         assert redirect_url == "http://0.0.0.0:3333/value/http%3A%2F%2Frdfh.ch%2F0001%2Fcmfk1DMHRBiR4-_6HXpEFA/pLlW4ODASumZfZFbJdpw1g?version=20180604T085622Z"
 
+        # parse an ARK URL of a DSP resource without a timestamp and redirect it to a customized location
+        ark_url_info = ArkUrlInfo(self.settings,
+                                  "https://ark.example.org/ark:/00000/1/0005/SQkTPdHdTzq_gqbwj6QR=A")
+        redirect_url = ark_url_info.to_redirect_url()
+        assert redirect_url == "http://0.0.0.0:3333/resource/0005/SQkTPdHdTzq_gqbwj6QR-A"
+
+    def test_ark_url_info_redirect_value(self):
+        # parse an ARK URL of a DSP value without a timestamp and redirect it to a customized location
+        ark_url_info = ArkUrlInfo(self.settings,
+                                  "https://ark.example.org/ark:/00000/1/0005/SQkTPdHdTzq_gqbwj6QR=AR/=SSbnPK3Q7WWxzBT1UPpRgo")
+        redirect_url = ark_url_info.to_redirect_url()
+        assert redirect_url == "http://0.0.0.0:3333/resource/0005/SQkTPdHdTzq_gqbwj6QR-A/-SSbnPK3Q7WWxzBT1UPpRg"
+
+    def test_ark_url_info_redirect_salsah_resource(self):
         # parse a version 1 ARK URL of a PHP-SALSAH resource without a timestamp
         ark_url_info = ArkUrlInfo(self.settings, "https://ark.example.org/ark:/00000/1/0803/751e0b8am")
         redirect_url = ark_url_info.to_redirect_url()
@@ -162,9 +180,9 @@ class TestArkResolver(unittest.TestCase):
     def test_conversion_to_resource_iri_with_ark_version_1(self):
         # redirect a version 1 ARK URL to the URL on data.dasch.swiss
         ark_url_info = ArkUrlInfo(self.settings,
-                                  "https://ark.example.org/ark:/00000/1/0002/=gPn0zlpSvy1rV4pu3nveg6.20210712T074927466631Z")
+                                  "https://ark.example.org/ark:/00000/1/0002/0_sWRg5jT3S0PLxakX9ffg1.20210712T074927466631Z")
         resource_iri = ark_url_info.to_resource_iri()
-        assert resource_iri == "http://rdfh.ch/0002/-gPn0zlpSvy1rV4pu3nveg"
+        assert resource_iri == "http://rdfh.ch/0002/0_sWRg5jT3S0PLxakX9ffg"
 
     def test_conversion_to_resource_iri_with_salsah_id(self):
         # convert a PHP-SALSAH object ID to the same custom DSP resource IRI, and then to the same redirect URL:
