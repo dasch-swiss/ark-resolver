@@ -120,18 +120,6 @@ class TestArkResolver(unittest.TestCase):
         redirect_url = ark_url_info.to_redirect_url()
         assert redirect_url == "http://0.0.0.0:3333/resource/http%3A%2F%2Frdfh.ch%2F0001%2Fcmfk1DMHRBiR4-_6HXpEFA?version=20180604T085622Z"
 
-        # parse an ARK URL of a DSP resource and value UUID without a timestamp
-        ark_url_info = ArkUrlInfo(self.settings,
-                                  "https://ark.example.org/ark:/00000/1/0001/cmfk1DMHRBiR4=_6HXpEFAn/pLlW4ODASumZfZFbJdpw1gu")
-        redirect_url = ark_url_info.to_redirect_url()
-        assert redirect_url == "http://0.0.0.0:3333/value/http%3A%2F%2Frdfh.ch%2F0001%2Fcmfk1DMHRBiR4-_6HXpEFA/pLlW4ODASumZfZFbJdpw1g"
-
-        # parse an ARK URL of a DSP resource and value UUID with a timestamp
-        ark_url_info = ArkUrlInfo(self.settings,
-                                  "https://ark.example.org/ark:/00000/1/0001/cmfk1DMHRBiR4=_6HXpEFAn/pLlW4ODASumZfZFbJdpw1gu.20180604T085622Z")
-        redirect_url = ark_url_info.to_redirect_url()
-        assert redirect_url == "http://0.0.0.0:3333/value/http%3A%2F%2Frdfh.ch%2F0001%2Fcmfk1DMHRBiR4-_6HXpEFA/pLlW4ODASumZfZFbJdpw1g?version=20180604T085622Z"
-
         # parse an ARK URL of a DSP resource without a timestamp and redirect it to a customized location
         ark_url_info = ArkUrlInfo(self.settings,
                                   "https://ark.example.org/ark:/00000/1/0005/0_sWRg5jT3S0PLxakX9ffg1")
@@ -144,6 +132,12 @@ class TestArkResolver(unittest.TestCase):
                                   "https://ark.example.org/ark:/00000/1/0005/SQkTPdHdTzq_gqbwj6QR=AR/=SSbnPK3Q7WWxzBT1UPpRgo")
         redirect_url = ark_url_info.to_redirect_url()
         assert redirect_url == "http://0.0.0.0:3333/resource/0005/SQkTPdHdTzq_gqbwj6QR-A/-SSbnPK3Q7WWxzBT1UPpRg"
+
+        # parse an ARK URL of a DSP value with a timestamp
+        ark_url_info = ArkUrlInfo(self.settings,
+                                  "https://ark.example.org/ark:/00000/1/0001/cmfk1DMHRBiR4=_6HXpEFAn/pLlW4ODASumZfZFbJdpw1gu.20180604T085622Z")
+        redirect_url = ark_url_info.to_redirect_url()
+        assert redirect_url == "http://0.0.0.0:3333/value/http%3A%2F%2Frdfh.ch%2F0001%2Fcmfk1DMHRBiR4-_6HXpEFA/pLlW4ODASumZfZFbJdpw1g?version=20180604T085622Z"
 
         # parse an ARK URL of a DSP value without a timestamp and redirect it to a customized location
         ark_url_info = ArkUrlInfo(self.settings,
