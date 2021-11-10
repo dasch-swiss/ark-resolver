@@ -153,20 +153,25 @@ class TestArkResolver(unittest.TestCase):
         redirect_url = ark_url_info.to_redirect_url()
         assert redirect_url == "http://data.dasch.swiss/resources/2126045"
 
-    def test_convert_arks(self):
+    def test_conversion_to_resource_iri_with_ark_version_0(self):
         # convert a version 0 ARK URL to a custom DSP resource IRI, and then to a redirect URL
         ark_url_info = ArkUrlInfo(self.settings, "http://ark.example.org/ark:/00000/0002-751e0b8a-6.2021519")
         resource_iri = ark_url_info.to_resource_iri()
         assert resource_iri == "http://rdfh.ch/0002/751e0b8a"
-        redirect_url = ark_url_info.to_redirect_url()
-        assert redirect_url == "http://data.dasch.swiss/resource/http%3A%2F%2Frdfh.ch%2F0002%2F751e0b8a"
 
+    def test_conversion_to_resource_iri_with_ark_version_1(self):
+        # redirect a version 1 ARK URL to the URL on data.dasch.swiss
+        ark_url_info = ArkUrlInfo(self.settings,
+                                  "https://ark.example.org/ark:/00000/1/0002/=gPn0zlpSvy1rV4pu3nveg6.20210712T074927466631Z")
+        resource_iri = ark_url_info.to_resource_iri()
+        assert resource_iri == "http://rdfh.ch/0002/-gPn0zlpSvy1rV4pu3nveg"
+
+    def test_conversion_to_resource_iri_with_salsah_id(self):
         # convert a PHP-SALSAH object ID to the same custom DSP resource IRI, and then to the same redirect URL:
         resource_iri = ResourceIriFormatter(self.settings).format_resource_iri(1, "0002")
         assert resource_iri == "http://rdfh.ch/0002/751e0b8a"
-        redirect_url = ark_url_info.to_redirect_url()
-        assert redirect_url == "http://data.dasch.swiss/resource/http%3A%2F%2Frdfh.ch%2F0002%2F751e0b8a"
 
+    def test_reject_ark_with_wrong_digit(self):
         # reject an ARK URL that doesn't pass check digit validation
         rejected = False
         try:
