@@ -1,5 +1,5 @@
 """Creates a pickle file 'settings.pkl' with the configuration in ark-registry.ini. This file can then be used in the
-unit tests """
+unit tests. Run it from inside ark-resolver with 'python3 test/create_mock_settings.py' """
 
 import pickle as pkl
 import os
