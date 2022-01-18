@@ -17,8 +17,9 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with DSP.  If not, see <http://www.gnu.org/licenses/>.
 
-
+import base64
 import re
+import uuid
 from string import Template
 from urllib import parse
 
@@ -52,7 +53,7 @@ class ArkUrlSettings:
 
         # Patterns for matching PHP-SALSAH ARK version 0 URLs.
         self.v0_ark_path_pattern = "ark:/" + self.top_config[
-            "ArkNaan"] + r"/([0-9A-Fa-f]+)-([A-Za-z0-9]+)-[A-Za-z0-9](?:\.([0-9]{6,8}))?"
+            "ArkNaan"] + r"/([0-9A-Fa-f]+)-([A-Za-z0-9]+)-[A-Za-z0-9]+(?:\.([0-9]{6,8}))?"
         self.v0_ark_path_regex = re.compile("^" + self.v0_ark_path_pattern + "$")
         self.v0_ark_url_regex = re.compile(
             "^https?://" + self.top_config["ArkExternalHost"] + "/" + self.v0_ark_path_pattern + "$")
@@ -94,7 +95,6 @@ class ArkUrlInfo:
         else:
             # We are matching a whole URL. Does it contain a version 1 ARK ID?
             match = settings.ark_url_regex.match(ark_url)
-
             if match is not None:
                 # Yes.
                 self.url_version = int(match.group(1))
@@ -104,7 +104,6 @@ class ArkUrlInfo:
 
                 if match is not None:
                     self.url_version = 0
-
         if match is None:
             raise ArkUrlException("Invalid ARK ID: {}".format(ark_url))
 
@@ -153,7 +152,7 @@ class ArkUrlInfo:
             if not project_config.getboolean("AllowVersion0"):
                 raise ArkUrlException("Invalid ARK ID (version 0 not allowed): {}".format(ark_url))
         else:
-            raise ArkUrlException("Invalid ARK ID: {}".format(ark_url))
+            raise ArkUrlException(f"Invalid ARK ID {ark_url}. The version of the ARK ID doesn't match the version defined in the settings.")
 
         self.template_dict = {
             "url_version": self.url_version,
@@ -190,6 +189,17 @@ class ArkUrlInfo:
         template_dict = self.template_dict.copy()
         template_dict["host"] = project_config["Host"]
 
+        if self.url_version == 0:
+            # in case of an ARK URL version 0, the resource_id generated from the salsah ID has to be converted to a
+            # base64 UUID
+            generic_namespace_url = uuid.NAMESPACE_URL
+            dasch_uuid_ns = uuid.uuid5(generic_namespace_url, "http://dasch.swiss")
+            resource_id = template_dict["resource_id"]
+            dsp_iri = base64.urlsafe_b64encode(uuid.uuid5(dasch_uuid_ns, resource_id).bytes).decode("utf-8")
+            # remove the padding ('==') from the end of the string
+            dsp_iri = dsp_iri[:-2]
+            template_dict["resource_id"] = dsp_iri
+
         return resource_iri_template.substitute(template_dict)
 
     def to_dsp_redirect_url(self, project_config) -> str:
@@ -214,12 +224,17 @@ class ArkUrlInfo:
             else:
                 request_template = Template(project_config["DSPResourceVersionRedirectUrl"])
         # it's a value
-        elif self.value_id is not None:
+        elif self.value_id:
             template_dict["value_id"] = self.value_id
             if self.timestamp is None:
                 request_template = Template(project_config["DSPValueRedirectUrl"])
             else:
                 request_template = Template(project_config["DSPValueVersionRedirectUrl"])
+
+        # in case of a version 0 ARK URL, convert the resource ID to a UUID (base64 encoded)
+        if self.url_version == 0:
+            res_iri = self.to_resource_iri()
+            template_dict["resource_id"] = res_iri.split("/")[-1]
 
         # add the DSP resource IRI to the template_dict
         resource_iri = resource_iri_template.substitute(template_dict)
@@ -322,6 +337,9 @@ class ArkUrlFormatter:
 
     def php_resource_to_ark_url(self, php_resource_id, project_id, timestamp=None) -> str:
         """
+        IMPORTANT NOTICE: This is how ARK URL were created in salsah.org. Don't use it anymore because the generated
+        dsp_resource_ids are not valid UUIDs and can therefore not be used in DSP-API.
+
         Converts a PHP-SALSAH resource ID to an ARK URL.
         """
         dsp_resource_id = format((php_resource_id + 1) * self.settings.resource_int_id_factor, 'x')
