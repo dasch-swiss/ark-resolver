@@ -38,28 +38,13 @@ from sanic.log import logger
 from sanic_cors import CORS
 
 import base64url_check_digit
-from ark_url import ArkUrlInfo, ArkUrlFormatter, ArkUrlException, ArkUrlSettings, ResourceIriFormatter
+from ark_url import ArkUrlInfo, ArkUrlFormatter, ArkUrlException, ArkUrlSettings
 
 #################################################################################################
 # Server implementation.
 
 app = Sanic('ark_resolver')
 CORS(app)
-
-
-@app.get("/make_php_ark_url")
-async def make_php_ark_url(req) -> HTTPResponse:
-    """
-    Returns an ARK URL from a given PHP resource
-    """
-    project_id = req.args["project_id"][0]
-
-    if app.config.settings.project_id_regex.match(project_id) is None:
-        return response.text("Invalid project ID: {}".format(project_id), status=400)
-
-    php_resource_id = int(req.args["resource_id"][0])
-    ark_url = ArkUrlFormatter(app.config.settings).php_resource_to_ark_url(php_resource_id, project_id)
-    return response.text(ark_url)
 
 
 def get_config() -> str:
@@ -212,13 +197,11 @@ def main() -> None:
     parser.add_argument("-c", "--config", help="config file (default {})".format(default_config_path))
     group = parser.add_mutually_exclusive_group()
     group.add_argument("-s", "--server", help="start server", action="store_true")
-    group.add_argument("-a", "--ark", help="ARK URL")
-    group.add_argument("-i", "--iri", help="resource IRI")
-    group.add_argument("-n", "--number", help="resource number for PHP server")
+    group.add_argument("-i", "--iri", help="print the converted ARK URL from a given DSP resource IRI (add -v and -d optionally)")
+    group.add_argument("-a", "--ark", help="print the converted DSP resource IRI (requires -r) or DSP URL from a given ARK URL")
     parser.add_argument("-r", "--resource", help="generate resource IRI", action="store_true")
-    parser.add_argument("-v", "--value", help="value UUID (with -i)")
-    parser.add_argument("-d", "--date", help="DSP ARK timestamp (with -i or -n)")
-    parser.add_argument("-p", "--project", help="project ID (with -n)")
+    parser.add_argument("-v", "--value", help="value UUID (has to be provided with -i)")
+    parser.add_argument("-d", "--date", help="DSP ARK timestamp (has to be provided with -i)")
     args = parser.parse_args()
 
     # reads the config and registry files
@@ -234,17 +217,8 @@ def main() -> None:
             # starts the app as server
             server(settings)
         elif args.iri:
-            # prints the converted ARK URL from a given resource IRI
+            # prints the converted ARK URL from a given DSP resource IRI
             print(ArkUrlFormatter(settings).resource_iri_to_ark_url(args.iri, args.value, args.date))
-        elif args.number:
-            if args.project is None:
-                raise ArkUrlException("Project ID is required with resource number")
-            elif args.resource:
-                # prints the DSP resource IRI from a given PHP-SALSAH object ID
-                print(ResourceIriFormatter(settings).format_resource_iri(int(args.number), args.project))
-            else:
-                # prints the converted ARK URL from a given PHP-SALSAH object ID
-                print(ArkUrlFormatter(settings).php_resource_to_ark_url(int(args.number), args.project))
         elif args.ark:
             if args.resource:
                 # prints the converted DSP resource IRI from a given ARK URL
