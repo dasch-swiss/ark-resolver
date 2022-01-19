@@ -180,18 +180,18 @@ class TestArkResolver(unittest.TestCase):
         # parse and redirect a version 0 ARK URL of a PHP-SALSAH resource which is on DSP (migrated from salsah to DSP) without a timestamp
         ark_url_info = ArkUrlInfo(self.settings, "http://ark.example.org/ark:/00000/0002-779b9990a0c3f-6e")
         redirect_url = ark_url_info.to_redirect_url()
-        assert redirect_url == "http://0.0.0.0:4200/resource/0002/QxQ8dmZsU3iCohAn6tIE6w"
+        assert redirect_url == "http://0.0.0.0:4200/resource/0002/Ef9heHjPWDS7dMR_gGax2Q"
 
         # parse and redirect a version 0 ARK URL of a PHP-SALSAH resource which is on DSP (migrated from salsah to DSP) with a timestamp
         ark_url_info = ArkUrlInfo(self.settings, "http://ark.example.org/ark:/00000/0002-779b9990a0c3f-6e.20190129")
         redirect_url = ark_url_info.to_redirect_url()
-        assert redirect_url == "http://0.0.0.0:4200/resource/0002/QxQ8dmZsU3iCohAn6tIE6w?version=20190129"
+        assert redirect_url == "http://0.0.0.0:4200/resource/0002/Ef9heHjPWDS7dMR_gGax2Q?version=20190129"
 
     def test_conversion_to_resource_iri_with_ark_version_0(self):
         # convert a version 0 ARK URL to a DSP resource IRI
         ark_url_info = ArkUrlInfo(self.settings, "http://ark.example.org/ark:/00000/0002-751e0b8a-6.2021519")
         resource_iri = ark_url_info.to_resource_iri()
-        assert resource_iri == "http://rdfh.ch/0002/yeIMdyetU96Et-77-JORuA"
+        assert resource_iri == "http://rdfh.ch/0002/70aWaB2kWsuiN6ujYgM0ZQ"
 
     def test_conversion_to_resource_iri_with_ark_version_1(self):
         # convert a version 1 ARK URL to a DSP resource IRI

@@ -82,7 +82,7 @@ class ArkUrlInfo:
             # Yes. Is it a version 1 ARK ID?
             match = settings.ark_path_regex.match(ark_url)
 
-            if match is not None:
+            if match:
                 # Yes.
                 self.url_version = int(match.group(1))
             else:
@@ -193,7 +193,7 @@ class ArkUrlInfo:
             # in case of an ARK URL version 0, the resource_id generated from the salsah ID has to be converted to a
             # base64 UUID
             generic_namespace_url = uuid.NAMESPACE_URL
-            dasch_uuid_ns = uuid.uuid5(generic_namespace_url, "http://dasch.swiss")
+            dasch_uuid_ns = uuid.uuid5(generic_namespace_url, "https://dasch.swiss")
             resource_id = template_dict["resource_id"]
             dsp_iri = base64.urlsafe_b64encode(uuid.uuid5(dasch_uuid_ns, resource_id).bytes).decode("utf-8")
             # remove the padding ('==') from the end of the string
