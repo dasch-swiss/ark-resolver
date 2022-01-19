@@ -163,8 +163,8 @@ class ArkUrlInfo:
 
     def to_redirect_url(self) -> str:
         """
-        Checks if self is the top level object which is redirected to TopLevelObjectURL. If not, returns the
-        redirect URL of either a PHP-SALSAH or DSP object.
+        Checks if the object that it is called on is the top level object which is redirected to TopLevelObjectURL.
+        If not, returns the redirect URL of either a PHP-SALSAH or DSP object.
         """
         if self.project_id is None:
             # return the redirect URL of the top level object
@@ -181,7 +181,9 @@ class ArkUrlInfo:
 
     def to_resource_iri(self) -> str:
         """
-        Converts an ARK URL to a DSP resource IRI.
+        Converts an ARK URL to a DSP resource IRI. In case of an ARK URL version 0 the UUID for the IRI needs to be of
+        version 5 and created from the DaSCH specific namespace and the resource_id coming from the ARK URL. This is for
+        objects that have been migrated from salsah.org to DSP.
         """
         project_config = self.settings.config[self.project_id]
         resource_iri_template = Template(project_config["DSPResourceIri"])
@@ -204,8 +206,8 @@ class ArkUrlInfo:
 
     def to_dsp_redirect_url(self, project_config) -> str:
         """
-        In case it's called on a DSP object, converts an ARK URL to the URL that the client should be redirected to
-        according to its type (project, resource, or value)
+        In case it's called on a DSP object (either version 0 or version 1), converts an ARK URL to the URL that the
+        client should be redirected to according to its type (project, resource, or value)
         """
         resource_iri_template = Template(project_config["DSPResourceIri"])
         project_iri_template = Template(project_config["DSPProjectIri"])
@@ -301,7 +303,7 @@ def unescape_and_validate_uuid(ark_url, escaped_uuid) -> str:
 
 class ArkUrlFormatter:
     """
-    Handles formatting of PHP-SALSAH object IDs and DSP resource IRIs into ARK URLs
+    Handles formatting of DSP resource IRIs into ARK URLs
     """
 
     def __init__(self, settings):
@@ -366,27 +368,3 @@ class ArkUrlFormatter:
             url += "." + timestamp
 
         return url
-
-
-class ResourceIriFormatter:
-    """
-    Handles formatting of PHP-SALSAH object IDs and DSP resource IRIs
-    """
-
-    def __init__(self, settings):
-        self.settings = settings
-
-    def format_resource_iri(self, php_resource_id, project_id) -> str:
-        """
-        Returns the DSP resource IRI from a given PHP-SALSAH object ID.
-        """
-        dsp_resource_id = format((php_resource_id + 1) * self.settings.resource_int_id_factor, 'x')
-        project_config = self.settings.config[project_id]
-        resource_iri_template = Template(project_config["DSPResourceIri"])
-
-        template_dict = {
-            "project_id": project_id,
-            "resource_id": dsp_resource_id
-        }
-
-        return resource_iri_template.substitute(template_dict)

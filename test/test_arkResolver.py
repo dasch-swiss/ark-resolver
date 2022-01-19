@@ -3,7 +3,7 @@ import pickle
 import unittest
 
 from src import base64url_check_digit
-from src.ark_url import ArkUrlFormatter, ArkUrlInfo, ArkUrlException, ResourceIriFormatter
+from src.ark_url import ArkUrlFormatter, ArkUrlInfo, ArkUrlException
 
 
 class TestArkResolver(unittest.TestCase):
@@ -190,11 +190,6 @@ class TestArkResolver(unittest.TestCase):
                                   "https://ark.example.org/ark:/00000/1/0002/0_sWRg5jT3S0PLxakX9ffg1.20210712T074927466631Z")
         resource_iri = ark_url_info.to_resource_iri()
         assert resource_iri == "http://rdfh.ch/0002/0_sWRg5jT3S0PLxakX9ffg"
-
-    def test_conversion_to_resource_iri_with_salsah_id(self):
-        # convert a PHP-SALSAH object ID to a DSP resource IRI
-        resource_iri = ResourceIriFormatter(self.settings).format_resource_iri(1, "0002")
-        assert resource_iri == "http://rdfh.ch/0002/751e0b8a"
 
     def test_reject_ark_with_wrong_digit(self):
         # reject an ARK URL that doesn't pass check digit validation
