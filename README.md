@@ -67,14 +67,19 @@ http://0.0.0.0:4200/resource/0002/70aWaB2kWsuiN6ujYgM0ZQ
 
 
 ## A note about the creation of Resource IRIs from Salsah ARK URLs
-As permanent identifiers, ARKs need to be valid for an unlimited period of time. After resources have been migrated from 
-salsah.org to DSP, their ARK URLs need to stay valid. This means that an ARK URL needs to be redirected to the resource
-on DSP (and no longer to the resource on salsah.org). In order to guarantee the correct redirection of ARK URLs coming 
-salsah.org to resources on DSP the DSP resource IRI (which contains a UUID) needs to be calculated from the resource ID 
-provided in the ARK. To do so, UUIDs of version 5 are used. The DaSCH specific namespace used for the creation of UUIDs 
-is `cace8b00-717e-50d5-bcb9-486f39d733a2`. It is created from the generic namespace the Python library 
-[uuid](https://docs.python.org/3/library/uuid.html) provides and the string `https://dasch.swiss` and is therefore 
-itself a UUID version 5.
+As permanent identifiers, ARKs need to be valid for an unlimited period of time. So, after resources have been migrated 
+from salsah.org to DSP, their ARK URLs need to stay valid. This means that the same ARK URL that formerly was redirected 
+to a resource on salsah.org, now has to be redirected to the same resource on DSP. 
+
+To enable the correct redirection of ARK URLs coming from salsah.org to resources on DSP the DSP resource IRI 
+(which contains a UUID) needs to be calculated from the resource ID provided in the ARK. To do so, UUIDs of version 5 
+are used. The DaSCH specific namespace used for the creation of UUIDs is `cace8b00-717e-50d5-bcb9-486f39d733a2`. It is 
+created from the generic `uuid.NAMESPACE_URL` the Python library [uuid](https://docs.python.org/3/library/uuid.html) 
+provides and the string `https://dasch.swiss` and is therefore itself a UUID version 5.
+
+Projects migrated from salsah.org to DSP need to have parameter `AllowVersion0` set to `true` in their project 
+configuration (`ark-registry.ini`). Otherwise, the ARK URLs of version 0 are rejected.
+
 
 ## Server routes
 
