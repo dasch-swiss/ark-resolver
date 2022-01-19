@@ -32,16 +32,54 @@ Prerequisites:
 
 - Python 3
 - [Sanic](https://sanic.readthedocs.io/en/latest/)
-- [Requests](http://docs.python-requests.org/en/master/)
+- [Requests](https://docs.python-requests.org/en/master/)
 
-## Converting an ARK URL from a project on salsah.org to a custom resource IRI for import into DSP
+
+## Examples for using the ark-resolver on the command-line
+
+### Converting a DSP resource IRI to an ARK URL
 
 ```
-$ ./ark.py -r -a http://ark.example.org/ark:/00000/0002-751e0b8a-6.2021519
-http://rdfh.ch/0002/751e0b8a
-$ ./ark.py -r -p 080E -n 1                                                
-http://rdfh.ch/080E/751e0b8a
+$ ./ark.py -i http://rdfh.ch/0002/70aWaB2kWsuiN6ujYgM0ZQ
+https://ark.example.org/ark:/00000/1/0002/70aWaB2kWsuiN6ujYgM0ZQD
 ```
+
+### Converting a DSP value IRI to an ARK URL with Timestamp
+
+```
+$ ./ark.py -i http://rdfh.ch/0002/70aWaB2kWsuiN6ujYgM0ZQ -d 20220119T101727886178Z
+https://ark.example.org/ark:/00000/1/0002/70aWaB2kWsuiN6ujYgM0ZQD.20220119T101727886178Z
+```
+
+### Converting an ARK URL from a project on salsah.org to a custom resource IRI for import into DSP
+
+```
+$ ./ark.py -a http://ark.example.org/ark:/00000/0002-751e0b8a-6.2021519 -r
+http://rdfh.ch/0002/70aWaB2kWsuiN6ujYgM0ZQ
+```
+
+### Redirecting an ARK URL from a resource created on salsah.org to the location of the resource on DSP
+
+```
+$ ./ark.py -a http://ark.example.org/ark:/00000/0002-751e0b8a-6.2021519
+http://0.0.0.0:4200/resource/0002/70aWaB2kWsuiN6ujYgM0ZQ
+```
+
+
+## A note about the creation of Resource IRIs from Salsah ARK URLs
+As permanent identifiers, ARKs need to be valid for an unlimited period of time. So, after resources have been migrated 
+from salsah.org to DSP, their ARK URLs need to stay valid. This means that the same ARK URL that formerly was redirected 
+to a resource on salsah.org, now has to be redirected to the same resource on DSP. 
+
+To enable the correct redirection of ARK URLs coming from salsah.org to resources on DSP the DSP resource IRI 
+(which contains a UUID) needs to be calculated from the resource ID provided in the ARK. To do so, UUIDs of version 5 
+are used. The DaSCH specific namespace used for the creation of UUIDs is `cace8b00-717e-50d5-bcb9-486f39d733a2`. It is 
+created from the generic `uuid.NAMESPACE_URL` the Python library [uuid](https://docs.python.org/3/library/uuid.html) 
+provides and the string `https://dasch.swiss` and is therefore itself a UUID version 5.
+
+Projects migrated from salsah.org to DSP need to have parameter `AllowVersion0` set to `true` in their project 
+configuration (`ark-registry.ini`). Otherwise, the ARK URLs of version 0 are rejected.
+
 
 ## Server routes
 
@@ -62,14 +100,9 @@ the secret configured as `ArkGitHubSecret`. If the request is valid, reloads the
 configuration, including the project registry. Changes to `ArkInternalHost` and
 `ArkInternalPort` are not taken into account.
 
-```
-GET /make_php_ark_url?project_id=PROJECT_ID&resource_id=RESOURCE_ID
-```
-
-Takes a project ID (a hexadecimal number) and a PHP-SALSAH resource ID (an integer in base 10)
-and returns an ARK URL.
 
 All other GET requests are interpreted as ARK URLs.
+
 
 ## Using Docker
 
@@ -81,6 +114,7 @@ To use, run:
 ```bash
 $ docker run daschswiss/ark-resolver
 ```
+
 
 ## Requirements
 
