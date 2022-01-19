@@ -191,9 +191,9 @@ class ArkUrlInfo:
 
         if self.url_version == 0:
             # in case of an ARK URL version 0, the resource_id generated from the salsah ID has to be converted to a
-            # base64 UUID
+            # base64 UUID version 5
             generic_namespace_url = uuid.NAMESPACE_URL
-            dasch_uuid_ns = uuid.uuid5(generic_namespace_url, "https://dasch.swiss")
+            dasch_uuid_ns = uuid.uuid5(generic_namespace_url, "https://dasch.swiss")  # cace8b00-717e-50d5-bcb9-486f39d733a2
             resource_id = template_dict["resource_id"]
             dsp_iri = base64.urlsafe_b64encode(uuid.uuid5(dasch_uuid_ns, resource_id).bytes).decode("utf-8")
             # remove the padding ('==') from the end of the string
@@ -332,25 +332,6 @@ class ArkUrlFormatter:
             project_id=project_id,
             resource_id_with_check_digit=escaped_resource_id_with_check_digit,
             value_id_with_check_digit=escaped_value_id_with_check_digit,
-            timestamp=timestamp
-        )
-
-    def php_resource_to_ark_url(self, php_resource_id, project_id, timestamp=None) -> str:
-        """
-        IMPORTANT NOTICE: This is how ARK URL were created in salsah.org. Don't use it anymore because the generated
-        dsp_resource_ids are not valid UUIDs and can therefore not be used in DSP-API.
-
-        Converts a PHP-SALSAH resource ID to an ARK URL.
-        """
-        dsp_resource_id = format((php_resource_id + 1) * self.settings.resource_int_id_factor, 'x')
-        check_digit = base64url_check_digit.calculate_check_digit(dsp_resource_id)
-        resource_id_with_check_digit = dsp_resource_id + check_digit
-
-        # formats and returns the ARK URL
-        return self.format_ark_url(
-            project_id=project_id,
-            resource_id_with_check_digit=resource_id_with_check_digit,
-            value_id_with_check_digit=None,
             timestamp=timestamp
         )
 

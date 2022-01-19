@@ -76,15 +76,6 @@ class TestArkResolver(unittest.TestCase):
                                                             timestamp="20180604T085622513Z")
         assert ark_url == "https://ark.example.org/ark:/00000/1/0001/cmfk1DMHRBiR4=_6HXpEFAn/pLlW4ODASumZfZFbJdpw1gu.20180604T085622513Z"
 
-        # generate a version 1 ARK URL from a PHP resource without a timestamp (deprecated)
-        ark_url = ark_url_formatter.php_resource_to_ark_url(php_resource_id=1, project_id="0803")
-        assert ark_url == "https://ark.example.org/ark:/00000/1/0803/751e0b8am"
-
-        # generate a version 1 ARK URL from a PHP resource with a timestamp (deprecated)
-        ark_url = ark_url_formatter.php_resource_to_ark_url(php_resource_id=1, project_id="0803",
-                                                            timestamp="20180604T085622513Z")
-        assert ark_url == "https://ark.example.org/ark:/00000/1/0803/751e0b8am.20180604T085622513Z"
-
     def test_ark_url_info_redirect_top_level_object(self):
         # parse and redirect an ARK URL representing the top-level object
         ark_url_info = ArkUrlInfo(self.settings, "https://ark.example.org/ark:/00000/1")
