@@ -9,7 +9,7 @@ idna==2.10
 multidict==5.1.0
 requests==2.25.1
 rfc3986==1.5.0
-sanic==21.9.1
+sanic==21.12.2
 Sanic-Cors==1.0.1
 Sanic-Plugins-Framework
 sanic-routing
