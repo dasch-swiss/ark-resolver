@@ -24,7 +24,7 @@ The program `ark.py` has two modes of operation:
 For usage information, run `./ark.py --help`, and see the sample configuration
 file `ark-config.ini` and the sample project registry file `ark-registry.ini`.
 
-In the sample registry file, the redirect URLs are DSP API URLs,
+In the sample registry file, the redirect URLs are DSP-API URLs,
 but it is recommended that in production, redirect URLs should refer to
 human-readable representations provided by a user interface.
 
