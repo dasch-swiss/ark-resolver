@@ -270,9 +270,11 @@ class ArkUrlInfo:
 
                 # The PHP server only takes timestamps in the format YYYYMMDD
                 template_dict["timestamp"] = self.timestamp[0:8]
+
         # it's a project
         else:
             request_template = Template(project_config["DSPProjectRedirectUrl"])
+            template_dict["project_host"] = project_config["ProjectHost"]
 
         return request_template.substitute(template_dict)
 
