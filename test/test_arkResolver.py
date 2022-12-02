@@ -167,6 +167,17 @@ class TestArkResolver(unittest.TestCase):
         redirect_url = ark_url_info.to_redirect_url()
         assert redirect_url == "http://data.dasch.swiss/resources/2126045"
 
+    def test_ark_url_info_redirect_salsah_project(self):
+        # parse and redirect an ARK URL of a project on Salsah with default project host, i.e. without specified project host
+        ark_url_info = ArkUrlInfo(self.settings, "https://ark.example.org/ark:/00000/1/0803")
+        redirect_url = ark_url_info.to_redirect_url()
+        assert redirect_url == "http://meta.dasch.swiss/projects/0803"
+
+        # parse and redirect an ARK URL of a project on Salsah with a specific project host
+        ark_url_info = ArkUrlInfo(self.settings, "https://ark.example.org/ark:/00000/1/0006")
+        redirect_url = ark_url_info.to_redirect_url()
+        assert redirect_url == "http://other-meta.dasch.swiss/projects/0006"
+
     def test_ark_url_info_redirect_salsah_ark(self):
         # parse and redirect a version 0 ARK URL of a PHP-SALSAH resource which is on DSP (migrated from salsah to DSP) without a timestamp
         ark_url_info = ArkUrlInfo(self.settings, "http://ark.example.org/ark:/00000/0002-779b9990a0c3f-6e")
