@@ -30,15 +30,17 @@ import configparser
 import hashlib
 import hmac
 import os
+from asyncio import sleep
 from io import StringIO
 
 import requests
-from sanic import Sanic, response, HTTPResponse
+from sanic import HTTPResponse, Sanic, response
 from sanic.log import logger
 from sanic_cors import CORS
 
 import base64url_check_digit
-from ark_url import ArkUrlInfo, ArkUrlFormatter, ArkUrlException, ArkUrlSettings
+from ark_url import (ArkUrlException, ArkUrlFormatter, ArkUrlInfo,
+                     ArkUrlSettings)
 
 #################################################################################################
 # Server implementation.
@@ -111,10 +113,10 @@ async def reload(req) -> HTTPResponse:
 
     # If the submitted signature is the same as the computed one, the request is valid.
     if hmac.compare_digest(submitted_signature, computed_signature):
-        # Reload configuration.
-        settings = load_settings(app.config.config_path)
-        app.config.settings = settings
-        logger.info("Configuration reloaded.")
+        # reload configuration right away
+        reload_config()
+        # reload configuration again in 5 minutes (non-blocking), when github caching has expired
+        app.add_task(schedule_reload())
         return response.text("", status=204)
     else:
         return response.text("Unauthorized", status=401)
@@ -145,6 +147,25 @@ def server(settings) -> None:
     """
     app.config.settings = settings
     app.run(host=settings.top_config["ArkInternalHost"], port=settings.top_config.getint("ArkInternalPort"))
+
+
+#################################################################################################
+# schedule reload
+
+
+async def schedule_reload() -> None:
+    await sleep(5 * 60)
+    logger.info("Reloading config again.")
+    reload_config()
+
+
+#################################################################################################
+# Reload config
+
+def reload_config() -> None:
+    settings = load_settings(app.config.config_path)
+    app.config.settings = settings
+    logger.info("Configuration reloaded.")
 
 
 #################################################################################################
