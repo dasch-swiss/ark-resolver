@@ -94,7 +94,7 @@ async def config_head(_) -> HTTPResponse:
 @app.post("/reload")
 async def reload(req) -> HTTPResponse:
     """
-    Requests a reload of the configuration. Checks if the request is authorized.
+    Requests reloading of the configuration. Checks if the request is authorized.
     """
     # Get the signature submitted with the request.
     if "X-Hub-Signature" not in req.headers:
