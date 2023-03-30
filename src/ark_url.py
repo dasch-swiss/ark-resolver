@@ -260,7 +260,11 @@ class ArkUrlInfo:
 
         # it's a resource
         if self.resource_id is not None:
-            resource_int_id = (int(self.resource_id, 16) // self.settings.resource_int_id_factor) - 1
+            try:
+                resource_int_id = (int(self.resource_id, 16) // self.settings.resource_int_id_factor) - 1
+            except ValueError:
+                raise ArkUrlException("Invalid ARK ID")
+
             template_dict["resource_int_id"] = resource_int_id
 
             if self.timestamp is None:
