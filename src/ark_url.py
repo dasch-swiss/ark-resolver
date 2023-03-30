@@ -105,7 +105,7 @@ class ArkUrlInfo:
                 if match is not None:
                     self.url_version = 0
         if match is None:
-            raise ArkUrlException("Invalid ARK ID: {}".format(ark_url))
+            raise ArkUrlException(f"Invalid ARK ID: {ark_url}")
 
         # Which version of ARK ID did we match?
         if self.url_version == settings.dsp_ark_version:
@@ -150,7 +150,7 @@ class ArkUrlInfo:
             project_config = self.settings.config[self.project_id]
 
             if not project_config.getboolean("AllowVersion0"):
-                raise ArkUrlException("Invalid ARK ID (version 0 not allowed): {}".format(ark_url))
+                raise ArkUrlException(f"Invalid ARK ID (version 0 not allowed): {ark_url}")
         else:
             raise ArkUrlException(f"Invalid ARK ID {ark_url}. The version of the ARK ID doesn't match the version defined in the settings.")
 
@@ -263,7 +263,7 @@ class ArkUrlInfo:
             try:
                 resource_int_id = (int(self.resource_id, 16) // self.settings.resource_int_id_factor) - 1
             except ValueError:
-                raise ArkUrlException("Invalid ARK ID")
+                raise ArkUrlException(f"Invalid resource ID: {self.resource_id}")
 
             template_dict["resource_int_id"] = resource_int_id
 
@@ -302,7 +302,7 @@ def unescape_and_validate_uuid(ark_url, escaped_uuid) -> str:
     unescaped_uuid = escaped_uuid.replace('=', '-')
 
     if not base64url_check_digit.is_valid(unescaped_uuid):
-        raise ArkUrlException("Invalid ARK ID: {}".format(ark_url))
+        raise ArkUrlException(f"Invalid ARK ID: {ark_url}")
 
     return unescaped_uuid[0:-1]
 
