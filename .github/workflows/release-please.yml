@@ -18,7 +18,6 @@ jobs:
       - uses: google-github-actions/release-please-action@v3
         with:
           token: ${{ secrets.GH_TOKEN }}
-          release-type: python
+          release-type: simple
           package-name: ark-resolver
-          pull-request-title-pattern: 'chore: release ${version}'
     
