@@ -7,7 +7,7 @@ on:
     types: [released]
 
 env:
-  TOKEN: ${{ secrets.GH_TOKEN }}
+  TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
 jobs:
   publish-to-dockerhub:
