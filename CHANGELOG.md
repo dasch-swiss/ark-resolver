@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.9](https://github.com/dasch-swiss/ark-resolver/compare/v1.7.8...v1.7.9) (2023-09-18)
+
+
+### Bug Fixes
+
+* deployment action needs a token with more permissions ([#48](https://github.com/dasch-swiss/ark-resolver/issues/48)) ([62f0893](https://github.com/dasch-swiss/ark-resolver/commit/62f0893040ce6584e2261877b7414893e6e2cb29))
+
 ## [1.7.8](https://github.com/dasch-swiss/ark-resolver/compare/v1.7.7...v1.7.8) (2023-09-18)
 
 
