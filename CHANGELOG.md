@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.7.8](https://github.com/dasch-swiss/ark-resolver/compare/v1.7.7...v1.7.8) (2023-09-18)
+
+
+### Maintenance
+
+* bump python to 3.11 ([#42](https://github.com/dasch-swiss/ark-resolver/pull/42))
+  ([862bced](https://github.com/dasch-swiss/ark-resolver/commit/cc61ff6ec48eac27b3d443c294e58d0469c550ff))
+* bump dependencies (multiple PRs)
+* add a release-please action (multiple PRs)
+
 ## [1.7.7](https://github.com/dasch-swiss/ark-resolver/compare/v1.7.6...v1.7.7) (2023-08-22)
 
 * feat: add deferred reload after 5 minutes by @BalduinLandolt in [PR 37](https://github.com/dasch-swiss/ark-resolver/pull/37)
