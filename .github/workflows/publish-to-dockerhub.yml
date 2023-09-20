@@ -4,7 +4,7 @@ name: Publish to Docker Hub
 
 on:
   release:
-    types: [released]
+    types: [published]
 
 env:
   TOKEN: ${{ secrets.GITHUB_TOKEN }}
