@@ -1,6 +1,6 @@
 ---
 
-name: Publish to Docker Hub
+name: Publish to Docker Hub foo
 
 on:
   release:
