@@ -2,7 +2,7 @@
 
 name: ARK Resolver Tests
 
-on: [pull_request]
+on: [push]
 
 jobs:
   ark-resolver-tests:
