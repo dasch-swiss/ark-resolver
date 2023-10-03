@@ -1,13 +1,5 @@
 # Changelog
 
-## [1.7.10](https://github.com/dasch-swiss/ark-resolver/compare/v1.7.9...v1.7.10) (2023-09-20)
-
-
-### Bug Fixes
-
-* fix publishing to dockerhub job: trigger when a release was published ([#51](https://github.com/dasch-swiss/ark-resolver/issues/51)) ([df0c1d1](https://github.com/dasch-swiss/ark-resolver/commit/df0c1d1703830809fec812f331ff3d309525885f))
-* **release-please:** run tests on pull_request instead of on push ([#53](https://github.com/dasch-swiss/ark-resolver/issues/53)) ([1e58ce0](https://github.com/dasch-swiss/ark-resolver/commit/1e58ce00195b4839444e2bfcf17d3cafe46b40ef))
-
 ## [1.7.9](https://github.com/dasch-swiss/ark-resolver/compare/v1.7.8...v1.7.9) (2023-09-18)
 
 
