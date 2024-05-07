@@ -45,6 +45,8 @@ from ark_url import (ArkUrlException, ArkUrlFormatter, ArkUrlInfo,
 #################################################################################################
 # Server implementation.
 
+Sanic.start_method = "fork"
+
 app = Sanic('ark_resolver')
 CORS(app)
 
