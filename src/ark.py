@@ -65,7 +65,7 @@ def get_config() -> str:
     # Return the result as a string.
     safe_config_output = StringIO()
     safe_config.write(safe_config_output)
-    return config_output.getvalue()
+    return safe_config_output.getvalue()
 
 
 @app.get("/config")
