@@ -10,7 +10,7 @@ httptools==0.6.0
 httpx==0.24.1
 idna==3.7
 multidict==6.0.4
-requests==2.31.0
+requests==2.32.0
 rfc3986==2.0.0
 sanic==23.6.0
 Sanic-Cors
