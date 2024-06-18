@@ -1,6 +1,6 @@
 FROM python:3.11-alpine3.20
 
-RUN apk add build-base
+RUN apk add --no-cache build-base
 
 RUN python3 -m pip install --upgrade pip
 
