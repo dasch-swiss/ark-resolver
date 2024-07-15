@@ -1,6 +1,6 @@
 aiofiles==23.2.1
 anyio==3.7.1
-certifi==2023.7.22
+certifi==2024.7.4
 chardet==5.2.0
 charset-normalizer==3.2.0
 h11==0.14.0
