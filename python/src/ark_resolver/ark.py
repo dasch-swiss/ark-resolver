@@ -1,21 +1,7 @@
 #!/usr/bin/env python3
 
-# Copyright @ 2015-2021 Data and Service Center for the Humanities (DaSCH)
-#
-# This file is part of DSP.
-#
-# DSP is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Affero General Public License as published
-# by the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# DSP is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU Affero General Public License for more details.
-#
-# You should have received a copy of the GNU Affero General Public
-# License along with DSP.  If not, see <http://www.gnu.org/licenses/>.
+# Copyright © 2015 - 2025 Swiss National Data and Service Center for the Humanities and/or DaSCH Service Platform contributors.
+# SPDX-License-Identifier: Apache-2.0
 
 
 #################################################################################################
@@ -33,14 +19,41 @@ import os
 from asyncio import sleep
 from io import StringIO
 
+from opentelemetry import trace
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import (
+    BatchSpanProcessor,
+    ConsoleSpanExporter,
+)
+
+import sentry_sdk
+from sentry_sdk.integrations.asyncio import AsyncioIntegration
+from sentry_sdk.integrations.sanic import SanicIntegration
+from sentry_sdk.integrations.rust_tracing import RustTracingIntegration
+
 import requests
 from sanic import HTTPResponse, Sanic, response
 from sanic.log import logger
 from sanic_cors import CORS
 
-import base64url_check_digit
-from ark_url import (ArkUrlException, ArkUrlFormatter, ArkUrlInfo,
-                     ArkUrlSettings)
+import _rust
+from ark_resolver import ark_url
+import ark_resolver.check_digit as check_digit_py
+import ark_resolver.health
+
+
+#################################################################################################
+# OpenTelemetry
+
+provider = TracerProvider()
+processor = BatchSpanProcessor(ConsoleSpanExporter())
+provider.add_span_processor(processor)
+
+# Sets the global default tracer provider
+trace.set_tracer_provider(provider)
+
+# Creates a tracer from the global tracer provider
+tracer = trace.get_tracer("my.tracer.name")
 
 #################################################################################################
 # Server implementation.
@@ -50,8 +63,53 @@ Sanic.start_method = "fork"
 app = Sanic('ark_resolver')
 CORS(app)
 
+# Register health check route
+app.blueprint(ark_resolver.health.health_bp)
 
-def get_config() -> str:
+
+@app.before_server_start
+async def init_sentry(_):
+    sentry_dsn = os.environ.get("ARK_SENTRY_DSN", None)
+    sentry_debug = os.environ.get("ARK_SENTRY_DEBUG", "False")
+    sentry_environment = os.environ.get("ARK_SENTRY_ENVIRONMENT", None)
+    sentry_release = os.environ.get("ARK_SENTRY_RELEASE", None)
+    if sentry_dsn:
+        sentry_sdk.init(
+            dsn=sentry_dsn,
+            debug=sentry_debug,
+            environment=sentry_environment,
+            release=sentry_release,
+            # Add data like request headers and IP for users;
+            # see https://docs.sentry.io/platforms/python/data-management/data-collected/ for more info
+            send_default_pii=True,
+            # Set traces_sample_rate to 1.0 to capture 100%
+            # of transactions for tracing.
+            traces_sample_rate=1.0,
+            # Set profiles_sample_rate to 1.0 to profile 100%
+            # of sampled transactions.
+            # We recommend adjusting this value in production.
+            profiles_sample_rate=1.0,
+            instrumenter="otel",
+            integrations=[
+                AsyncioIntegration(),
+                RustTracingIntegration(
+                    "_rust",
+                    _rust.initialize_tracing,
+                    include_tracing_fields=True,
+                ),
+                SanicIntegration(
+                    # Configure the Sanic integration so that we generate
+                    # transactions for all HTTP status codes, including 404
+                    unsampled_statuses=None,
+                ),
+            ],
+        )
+        logger.info("Sentry initialized.")
+    else:
+        logger.info("No SENTRY_DSN found in environment variables. Sentry will not be initialized.")
+
+
+def get_safe_config() -> str:
     """
     Returns the app's configuration
     """
@@ -70,20 +128,22 @@ def get_config() -> str:
     return safe_config_output.getvalue()
 
 
+@tracer.start_as_current_span("config_get")
 @app.get("/config")
-async def config_get(_) -> HTTPResponse:
+async def safe_config_get(_) -> HTTPResponse:
     """
     Returns the app's configuration
     """
-    return response.text(get_config())
+    return response.text(get_safe_config())
 
 
+@tracer.start_as_current_span("config_head")
 @app.head("/config")
-async def config_head(_) -> HTTPResponse:
+async def safe_config_head(_) -> HTTPResponse:
     """
     Returns only the head of the config response
     """
-    config_str = get_config()
+    config_str = get_safe_config()
 
     headers = {
         "Content-Length": str(len(config_str)),
@@ -93,6 +153,7 @@ async def config_head(_) -> HTTPResponse:
     return response.text("", headers=headers)
 
 
+@tracer.start_as_current_span("reload")
 @app.post("/reload")
 async def reload(req) -> HTTPResponse:
     """
@@ -123,23 +184,28 @@ async def reload(req) -> HTTPResponse:
     else:
         return response.text("Unauthorized", status=401)
 
-
+@tracer.start_as_current_span("redirect")
 @app.get('/<path:path>')
 async def catch_all(_, path="") -> HTTPResponse:
     """
     Catch all URL. Tries to redirect the given ARK ID.
     """
     try:
-        redirect_url = ArkUrlInfo(settings=app.config.settings, ark_url=path, path_only=True).to_redirect_url()
-    except ArkUrlException as ex:
+        redirect_url = ark_url.ArkUrlInfo(settings=app.config.settings, ark_id=path).to_redirect_url()
+
+    except ark_url.ArkUrlException as ex:
+        logger.error(f"Invalid ARK ID: {path}", exc_info=ex)
         return response.text(body=ex.message, status=400)
 
-    except base64url_check_digit.CheckDigitException as ex:
+    except check_digit_py.CheckDigitException as ex:
+        logger.error(f"Invalid ARK ID: {path}", exc_info=ex)
         return response.text(body=ex.message, status=400)
 
-    except KeyError:
+    except KeyError as ex:
+        logger.error(f"Invalid ARK ID: {path}", exc_info=ex)
         return response.text(body="Invalid ARK ID", status=400)
 
+    logger.info(f"Redirecting {path} to {redirect_url}")
     return response.redirect(redirect_url)
 
 
@@ -173,7 +239,7 @@ def reload_config() -> None:
 #################################################################################################
 # Loading of config and registry files.
 
-def load_settings(config_path: str) -> ArkUrlSettings:
+def load_settings(config_path: str) -> ark_url.ArkUrlSettings:
     """
     Loads configuration from given path and returns an ArkUrlSettings.
     """
@@ -202,7 +268,7 @@ def load_settings(config_path: str) -> ArkUrlSettings:
     else:
         config.read_file(open(registry_path))
 
-    settings = ArkUrlSettings(config)
+    settings = ark_url.ArkUrlSettings(config)
 
     return settings
 
@@ -220,8 +286,10 @@ def main() -> None:
     parser.add_argument("-c", "--config", help="config file (default {})".format(default_config_path))
     group = parser.add_mutually_exclusive_group()
     group.add_argument("-s", "--server", help="start server", action="store_true")
-    group.add_argument("-i", "--iri", help="print the converted ARK URL from a given DSP resource IRI (add -v and -d optionally)")
-    group.add_argument("-a", "--ark", help="print the converted DSP resource IRI (requires -r) or DSP URL from a given ARK URL")
+    group.add_argument("-i", "--iri",
+                       help="print the converted ARK URL from a given DSP resource IRI (add -v and -d optionally)")
+    group.add_argument("-a", "--ark",
+                       help="print the converted DSP resource IRI (requires -r) or DSP URL from a given ARK ID")
     parser.add_argument("-r", "--resource", help="generate resource IRI", action="store_true")
     parser.add_argument("-v", "--value", help="value UUID (has to be provided with -i)")
     parser.add_argument("-d", "--date", help="DSP ARK timestamp (has to be provided with -i)")
@@ -241,20 +309,20 @@ def main() -> None:
             server(settings)
         elif args.iri:
             # prints the converted ARK URL from a given DSP resource IRI
-            print(ArkUrlFormatter(settings).resource_iri_to_ark_url(args.iri, args.value, args.date))
+            print(ark_url.ArkUrlFormatter(settings).resource_iri_to_ark_url(args.iri, args.value, args.date))
         elif args.ark:
             if args.resource:
                 # prints the converted DSP resource IRI from a given ARK URL
-                print(ArkUrlInfo(settings, args.ark).to_resource_iri())
+                print(ark_url.ArkUrlInfo(settings, args.ark).to_resource_iri())
             else:
                 # prints the converted DSP URL from a given ARK URL
-                print(ArkUrlInfo(settings, args.ark).to_redirect_url())
+                print(ark_url.ArkUrlInfo(settings, args.ark).to_redirect_url())
         else:
             parser.print_help()
-    except ArkUrlException as ex:
+    except ark_url.ArkUrlException as ex:
         print(ex.message)
         exit(1)
-    except base64url_check_digit.CheckDigitException as ex:
+    except check_digit_py.CheckDigitException as ex:
         print(ex.message)
         exit(1)
 
