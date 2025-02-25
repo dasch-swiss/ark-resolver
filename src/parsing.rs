@@ -2,6 +2,8 @@ use regex::Regex;
 
 const PROJECT_ID_PATTERN: &str = "([0-9A-Fa-f]{4})";
 const ENCODED_UUID_PATTERN: &str = "([A-Za-z0-9=_]+)"; // Allows base64-like characters. The '-' is not allowed in the encoded UUID.
+
+#[allow(dead_code)]
 const TIMESTAMP_PATTERN: &str = r"([0-9]{8}T[0-9]{6,15}Z)";
 
 pub fn resource_iri_regex() -> Regex {
@@ -9,7 +11,7 @@ pub fn resource_iri_regex() -> Regex {
         r"^http://rdfh.ch/{}/([A-Za-z0-9_-]+)$",
         PROJECT_ID_PATTERN
     ))
-        .unwrap()
+    .unwrap()
 }
 // FIXME: This regex excludes timestamps
 pub fn ark_path_regex(ark_naan: &str) -> Regex {
@@ -30,9 +32,7 @@ pub fn v0_ark_path_regex(ark_naan: &str) -> Regex {
 
 #[cfg(test)]
 mod tests {
-    use crate::parsing::{
-        resource_iri_regex, PROJECT_ID_PATTERN, TIMESTAMP_PATTERN,
-    };
+    use crate::parsing::{resource_iri_regex, PROJECT_ID_PATTERN, TIMESTAMP_PATTERN};
     use regex::Regex;
 
     #[test]
@@ -139,5 +139,4 @@ mod tests {
             "ark:/00000/1/0001/cmfk1DMHRBiR4=_6HXpEFAn/pLlW4ODASumZfZFbJdpw1gu.20180604T085622Z"
         ));
     }
-  
 }

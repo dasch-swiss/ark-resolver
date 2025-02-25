@@ -1,9 +1,9 @@
+use crate::parsing::{ark_path_regex, resource_iri_regex, v0_ark_path_regex};
 use config::{Config, File, FileFormat};
 use pyo3::prelude::*;
 use regex::Regex;
 use std::collections::HashMap;
 use std::env;
-use crate::parsing::{ark_path_regex, resource_iri_regex, v0_ark_path_regex};
 
 struct ArkConfig {
     ark_external_host: String,
@@ -15,20 +15,18 @@ struct ArkConfig {
     ark_github_secret: String,
 }
 
-impl Into<ConfigWrapper> for ArkConfig {
-    fn into(self) -> ConfigWrapper {
+impl From<ArkConfig> for ConfigWrapper {
+    fn from(value: ArkConfig) -> Self {
         let mut map = HashMap::new();
-        map.insert("ArkExternalHost".to_string(), self.ark_external_host);
-        map.insert("ArkInternalHost".to_string(), self.ark_internal_host);
-        map.insert("ArkInternalPort".to_string(), self.ark_internal_port);
-        map.insert("ArkNaan".to_string(), self.ark_naan);
-        map.insert("ArkHttpsProxy".to_string(), self.ark_https_proxy);
-        map.insert("ArkRegistry".to_string(), self.ark_registry);
-        map.insert("ArkGithubSecret".to_string(), self.ark_github_secret);
+        map.insert("ArkExternalHost".to_string(), value.ark_external_host);
+        map.insert("ArkInternalHost".to_string(), value.ark_internal_host);
+        map.insert("ArkInternalPort".to_string(), value.ark_internal_port);
+        map.insert("ArkNaan".to_string(), value.ark_naan);
+        map.insert("ArkHttpsProxy".to_string(), value.ark_https_proxy);
+        map.insert("ArkRegistry".to_string(), value.ark_registry);
+        map.insert("ArkGithubSecret".to_string(), value.ark_github_secret);
 
-        ConfigWrapper {
-            config: map,
-        }
+        ConfigWrapper { config: map }
     }
 }
 
@@ -44,7 +42,6 @@ impl From<HashMap<String, String>> for ConfigWrapper {
         Self { config }
     }
 }
-
 
 #[pymethods]
 impl ConfigWrapper {
@@ -102,18 +99,19 @@ impl ArkUrlSettings {
     pub fn get_default_config(&self, key: &str) -> Option<String> {
         self.default_config.get(key).map(|s| s.to_string())
     }
-    
+
     /// Get a project configuration section from the registry
     #[pyo3(text_signature = "(self, project_id)")]
     pub fn get_project_config(&self, project_id: &str) -> Option<ConfigWrapper> {
         let mut defaults = self.default_config.clone();
-        self.registry.get(&project_id.to_lowercase())?
+        self.registry
+            .get(&project_id.to_lowercase())?
             .clone()
             .config
             .into_iter()
             .for_each(|(k, v)| {
-            defaults.insert(k, v);
-        });
+                defaults.insert(k, v);
+            });
         Some(defaults.into())
     }
 
@@ -132,6 +130,7 @@ impl ArkUrlSettings {
 
     /// Check structure and extract ARK path components
     /// Returns a tuple with ARK version, project ID, resource ID, value ID and timestamp
+    #[allow(clippy::type_complexity)]
     #[pyo3(text_signature = "(self, ark_path)")]
     pub fn match_ark_path(
         &self,
@@ -186,8 +185,8 @@ pub fn load_settings(config_path: String) -> PyResult<ArkUrlSettings> {
 }
 
 fn new_impl(_config_path: String) -> Result<ArkUrlSettings, String> {
-
-    let registry_path = env::var("ARK_REGISTRY").unwrap_or("python/src/ark_resolver/ark-registry.ini".to_string());
+    let registry_path =
+        env::var("ARK_REGISTRY").unwrap_or("python/src/ark_resolver/ark-registry.ini".to_string());
 
     let ark_config: ConfigWrapper = ArkConfig {
         ark_external_host: env::var("ARK_EXTERNAL_HOST").unwrap_or("ark.example.org".to_string()),
@@ -197,7 +196,8 @@ fn new_impl(_config_path: String) -> Result<ArkUrlSettings, String> {
         ark_https_proxy: env::var("ARK_HTTPS_PROXY").unwrap_or("true".to_string()),
         ark_registry: registry_path.clone(),
         ark_github_secret: env::var("ARK_GITHUB_SECRET").unwrap_or("".to_string()),
-    }.into();
+    }
+    .into();
 
     let registry_ini = Config::builder()
         .add_source(File::with_name(&registry_path).format(FileFormat::Ini))
@@ -239,13 +239,11 @@ fn new_impl(_config_path: String) -> Result<ArkUrlSettings, String> {
     }
 
     let default_ark_naan = "00000".to_string();
-    let ark_naan = default_section
-        .get("ArkNaan")
-        .unwrap_or(&default_ark_naan);
+    let ark_naan = default_section.get("ArkNaan").unwrap_or(&default_ark_naan);
 
     Ok(ArkUrlSettings {
         ark_config,
-        default_config: default_section.clone().into(),
+        default_config: default_section.clone(),
         registry: registry.clone(),
         dsp_ark_version: 1,
         resource_int_id_factor: 982451653,
@@ -257,9 +255,7 @@ fn new_impl(_config_path: String) -> Result<ArkUrlSettings, String> {
 
 #[cfg(test)]
 mod tests {
-    use crate::ark_url_settings::{
-        new_impl  
-    };
+    use crate::ark_url_settings::new_impl;
 
     #[test]
     fn test_match_ark_path_impl() {
@@ -341,17 +337,48 @@ mod tests {
     fn test_settings() {
         let settings = new_impl("python/src/ark_resolver/ark-config.ini".to_string()).unwrap();
 
-        assert_eq!(settings.ark_config.get("ArkNaan"), Some(&"00000".to_string()));
-        assert_eq!(settings.ark_config.get("ArkExternalHost"), Some(&"ark.example.org".to_string()));
-        assert_eq!(settings.ark_config.get("ArkInternalHost"), Some(&"0.0.0.0".to_string()));
-        assert_eq!(settings.ark_config.get("ArkInternalPort"), Some(&"3336".to_string()));
-        assert_eq!(settings.ark_config.get("ArkHttpsProxy"), Some(&"true".to_string()));
-        assert_eq!(settings.default_config.get("TopLevelObjectUrl"), Some(&"http://dasch.swiss".to_string()));
-        assert_eq!(settings.get_default_config("TopLevelObjectUrl"), Some("http://dasch.swiss".to_string()));
-        assert_eq!(settings.get_project_config("0003").unwrap().get("ProjectHost"), Some(&"meta.dasch.swiss".to_string()));
-        assert_eq!(settings.get_project_config("080e").unwrap().get("Host"), Some(&"data.dasch.swiss".to_string()));
-        assert_eq!(settings.get_project_config("080E").unwrap().get("Host"), Some(&"data.dasch.swiss".to_string()));
-        
-
+        assert_eq!(
+            settings.ark_config.get("ArkNaan"),
+            Some(&"00000".to_string())
+        );
+        assert_eq!(
+            settings.ark_config.get("ArkExternalHost"),
+            Some(&"ark.example.org".to_string())
+        );
+        assert_eq!(
+            settings.ark_config.get("ArkInternalHost"),
+            Some(&"0.0.0.0".to_string())
+        );
+        assert_eq!(
+            settings.ark_config.get("ArkInternalPort"),
+            Some(&"3336".to_string())
+        );
+        assert_eq!(
+            settings.ark_config.get("ArkHttpsProxy"),
+            Some(&"true".to_string())
+        );
+        assert_eq!(
+            settings.default_config.get("TopLevelObjectUrl"),
+            Some(&"http://dasch.swiss".to_string())
+        );
+        assert_eq!(
+            settings.get_default_config("TopLevelObjectUrl"),
+            Some("http://dasch.swiss".to_string())
+        );
+        assert_eq!(
+            settings
+                .get_project_config("0003")
+                .unwrap()
+                .get("ProjectHost"),
+            Some(&"meta.dasch.swiss".to_string())
+        );
+        assert_eq!(
+            settings.get_project_config("080e").unwrap().get("Host"),
+            Some(&"data.dasch.swiss".to_string())
+        );
+        assert_eq!(
+            settings.get_project_config("080E").unwrap().get("Host"),
+            Some(&"data.dasch.swiss".to_string())
+        );
     }
 }

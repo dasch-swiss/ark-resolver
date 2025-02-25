@@ -1,0 +1,70 @@
+# This workflow runs whenever a PR is opened or updated, or a commit is pushed to main. It runs
+# several checks:
+# - fmt: checks that the code is formatted according to rustfmt
+# - clippy: checks that the code does not contain any clippy warnings
+# - doc: checks that the code can be documented without errors
+# - hack: check combinations of feature flags
+# - msrv: check that the msrv specified in the crate is correct
+
+name: check
+
+permissions:
+  contents: read
+
+# This configuration allows maintainers of this repo to create a branch and pull request based on
+# the new branch. Restricting the push trigger to the main branch ensures that the PR only gets
+# built once.
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+# If new code is pushed to a PR branch, then cancel in progress workflows for that PR. Ensures that
+# we don't waste CI time, and returns results quicker https://github.com/jonhoo/rust-ci-conf/pull/5
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  fmt:
+    runs-on: ubuntu-latest
+    name: fmt
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: astral-sh/setup-uv@v5
+        with:
+          version: "0.6.2"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
+      - run: cargo fmt --check
+  clippy:
+    runs-on: ubuntu-latest
+    name: clippy
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: astral-sh/setup-uv@v5
+        with:
+          version: "0.6.2"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+      - run: cargo clippy -- -D warnings
+  pr-title:
+    name: Check PR Title
+    runs-on: ubuntu-latest
+    steps:
+      - uses: deepakputhraya/action-pr-title@master
+        with:
+          regex: '^(build|chore|data|docs|feat|fix|perf|refactor|test|style)(\(.+\))?!?: .+$'
+          max_length: 140

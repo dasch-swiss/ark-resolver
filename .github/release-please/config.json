@@ -1,0 +1,56 @@
+{
+  "release-type": "rust",
+  "draft-pull-request": true,
+  "changelog-sections": [
+    {
+      "type": "build",
+      "section": "Maintenances"
+    },
+    {
+      "type": "chore",
+      "section": "Maintenances"
+    },
+    {
+      "type": "data",
+      "section": "Project Data"
+    },
+    {
+      "type": "docs",
+      "section": "Documentation"
+    },
+    {
+      "type": "feat",
+      "section": "Enhancements"
+    },
+    {
+      "type": "fix",
+      "section": "Bug Fixes"
+    },
+    {
+      "type": "perf",
+      "section": "Performance Improvements"
+    },
+    {
+      "type": "refactor",
+      "section": "Maintenances"
+    },
+    {
+      "type": "test",
+      "section": "Tests"
+    },
+    {
+      "type": "style",
+      "section": "Styles"
+    }
+  ],
+  "plugins": [
+    "sentence-case"
+  ],
+  "packages": {
+    ".": {
+      "changelog-path": "CHANGELOG.md",
+      "release-type": "rust"
+    }
+  },
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json"
+}
