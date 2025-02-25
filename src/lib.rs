@@ -1,5 +1,5 @@
-use crate::ark_url_settings::ArkUrlSettings;
 use crate::ark_url_settings::load_settings;
+use crate::ark_url_settings::ArkUrlSettings;
 use crate::base64url_ckeck_digit::base64url_check_digit;
 use pyo3::prelude::*;
 use pyo3::types::PyModule;
@@ -24,6 +24,6 @@ fn _rust(py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction_bound!(load_settings, py)?)?;
     m.add_function(wrap_pyfunction!(initialize_tracing, m)?)?;
     m.add_class::<ArkUrlSettings>()?;
-    
+
     Ok(())
 }
