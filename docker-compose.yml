@@ -1,0 +1,16 @@
+services:
+  ark-resolver:
+    image: daschswiss/ark-resolver:latest
+    ports:
+      - "3336:3336"
+    environment:
+      RUST_LOG: info
+      # ARK_SENTRY_DSN: ""
+      SENTRY_DEBUG: "True"
+      ARK_SENTRY_ENVIRONMENT: "local"
+      ARK_EXTERNAL_HOST: "ark.example.org"
+      ARK_INTERNAL_HOST: "0.0.0.0"
+      ARK_INTERNAL_PORT: "3336"
+      ARK_NAAN: "99999"
+      ARK_HTTPS_PROXY: false
+      ARK_REGISTRY: "/app/python/src/ark_resolver/ark-registry.ini"

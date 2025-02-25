@@ -1,21 +1,7 @@
 #!/usr/bin/env python3
 
-# Copyright @ 2015-2021 Data and Service Center for the Humanities (DaSCH)
-#
-# This file is part of DSP.
-#
-# DSP is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Affero General Public License as published
-# by the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# DSP is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU Affero General Public License for more details.
-#
-# You should have received a copy of the GNU Affero General Public
-# License along with DSP.  If not, see <http://www.gnu.org/licenses/>.
+# Copyright © 2015 - 2025 Swiss National Data and Service Center for the Humanities and/or DaSCH Service Platform contributors.
+# SPDX-License-Identifier: Apache-2.0
 
 import base64
 import re
@@ -23,7 +9,7 @@ import uuid
 from string import Template
 from urllib import parse
 
-import base64url_check_digit
+import ark_resolver.check_digit as check_digit_py
 
 
 #################################################################################################
@@ -70,42 +56,27 @@ class ArkUrlException(Exception):
 
 class ArkUrlInfo:
     """
-    Represents the information retrieved from a DSP ARK URL.
+    Represents the information retrieved from a DSP ARK ID.
     """
 
-    def __init__(self, settings, ark_url, path_only=False):
+    def __init__(self, settings, ark_id):
         self.settings = settings
 
-        # Are we matching just the path part of the URL?
-        # TODO: path_only=True should be tested in unit tests
-        if path_only:
+        match = settings.ark_path_regex.match(ark_id)
+
+        if match:
             # Yes. Is it a version 1 ARK ID?
-            match = settings.ark_path_regex.match(ark_url)
-
-            if match:
-                # Yes.
-                self.url_version = int(match.group(1))
-            else:
-                # No. Is it a version 0 ARK ID?
-                match = settings.v0_ark_path_regex.match(ark_url)
-
-                if match is not None:
-                    self.url_version = 0
-
+            self.url_version = int(match.group(1))
         else:
-            # We are matching a whole URL. Does it contain a version 1 ARK ID?
-            match = settings.ark_url_regex.match(ark_url)
-            if match is not None:
-                # Yes.
-                self.url_version = int(match.group(1))
-            else:
-                # No. Does it contain a version 0 ARK ID?
-                match = settings.v0_ark_url_regex.match(ark_url)
+            # No. Is it a version 0 ARK ID?
+            match = settings.v0_ark_path_regex.match(ark_id)
 
-                if match is not None:
-                    self.url_version = 0
+            # If NOT None!, then it is a version 0 ARK ID.
+            if match is not None:
+                self.url_version = 0
+
         if match is None:
-            raise ArkUrlException(f"Invalid ARK ID: {ark_url}")
+            raise ArkUrlException(f"Invalid ARK ID: {ark_id}")
 
         # Which version of ARK ID did we match?
         if self.url_version == settings.dsp_ark_version:
@@ -115,7 +86,7 @@ class ArkUrlInfo:
 
             if escaped_resource_id_with_check_digit is not None:
                 self.resource_id = unescape_and_validate_uuid(
-                    ark_url=ark_url,
+                    ark_url=ark_id,
                     escaped_uuid=escaped_resource_id_with_check_digit
                 )
 
@@ -123,7 +94,7 @@ class ArkUrlInfo:
 
                 if escaped_value_id_with_check_digit is not None:
                     self.value_id = unescape_and_validate_uuid(
-                        ark_url=ark_url,
+                        ark_url=ark_id,
                         escaped_uuid=escaped_value_id_with_check_digit
                     )
                 else:
@@ -150,9 +121,10 @@ class ArkUrlInfo:
             project_config = self.settings.config[self.project_id]
 
             if not project_config.getboolean("AllowVersion0"):
-                raise ArkUrlException(f"Invalid ARK ID (version 0 not allowed): {ark_url}")
+                raise ArkUrlException(f"Invalid ARK ID (version 0 not allowed): {ark_id}")
         else:
-            raise ArkUrlException(f"Invalid ARK ID {ark_url}. The version of the ARK ID doesn't match the version defined in the settings.")
+            raise ArkUrlException(
+                f"Invalid ARK ID {ark_id}. The version of the ARK ID doesn't match the version defined in the settings.")
 
         self.template_dict = {
             "url_version": self.url_version,
@@ -195,7 +167,8 @@ class ArkUrlInfo:
             # in case of an ARK URL version 0, the resource_id generated from the salsah ID has to be converted to a
             # base64 UUID version 5
             generic_namespace_url = uuid.NAMESPACE_URL
-            dasch_uuid_ns = uuid.uuid5(generic_namespace_url, "https://dasch.swiss")  # cace8b00-717e-50d5-bcb9-486f39d733a2
+            dasch_uuid_ns = uuid.uuid5(generic_namespace_url,
+                                       "https://dasch.swiss")  # cace8b00-717e-50d5-bcb9-486f39d733a2
             resource_id = template_dict["resource_id"]
             dsp_iri = base64.urlsafe_b64encode(uuid.uuid5(dasch_uuid_ns, resource_id).bytes).decode("utf-8")
             # remove the padding ('==') from the end of the string
@@ -287,7 +260,7 @@ def add_check_digit_and_escape(uuid) -> str:
     """
     Adds a check digit to a Base64-encoded UUID, and escapes the result.
     """
-    check_digit = base64url_check_digit.calculate_check_digit(uuid)
+    check_digit = check_digit_py.calculate_check_digit(uuid)
     uuid_with_check_digit = uuid + check_digit
 
     # Escape '-' as '=' in the resource ID and check digit, because '-' can be ignored in ARK URLs.
@@ -301,7 +274,7 @@ def unescape_and_validate_uuid(ark_url, escaped_uuid) -> str:
     # '-' is escaped as '=' in the UUID and check digit, because '-' can be ignored in ARK URLs.
     unescaped_uuid = escaped_uuid.replace('=', '-')
 
-    if not base64url_check_digit.is_valid(unescaped_uuid):
+    if not check_digit_py.is_valid(unescaped_uuid):
         raise ArkUrlException(f"Invalid ARK ID: {ark_url}")
 
     return unescaped_uuid[0:-1]

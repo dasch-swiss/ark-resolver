@@ -13,11 +13,11 @@ build: ## build and publish ark-resolver docker image locally
 
 .PHONY: test
 test: install-requirements test-create-data ## run ark-resolver unit tests
-	python3 -m unittest
+    PYTHONPATH=python python3 -m unittest discover python/test
 
 .PHONY: test-create-data
 test-create-data: ## creates pickle file with test data used in unit tests
-	python3 test/create_mock_settings.py
+	python3 python/test/create_mock_settings.py
 
 .PHONY: install-requirements
 install-requirements:

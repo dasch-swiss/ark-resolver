@@ -1,0 +1,67 @@
+[build-system]
+requires = ["maturin>=1.0"]
+build-backend = "maturin"
+
+[project]
+name = "ark-resolver"
+version = "0.1.0"
+description = "ARK Resolver implemented in Python and Rust"
+readme = "README.md"
+requires-python = ">=3.12"
+license = "Apache-2.0"
+
+dependencies = [
+    "sanic",
+    "Sanic-Cors",
+    "Sanic-Plugins-Framework",
+    "sanic-routing",
+    "aiofiles",
+    "anyio",
+    "certifi",
+    "chardet",
+    "charset-normalizer",
+    "h11",
+    "html5tagger",
+    "httpcore",
+    "httptools",
+    "httpx",
+    "idna",
+    "maturin",
+    "multidict",
+    "opentelemetry-api",
+    "opentelemetry-sdk",
+    "requests",
+    "rfc3986",
+    "sentry-sdk[opentelemetry, sanic]",
+    "sniffio",
+    "toml",
+    "tracerite",
+    "types-requests",
+    "types-urllib3",
+    "typing_extensions",
+    "urllib3",
+    "uvloop",
+    "websockets",
+]
+[dependency-groups]
+dev = [
+    "maturin",
+    "pytest",
+    "black",
+    "flake8",
+    "mypy",
+    "pre-commit"
+]
+
+[tool.maturin]
+bindings = "pyo3"
+module-name = "ark_resolver._rust"
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+addopts = "--verbose -s"
+pythonpath = [".", "python/src", "python/tests"]
+
+[tool.mypy]
+strict = true
+

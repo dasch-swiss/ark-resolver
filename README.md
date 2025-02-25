@@ -28,11 +28,21 @@ In the sample registry file, the redirect URLs are DSP-API URLs,
 but it is recommended that in production, redirect URLs should refer to
 human-readable representations provided by a user interface.
 
-Prerequisites:
 
-- Python 3
-- [Sanic](https://sanic.readthedocs.io/en/latest/)
-- [Requests](https://docs.python-requests.org/en/master/)
+## Requirements / local setup
+
+First, install `uv`, which will automatically handle your Python installations,
+virtual environments, and dependencies:
+
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+Then, create the virtual environment and install the dependencies with:
+
+```bash
+uv sync
+```
 
 
 ## Examples for using the ark-resolver on the command-line
@@ -115,17 +125,3 @@ To use, run:
 $ docker run daschswiss/ark-resolver
 ```
 
-
-## Requirements
-
-To install the requirements:
-
-```bash
-$ pip3 install -r requirements.txt
-```
-
-To generate the requirements file (requirements.txt), that you commit with the project, do:
-
-```bash
-$ pip3 freeze > requirements.txt
-```
