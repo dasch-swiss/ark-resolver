@@ -12,7 +12,7 @@ default:
 
 # Install python packages (as defined in pyproject.toml and uv.lock)
 install:
-    uv sync
+    uv sync --locked --no-install-project
 
 # Upgrade python packages (uv.lock)
 upgrade:
