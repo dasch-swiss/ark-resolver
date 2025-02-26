@@ -58,7 +58,7 @@ RUN if [ "$TARGETPLATFORM" = "linux/arm64" ]; then \
 RUN cargo clean
 
 # ---- Setup Python Service ----
-FROM python:3.12-alpine3.21 AS runtime
+FROM python:3.13-alpine3.21 AS runtime
 
 # Install necessary dependencies
 RUN apk add --no-cache \
