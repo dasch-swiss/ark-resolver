@@ -32,7 +32,7 @@ dependencies = [
     "opentelemetry-sdk",
     "requests",
     "rfc3986",
-    "sentry-sdk[opentelemetry, sanic]",
+    "sentry-sdk[opentelemetry]",
     "sniffio",
     "toml",
     "tracerite",
@@ -64,4 +64,3 @@ pythonpath = [".", "python/src", "python/tests"]
 
 [tool.mypy]
 strict = true
-
