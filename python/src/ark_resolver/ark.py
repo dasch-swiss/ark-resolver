@@ -10,7 +10,6 @@
 # For help on command-line options, run with --help.
 #################################################################################################
 
-
 import argparse
 import configparser
 import hashlib
@@ -20,15 +19,12 @@ from asyncio import sleep
 from io import StringIO
 
 from opentelemetry import trace
+from opentelemetry.trace import Status, StatusCode
+from opentelemetry.propagate import set_global_textmap
 from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export import (
-    BatchSpanProcessor,
-    ConsoleSpanExporter,
-)
 
 import sentry_sdk
-from sentry_sdk.integrations.asyncio import AsyncioIntegration
-from sentry_sdk.integrations.sanic import SanicIntegration
+from sentry_sdk.integrations.opentelemetry import SentrySpanProcessor, SentryPropagator
 from sentry_sdk.integrations.rust_tracing import RustTracingIntegration
 
 import requests
@@ -41,19 +37,21 @@ from ark_resolver import ark_url
 import ark_resolver.check_digit as check_digit_py
 import ark_resolver.health
 
-
 #################################################################################################
 # OpenTelemetry
 
 provider = TracerProvider()
-processor = BatchSpanProcessor(ConsoleSpanExporter())
-provider.add_span_processor(processor)
+
+# Add both Sentry and Console span processors to the provider
+provider.add_span_processor(SentrySpanProcessor())  # Sentry integration
+
+set_global_textmap(SentryPropagator())
 
 # Sets the global default tracer provider
 trace.set_tracer_provider(provider)
 
 # Creates a tracer from the global tracer provider
-tracer = trace.get_tracer("my.tracer.name")
+tracer = trace.get_tracer(__name__)
 
 #################################################################################################
 # Server implementation.
@@ -91,17 +89,11 @@ async def init_sentry(_):
             profiles_sample_rate=1.0,
             instrumenter="otel",
             integrations=[
-                AsyncioIntegration(),
                 RustTracingIntegration(
                     "_rust",
                     _rust.initialize_tracing,
                     include_tracing_fields=True,
-                ),
-                SanicIntegration(
-                    # Configure the Sanic integration so that we generate
-                    # transactions for all HTTP status codes, including 404
-                    unsampled_statuses=None,
-                ),
+                )
             ],
         )
         logger.info("Sentry initialized.")
@@ -128,7 +120,6 @@ def get_safe_config() -> str:
     return safe_config_output.getvalue()
 
 
-@tracer.start_as_current_span("config_get")
 @app.get("/config")
 async def safe_config_get(_) -> HTTPResponse:
     """
@@ -137,7 +128,6 @@ async def safe_config_get(_) -> HTTPResponse:
     return response.text(get_safe_config())
 
 
-@tracer.start_as_current_span("config_head")
 @app.head("/config")
 async def safe_config_head(_) -> HTTPResponse:
     """
@@ -153,60 +143,70 @@ async def safe_config_head(_) -> HTTPResponse:
     return response.text("", headers=headers)
 
 
-@tracer.start_as_current_span("reload")
 @app.post("/reload")
 async def reload(req) -> HTTPResponse:
     """
     Requests reloading of the configuration. Checks if the request is authorized.
     """
-    # Get the signature submitted with the request.
-    if "X-Hub-Signature" not in req.headers:
-        return response.text("Unauthorized", status=401)
+    with tracer.start_as_current_span("reload") as span:
+        span.set_attribute("request", req)  # Attach ARK ID as metadata
 
-    signature_header = req.headers["X-Hub-Signature"]
+        # Get the signature submitted with the request.
+        if "X-Hub-Signature" not in req.headers:
+            return response.text("Unauthorized", status=401)
 
-    if not signature_header.startswith("sha1="):
-        return response.text("Unauthorized", status=401)
+        signature_header = req.headers["X-Hub-Signature"]
 
-    submitted_signature = signature_header.split('=')[1]
+        if not signature_header.startswith("sha1="):
+            return response.text("Unauthorized", status=401)
 
-    # Compute a signature for the request using the configured GitHub secret.
-    secret = app.config.settings.top_config["ArkGitHubSecret"]
-    computed_signature = hmac.new(secret.encode(), req.body, hashlib.sha1).hexdigest()
+        submitted_signature = signature_header.split('=')[1]
 
-    # If the submitted signature is the same as the computed one, the request is valid.
-    if hmac.compare_digest(submitted_signature, computed_signature):
-        # reload configuration right away
-        reload_config()
-        # reload configuration again in 5 minutes (non-blocking), when github caching has expired
-        app.add_task(schedule_reload())
-        return response.text("", status=204)
-    else:
-        return response.text("Unauthorized", status=401)
+        # Compute a signature for the request using the configured GitHub secret.
+        secret = app.config.settings.top_config["ArkGitHubSecret"]
+        computed_signature = hmac.new(secret.encode(), req.body, hashlib.sha1).hexdigest()
 
-@tracer.start_as_current_span("redirect")
+        # If the submitted signature is the same as the computed one, the request is valid.
+        if hmac.compare_digest(submitted_signature, computed_signature):
+            # reload configuration right away
+            reload_config()
+            # reload configuration again in 5 minutes (non-blocking), when github caching has expired
+            app.add_task(schedule_reload())
+            span.set_status(Status(StatusCode.OK))
+            return response.text("", status=204)
+        else:
+            span.set_status(Status(StatusCode.ERROR))
+            return response.text("Unauthorized", status=401)
+
 @app.get('/<path:path>')
 async def catch_all(_, path="") -> HTTPResponse:
     """
-    Catch all URL. Tries to redirect the given ARK ID.
+        Catch all URL. Tries to redirect the given ARK ID.
     """
-    try:
-        redirect_url = ark_url.ArkUrlInfo(settings=app.config.settings, ark_id=path).to_redirect_url()
+    with tracer.start_as_current_span("redirect") as span:
+        span.set_attribute("ark_id", path)  # Attach ARK ID as metadata
 
-    except ark_url.ArkUrlException as ex:
-        logger.error(f"Invalid ARK ID: {path}", exc_info=ex)
-        return response.text(body=ex.message, status=400)
+        try:
+            redirect_url = ark_url.ArkUrlInfo(settings=app.config.settings, ark_id=path).to_redirect_url()
+            span.set_status(Status(StatusCode.OK))  # Mark as successful
+        except ark_url.ArkUrlException as ex:
+            span.set_status(Status(StatusCode.ERROR, "Invalid ARK ID"))
+            logger.error(f"Invalid ARK ID: {path}")
+            return response.text(body=ex.message, status=400)
 
-    except check_digit_py.CheckDigitException as ex:
-        logger.error(f"Invalid ARK ID: {path}", exc_info=ex)
-        return response.text(body=ex.message, status=400)
+        except check_digit_py.CheckDigitException as ex:
+            span.set_status(Status(StatusCode.ERROR, "Check Digit Error"))
+            logger.error(f"Invalid ARK ID: {path}", exc_info=ex)
+            return response.text(body=ex.message, status=400)
 
-    except KeyError as ex:
-        logger.error(f"Invalid ARK ID: {path}", exc_info=ex)
-        return response.text(body="Invalid ARK ID", status=400)
+        except KeyError as ex:
+            span.set_status(Status(StatusCode.ERROR, "KeyError"))
+            logger.error(f"Invalid ARK ID: {path}", exc_info=ex)
+            return response.text(body="Invalid ARK ID", status=400)
 
-    logger.info(f"Redirecting {path} to {redirect_url}")
-    return response.redirect(redirect_url)
+        span.add_event("Redirecting", {"redirect_url": redirect_url})
+        logger.info(f"Redirecting {path} to {redirect_url}")
+        return response.redirect(redirect_url)
 
 
 def server(settings) -> None:
