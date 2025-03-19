@@ -183,6 +183,11 @@ async def catch_all(_, path="") -> HTTPResponse:
     """
         Catch all URL. Tries to redirect the given ARK ID.
     """
+    # Check if the path could be a valid ARK ID.
+    if not path.startswith("ark:/"):
+        msg = f"Invalid ARK ID: {path}"
+        return response.text(body=msg, status=400)
+
     with tracer.start_as_current_span("redirect") as span:
         span.set_attribute("ark_id", path)  # Attach ARK ID as metadata
 
