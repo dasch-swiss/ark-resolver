@@ -60,7 +60,7 @@ module-name = "ark_resolver._rust"
 [tool.pytest.ini_options]
 minversion = "7.0"
 addopts = "--verbose -s"
-pythonpath = [".", "python/src", "python/tests"]
+pythonpath = ["."]
 
 [tool.mypy]
 strict = true

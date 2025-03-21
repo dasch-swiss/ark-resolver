@@ -82,19 +82,19 @@ WORKDIR /app
 # Optional: add the application virtualenv to search path.
 # We set the venv in the previous stage to `/app`, so we add it to the PATH.
 ENV PATH=/app/bin:$PATH
-ENV PYTHONPATH=/app/python/src:/app/lib/python3.12/site-packages
+ENV PYTHONPATH=/app:/app/lib/python3.12/site-packages
 ENV VIRTUAL_ENV=/app
 
 # Verify the installation of the ark_resolver module
 # Strictly optional, but I like it for introspection of what I've built
 # and run a smoke test that the application can, in fact, be imported.
 RUN \
- python3 -V \
- && python3 -m site \
- && python3 -c "import sys; print(sys.path)" \
- && python3 -c 'import ark_resolver; print(ark_resolver)' \
- && python3 -c 'import _rust; print(_rust)'
+    python3 -V \
+    && python3 -m site \
+    && python3 -c "import sys; print(sys.path)" \
+    && python3 -c 'import ark_resolver; print(ark_resolver)' \
+    && python3 -c 'from ark_resolver import _rust; print(_rust)'
 
 COPY --chmod=0755 entrypoint.sh /entrypoint.sh
 ENTRYPOINT ["/entrypoint.sh"]
-CMD ["-s", "-c", "/app/python/src/ark_resolver/ark-config.ini"]
+CMD ["-s", "-c", "/app/ark_resolver/ark-config.ini"]

@@ -40,6 +40,10 @@ build: install
 pytest: build
     uv run pytest
 
+# Run ark-resolver locally
+run: build
+    export ARK_REGISTRY="ark_resolver/ark-registry.ini" && uv run ark_resolver/ark.py -s -c ark_resolver/ark-config.ini
+
 # Run Rust unit tests
 test: build
     cargo test --lib
