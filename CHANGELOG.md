@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.10.0](https://github.com/dasch-swiss/ark-resolver/compare/ark_resolver-v1.9.0...ark_resolver-v1.10.0) (2025-03-19)
+
+
+### Maintenances
+
+* Add sending opentelemetry spans to sentry ([#74](https://github.com/dasch-swiss/ark-resolver/issues/74)) ([6a2fe2c](https://github.com/dasch-swiss/ark-resolver/commit/6a2fe2cddf24b2b529671981727c38bea7ef62e4))
+* Auto deploy stage ark-resolver (INFRA-769) ([#71](https://github.com/dasch-swiss/ark-resolver/issues/71)) ([66be814](https://github.com/dasch-swiss/ark-resolver/commit/66be814a3d562d64daddb8f035cf40b5519be1de))
+* **ci:** Remove PR title check ([#73](https://github.com/dasch-swiss/ark-resolver/issues/73)) ([0dfe509](https://github.com/dasch-swiss/ark-resolver/commit/0dfe509c13504629339d8540a772f1e22f9f547f))
+
+
+### Enhancements
+
+* Filter out spam ([#79](https://github.com/dasch-swiss/ark-resolver/issues/79)) ([c7131e2](https://github.com/dasch-swiss/ark-resolver/commit/c7131e22eba9f5d1946159e117482b9e3a6ae4f8))
+
 ## [1.9.0](https://github.com/dasch-swiss/ark-resolver/compare/ark_resolver-v1.8.0...ark_resolver-v1.9.0) (2025-02-27)
 
 
