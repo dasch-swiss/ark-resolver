@@ -18,24 +18,21 @@ import os
 from asyncio import sleep
 from io import StringIO
 
+import requests
+import sentry_sdk
 from opentelemetry import trace
-from opentelemetry.trace import Status, StatusCode
 from opentelemetry.propagate import set_global_textmap
 from opentelemetry.sdk.trace import TracerProvider
-
-import sentry_sdk
-from sentry_sdk.integrations.opentelemetry import SentrySpanProcessor, SentryPropagator
-from sentry_sdk.integrations.rust_tracing import RustTracingIntegration
-
-import requests
+from opentelemetry.trace import Status, StatusCode
 from sanic import HTTPResponse, Sanic, response
 from sanic.log import logger
 from sanic_cors import CORS
+from sentry_sdk.integrations.opentelemetry import SentryPropagator, SentrySpanProcessor
+from sentry_sdk.integrations.rust_tracing import RustTracingIntegration
 
-import _rust
-from ark_resolver import ark_url
 import ark_resolver.check_digit as check_digit_py
 import ark_resolver.health
+from ark_resolver import _rust, ark_url
 
 #################################################################################################
 # OpenTelemetry
@@ -58,7 +55,7 @@ tracer = trace.get_tracer(__name__)
 
 Sanic.start_method = "fork"
 
-app = Sanic('ark_resolver')
+app = Sanic("ark_resolver")
 CORS(app)
 
 # Register health check route
@@ -98,7 +95,9 @@ async def init_sentry(_):
         )
         logger.info("Sentry initialized.")
     else:
-        logger.info("No SENTRY_DSN found in environment variables. Sentry will not be initialized.")
+        logger.info(
+            "No SENTRY_DSN found in environment variables. Sentry will not be initialized."
+        )
 
 
 def get_safe_config() -> str:
@@ -137,7 +136,7 @@ async def safe_config_head(_) -> HTTPResponse:
 
     headers = {
         "Content-Length": str(len(config_str)),
-        "Content-Type": "text/plain; charset=utf-8"
+        "Content-Type": "text/plain; charset=utf-8",
     }
 
     return response.text("", headers=headers)
@@ -160,11 +159,13 @@ async def reload(req) -> HTTPResponse:
         if not signature_header.startswith("sha1="):
             return response.text("Unauthorized", status=401)
 
-        submitted_signature = signature_header.split('=')[1]
+        submitted_signature = signature_header.split("=")[1]
 
         # Compute a signature for the request using the configured GitHub secret.
         secret = app.config.settings.top_config["ArkGitHubSecret"]
-        computed_signature = hmac.new(secret.encode(), req.body, hashlib.sha1).hexdigest()
+        computed_signature = hmac.new(
+            secret.encode(), req.body, hashlib.sha1
+        ).hexdigest()
 
         # If the submitted signature is the same as the computed one, the request is valid.
         if hmac.compare_digest(submitted_signature, computed_signature):
@@ -178,10 +179,11 @@ async def reload(req) -> HTTPResponse:
             span.set_status(Status(StatusCode.ERROR))
             return response.text("Unauthorized", status=401)
 
-@app.get('/<path:path>')
+
+@app.get("/<path:path>")
 async def catch_all(_, path="") -> HTTPResponse:
     """
-        Catch all URL. Tries to redirect the given ARK ID.
+    Catch all URL. Tries to redirect the given ARK ID.
     """
     # Check if the path could be a valid ARK ID.
     if not path.startswith("ark:/"):
@@ -192,7 +194,9 @@ async def catch_all(_, path="") -> HTTPResponse:
         span.set_attribute("ark_id", path)  # Attach ARK ID as metadata
 
         try:
-            redirect_url = ark_url.ArkUrlInfo(settings=app.config.settings, ark_id=path).to_redirect_url()
+            redirect_url = ark_url.ArkUrlInfo(
+                settings=app.config.settings, ark_id=path
+            ).to_redirect_url()
             span.set_status(Status(StatusCode.OK))  # Mark as successful
         except ark_url.ArkUrlException as ex:
             span.set_status(Status(StatusCode.ERROR, "Invalid ARK ID"))
@@ -219,7 +223,10 @@ def server(settings) -> None:
     Starts the app as server with the given settings.
     """
     app.config.settings = settings
-    app.run(host=settings.top_config["ArkInternalHost"], port=settings.top_config.getint("ArkInternalPort"))
+    app.run(
+        host=settings.top_config["ArkInternalHost"],
+        port=settings.top_config.getint("ArkInternalPort"),
+    )
 
 
 #################################################################################################
@@ -235,6 +242,7 @@ async def schedule_reload() -> None:
 #################################################################################################
 # Reload config
 
+
 def reload_config() -> None:
     settings = load_settings(app.config.config_path)
     app.config.settings = settings
@@ -243,6 +251,7 @@ def reload_config() -> None:
 
 #################################################################################################
 # Loading of config and registry files.
+
 
 def load_settings(config_path: str) -> ark_url.ArkUrlSettings:
     """
@@ -258,8 +267,10 @@ def load_settings(config_path: str) -> ark_url.ArkUrlSettings:
         "ArkNaan": os.environ.get("ARK_NAAN", "00000"),
         "ArkHttpsProxy": os.environ.get("ARK_HTTPS_PROXY", "true"),
         "ArkRegistry": os.environ.get("ARK_REGISTRY", "ark-registry.ini"),
-        "ArkGitHubSecret": os.environ.get("ARK_GITHUB_SECRET", "")
+        "ArkGitHubSecret": os.environ.get("ARK_GITHUB_SECRET", ""),
     }
+
+    print(f"Environment variables: {environment_vars}")
 
     # Read the config and registry files.
     config = configparser.ConfigParser(defaults=environment_vars)
@@ -281,23 +292,38 @@ def load_settings(config_path: str) -> ark_url.ArkUrlSettings:
 #################################################################################################
 # Command-line invocation.
 
+
 def main() -> None:
     """
     Main method for app started as CLI
     """
     # parses the command-line arguments
     default_config_path = "ark-config.ini"
-    parser = argparse.ArgumentParser(description="Convert between DSP resource IRIs and ARK URLs.")
-    parser.add_argument("-c", "--config", help="config file (default {})".format(default_config_path))
+    parser = argparse.ArgumentParser(
+        description="Convert between DSP resource IRIs and ARK URLs."
+    )
+    parser.add_argument(
+        "-c", "--config", help="config file (default {})".format(default_config_path)
+    )
     group = parser.add_mutually_exclusive_group()
     group.add_argument("-s", "--server", help="start server", action="store_true")
-    group.add_argument("-i", "--iri",
-                       help="print the converted ARK URL from a given DSP resource IRI (add -v and -d optionally)")
-    group.add_argument("-a", "--ark",
-                       help="print the converted DSP resource IRI (requires -r) or DSP URL from a given ARK ID")
-    parser.add_argument("-r", "--resource", help="generate resource IRI", action="store_true")
+    group.add_argument(
+        "-i",
+        "--iri",
+        help="print the converted ARK URL from a given DSP resource IRI (add -v and -d optionally)",
+    )
+    group.add_argument(
+        "-a",
+        "--ark",
+        help="print the converted DSP resource IRI (requires -r) or DSP URL from a given ARK ID",
+    )
+    parser.add_argument(
+        "-r", "--resource", help="generate resource IRI", action="store_true"
+    )
     parser.add_argument("-v", "--value", help="value UUID (has to be provided with -i)")
-    parser.add_argument("-d", "--date", help="DSP ARK timestamp (has to be provided with -i)")
+    parser.add_argument(
+        "-d", "--date", help="DSP ARK timestamp (has to be provided with -i)"
+    )
     args = parser.parse_args()
 
     # reads the config and registry files
@@ -314,7 +340,11 @@ def main() -> None:
             server(settings)
         elif args.iri:
             # prints the converted ARK URL from a given DSP resource IRI
-            print(ark_url.ArkUrlFormatter(settings).resource_iri_to_ark_url(args.iri, args.value, args.date))
+            print(
+                ark_url.ArkUrlFormatter(settings).resource_iri_to_ark_url(
+                    args.iri, args.value, args.date
+                )
+            )
         elif args.ark:
             if args.resource:
                 # prints the converted DSP resource IRI from a given ARK URL
