@@ -8,8 +8,8 @@ from ark_resolver import _rust, ark_url_rust
 @pytest.fixture(scope="module")
 def settings():
     """Loads settings."""
-    config_path = "python/src/ark_resolver/ark-config.ini"
-    os.environ['ARK_REGISTRY'] = 'python/src/ark_resolver/ark-registry.ini'
+    config_path = "ark_resolver/ark-config.ini"
+    os.environ['ARK_REGISTRY'] = 'ark_resolver/ark-registry.ini'
     return _rust.load_settings(config_path)
 
 def test_ark_url_formatter(settings):
