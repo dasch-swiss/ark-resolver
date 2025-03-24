@@ -175,7 +175,7 @@ async def reload(req) -> HTTPResponse:
             span.set_status(Status(StatusCode.ERROR))
             return response.text("Unauthorized", status=401)
 
-@app.get("/<path:path>")
+@app.get('/<path:path>')
 async def catch_all(_, path="") -> HTTPResponse:
     """
         Catch all URL. Tries to redirect the given ARK ID.
