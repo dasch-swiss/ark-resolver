@@ -107,6 +107,8 @@ class ArkUrlInfo:
         """
         if self.project_id is None:
             # return the redirect URL of the top level object
+            # TODO: is this still needed to be supported?
+            # It redirects https://ark.dasch.swiss/ark:/72163/1 to https://dasch.swiss
             return self.settings.top_config["TopLevelObjectUrl"]
         else:
             project_config = self.settings.config[self.project_id]
@@ -143,7 +145,7 @@ class ArkUrlInfo:
 
         return resource_iri_template.substitute(template_dict)
 
-    # TODO: these types from ConfigParser are really messed-up and should be changed to something type-safe
+    # TODO: these types from ConfigParser are really messy and should be changed to something type-safe
     def _to_dsp_redirect_url(self, project_config: SectionProxy) -> str:
         """
         In case it's called on a DSP object (either version 0 or version 1), converts an ARK URL to the URL that the

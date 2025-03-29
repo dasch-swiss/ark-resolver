@@ -141,7 +141,8 @@ class ArkUrlInfo:
 
         return resource_iri_template.substitute(template_dict)
 
-    def to_dsp_redirect_url(self, project_config) -> str:
+    # TODO: these types from ConfigParser are really messey and should be changed to something type-safe
+    def to_dsp_redirect_url(self, project_config: SectionProxy) -> str:
         """
         In case it's called on a DSP object (either version 0 or version 1), converts an ARK URL to the URL that the
         client should be redirected to according to its type (project, resource, or value)
