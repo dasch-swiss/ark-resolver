@@ -216,7 +216,7 @@ async def catch_all(_, path="") -> HTTPResponse:
         return response.redirect(redirect_url)
 
 
-def server(settings) -> None:
+def start_server(settings: ArkUrlSettings) -> None:
     """
     Starts the app as server with the given settings.
     """

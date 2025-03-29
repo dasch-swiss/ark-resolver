@@ -2,7 +2,7 @@ import sys
 from argparse import ArgumentParser
 
 from ark_resolver.ark import load_settings
-from ark_resolver.ark import server
+from ark_resolver.ark import start_server
 from ark_resolver.ark_url import ArkUrlException
 from ark_resolver.ark_url import ArkUrlFormatter
 from ark_resolver.ark_url import ArkUrlInfo
@@ -37,7 +37,7 @@ def main() -> None:
 
         if args.server:
             # starts the app as server
-            server(settings)
+            start_server(settings)
         elif args.iri:
             # prints the converted ARK URL from a given DSP resource IRI
             print(ArkUrlFormatter(settings).resource_iri_to_ark_url(args.iri, args.value, args.date))
