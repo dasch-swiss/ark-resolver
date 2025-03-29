@@ -4,53 +4,18 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import base64
-import re
 import uuid
+from configparser import SectionProxy
 from string import Template
 from urllib import parse
 
 import ark_resolver.check_digit as check_digit_py
+from ark_resolver.ark_settings import ArkUrlSettings
 
 #################################################################################################
 # Tools for generating and parsing DSP ARK URLs.
 
 TIMESTAMP_LENGTH = 8
-
-
-class ArkUrlSettings:
-    """
-    Settings used for the validation of values used in the context of ARK URLs
-    """
-
-    def __init__(self, config):
-        self.config = config
-        self.top_config = config["DEFAULT"]
-        self.dsp_ark_version = 1
-        self.project_id_pattern = "([0-9A-F]+)"
-        self.uuid_pattern = "([A-Za-z0-9_=]+)"
-        self.project_id_regex = re.compile("^" + self.project_id_pattern + "$")
-        self.resource_iri_regex = re.compile("^http://rdfh.ch/" + self.project_id_pattern + "/([A-Za-z0-9_-]+)$")
-        self.resource_int_id_factor = 982451653
-
-        # Patterns for matching DSP ARK version 1 URLs.
-        self.ark_path_pattern = (
-            "ark:/"
-            + self.top_config["ArkNaan"]
-            + "/([0-9]+)(?:/"
-            + self.project_id_pattern
-            + "(?:/"
-            + self.uuid_pattern
-            + "(?:/"
-            + self.uuid_pattern
-            + r")?(?:\.([0-9]{8}T[0-9]{6,15}Z))?)?)?"
-        )
-        self.ark_path_regex = re.compile("^" + self.ark_path_pattern + "$")
-        self.ark_url_regex = re.compile("^https?://" + self.top_config["ArkExternalHost"] + "/" + self.ark_path_pattern + "$")
-
-        # Patterns for matching PHP-SALSAH ARK version 0 URLs.
-        self.v0_ark_path_pattern = "ark:/" + self.top_config["ArkNaan"] + r"/([0-9A-Fa-f]+)-([A-Za-z0-9]+)-[A-Za-z0-9]+(?:\.([0-9]{6,8}))?"
-        self.v0_ark_path_regex = re.compile("^" + self.v0_ark_path_pattern + "$")
-        self.v0_ark_url_regex = re.compile("^https?://" + self.top_config["ArkExternalHost"] + "/" + self.v0_ark_path_pattern + "$")
 
 
 class ArkUrlException(Exception):

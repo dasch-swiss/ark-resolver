@@ -18,7 +18,6 @@ from asyncio import sleep
 from io import StringIO
 from urllib.parse import unquote
 
-import requests
 import sentry_sdk
 from opentelemetry import trace
 from opentelemetry.propagate import set_global_textmap
@@ -37,6 +36,10 @@ from sentry_sdk.integrations.rust_tracing import RustTracingIntegration
 import ark_resolver.check_digit as check_digit_py
 import ark_resolver.health
 from ark_resolver import _rust  # type: ignore[attr-defined]
+from ark_resolver.ark_settings import ArkUrlSettings
+from ark_resolver.ark_settings import load_settings
+from ark_resolver.ark_url import ArkUrlException
+from ark_resolver.ark_url import ArkUrlInfo
 
 #################################################################################################
 # OpenTelemetry
@@ -216,10 +219,11 @@ async def catch_all(_, path="") -> HTTPResponse:
         return response.redirect(redirect_url)
 
 
-def start_server(settings: ArkUrlSettings) -> None:
+def start_server(config_path: str, settings: ArkUrlSettings) -> None:
     """
     Starts the app as server with the given settings.
     """
+    app.config.config_path = config_path
     app.config.settings = settings
     app.run(host=settings.top_config["ArkInternalHost"], port=settings.top_config.getint("ArkInternalPort"))
 
@@ -242,41 +246,3 @@ def reload_config() -> None:
     settings = load_settings(app.config.config_path)
     app.config.settings = settings
     logger.info("Configuration reloaded.")
-
-
-#################################################################################################
-# Loading of config and registry files.
-
-
-def load_settings(config_path: str) -> ark_url.ArkUrlSettings:
-    """
-    Loads configuration from given path and returns an ArkUrlSettings.
-    """
-    app.config.config_path = config_path
-
-    # Default configuration from environment variables.
-    environment_vars = {
-        "ArkExternalHost": os.environ.get("ARK_EXTERNAL_HOST", "ark.example.org"),
-        "ArkInternalHost": os.environ.get("ARK_INTERNAL_HOST", "0.0.0.0"),
-        "ArkInternalPort": os.environ.get("ARK_INTERNAL_PORT", "3336"),
-        "ArkNaan": os.environ.get("ARK_NAAN", "00000"),
-        "ArkHttpsProxy": os.environ.get("ARK_HTTPS_PROXY", "true"),
-        "ArkRegistry": os.environ.get("ARK_REGISTRY", "ark-registry.ini"),
-        "ArkGitHubSecret": os.environ.get("ARK_GITHUB_SECRET", ""),
-    }
-
-    # Read the config and registry files.
-    config = configparser.ConfigParser(defaults=environment_vars)
-    config.read_file(open(config_path))
-
-    registry_path = config["DEFAULT"]["ArkRegistry"]
-
-    if registry_path.startswith("http"):
-        registry_str = requests.get(registry_path, timeout=10).text
-        config.read_string(registry_str, source=registry_path)
-    else:
-        config.read_file(open(registry_path))
-
-    settings = ark_url.ArkUrlSettings(config)
-
-    return settings

@@ -2,7 +2,7 @@ import os
 
 import pytest
 
-from ark_resolver import ark
+from ark_resolver.ark_settings import load_settings
 from ark_resolver.ark_url import ArkUrlException
 from ark_resolver.ark_url import ArkUrlFormatter
 from ark_resolver.ark_url import ArkUrlInfo
@@ -13,7 +13,7 @@ def settings():
     """Loads settings."""
     config_path = "ark_resolver/ark-config.ini"
     os.environ["ARK_REGISTRY"] = "ark_resolver/ark-registry.ini"
-    return ark.load_settings(config_path)
+    return load_settings(config_path)
 
 
 def test_ark_url_formatter(settings):
