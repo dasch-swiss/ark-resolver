@@ -10,6 +10,14 @@ from string import Template
 from urllib import parse
 
 import ark_resolver.check_digit as check_digit_py
+<<<<<<< ours
+||||||| ancestor
+from ark_resolver._rust import ArkUrlSettings  # type: ignore[import-untyped]
+=======
+
+# TODO: the rust module should does not seem to be typed in python land.
+from ark_resolver._rust import ArkUrlSettings  # type: ignore[import-untyped]
+>>>>>>> theirs
 from ark_resolver.ark_url import ArkUrlException
 
 #################################################################################################
