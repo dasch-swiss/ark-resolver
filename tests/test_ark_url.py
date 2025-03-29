@@ -1,14 +1,16 @@
 import os
+
 import pytest
 
-from ark_resolver.ark_url import ArkUrlFormatter, ArkUrlInfo, ArkUrlException
 from ark_resolver import ark
+from ark_resolver.ark_url import ArkUrlException, ArkUrlFormatter, ArkUrlInfo
+
 
 @pytest.fixture(scope="module")
 def settings():
     """Loads settings."""
-    config_path = "python/src/ark_resolver/ark-config.ini"
-    os.environ['ARK_REGISTRY'] = 'python/src/ark_resolver/ark-registry.ini'
+    config_path = "ark_resolver/ark-config.ini"
+    os.environ["ARK_REGISTRY"] = "ark_resolver/ark-registry.ini"
     return ark.load_settings(config_path)
 
 def test_ark_url_formatter(settings):
@@ -74,6 +76,7 @@ def test_ark_url_info_redirect_resource(settings):
     ark_url_info = ArkUrlInfo(settings, "ark:/00000/1/0005/0_sWRg5jT3S0PLxakX9ffg1")
     redirect_url = ark_url_info.to_redirect_url()
     assert redirect_url == "http://0.0.0.0:4200/resources/0005/0_sWRg5jT3S0PLxakX9ffg"
+
 
 def test_ark_url_info_redirect_value(settings):
     # parse an ARK URL of a DSP value without a timestamp and redirect it to a customized location

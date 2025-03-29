@@ -18,24 +18,21 @@ import os
 from asyncio import sleep
 from io import StringIO
 
+import requests
+import sentry_sdk
 from opentelemetry import trace
-from opentelemetry.trace import Status, StatusCode
 from opentelemetry.propagate import set_global_textmap
 from opentelemetry.sdk.trace import TracerProvider
-
-import sentry_sdk
-from sentry_sdk.integrations.opentelemetry import SentrySpanProcessor, SentryPropagator
-from sentry_sdk.integrations.rust_tracing import RustTracingIntegration
-
-import requests
+from opentelemetry.trace import Status, StatusCode
 from sanic import HTTPResponse, Sanic, response
 from sanic.log import logger
 from sanic_cors import CORS
+from sentry_sdk.integrations.opentelemetry import SentryPropagator, SentrySpanProcessor
+from sentry_sdk.integrations.rust_tracing import RustTracingIntegration
 
-import _rust
-from ark_resolver import ark_url
 import ark_resolver.check_digit as check_digit_py
 import ark_resolver.health
+from ark_resolver import _rust, ark_url
 
 #################################################################################################
 # OpenTelemetry

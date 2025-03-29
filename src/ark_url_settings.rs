@@ -186,7 +186,7 @@ pub fn load_settings(config_path: String) -> PyResult<ArkUrlSettings> {
 
 fn new_impl(_config_path: String) -> Result<ArkUrlSettings, String> {
     let registry_path =
-        env::var("ARK_REGISTRY").unwrap_or("python/src/ark_resolver/ark-registry.ini".to_string());
+        env::var("ARK_REGISTRY").unwrap_or("ark_resolver/ark-registry.ini".to_string());
 
     let ark_config: ConfigWrapper = ArkConfig {
         ark_external_host: env::var("ARK_EXTERNAL_HOST").unwrap_or("ark.example.org".to_string()),
@@ -259,7 +259,7 @@ mod tests {
 
     #[test]
     fn test_match_ark_path_impl() {
-        let settings = new_impl("python/src/ark_resolver/ark-config.ini".to_string()).unwrap();
+        let settings = new_impl("ark_resolver/ark-config.ini".to_string()).unwrap();
 
         // project
         let captures = settings.match_ark_path("ark:/00000/1/0003").unwrap();
@@ -335,7 +335,7 @@ mod tests {
 
     #[test]
     fn test_settings() {
-        let settings = new_impl("python/src/ark_resolver/ark-config.ini".to_string()).unwrap();
+        let settings = new_impl("ark_resolver/ark-config.ini".to_string()).unwrap();
 
         assert_eq!(
             settings.ark_config.get("ArkNaan"),
