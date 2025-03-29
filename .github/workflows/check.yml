@@ -31,6 +31,7 @@ jobs:
       - uses: astral-sh/setup-uv@v5
         with:
           version: "0.6.2"
+          enable-cache: true
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -48,6 +49,7 @@ jobs:
       - uses: astral-sh/setup-uv@v5
         with:
           version: "0.6.2"
+          enable-cache: true
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -65,10 +67,13 @@ jobs:
       - uses: astral-sh/setup-uv@v5
         with:
           version: "0.6.2"
+          enable-cache: true
       - name: Install just
         uses: taiki-e/install-action@just
       - name: Install Python dependencies
         run: uv sync --all-extras --dev
         shell: bash
-      - name: Run ruff
-        run: just pycheck --output-format=github
+      - name: Run ruff format
+        run: uv run ruff format --check .
+      - name: Run ruff lint
+        run: uv run ruff check --output-format=github .
