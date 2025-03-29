@@ -3,6 +3,7 @@
 # - fmt: checks that the code is formatted according to rustfmt
 # - clippy: checks that the code does not contain any clippy warnings
 # - ruff checks
+# - ruff checks
 
 name: check
 
