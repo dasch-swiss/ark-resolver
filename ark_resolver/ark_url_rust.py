@@ -12,7 +12,7 @@ from urllib import parse
 
 import ark_resolver.check_digit as check_digit_py
 
-# TODO: the rust module should does not seem to be typed in python land.
+# TODO: the rust module does not seem to be typed in python land.
 from ark_resolver._rust import ArkUrlSettings  # type: ignore[import-untyped]
 from ark_resolver.ark_url import ArkUrlException
 
