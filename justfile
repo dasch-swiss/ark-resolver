@@ -60,6 +60,10 @@ pytest: build
 run: build
     export ARK_REGISTRY="ark_resolver/ark-registry.ini" && uv run ark_resolver/main.py -s -c ark_resolver/ark-config.ini
 
+# Run ark-resolver as CLI forwarding any arguments (e.g. `just ark-cli --help`)
+ark-cli *ARGS:
+    uv run ark_resolver/main.py {{ ARGS }}
+
 # Run Rust unit tests
 test: build
     cargo test --lib

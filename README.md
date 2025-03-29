@@ -5,23 +5,17 @@ resources in [DSP](https://dsp.dasch.swiss/) (formerly called Knora) repositorie
 
 ## Modes of operation
 
-The program `ark.py` has two modes of operation:
+The ark resolver has two modes of operation:
 
 - When run as an HTTP server, it resolves DSP ARK URLs by redirecting
   to the actual location of each resource. Redirect URLs are generated
   from templates in a configuration file. The hostname used in the
   redirect URL, as well as the whole URL template, can be configured per
   project.
-
-  To start the ark-resolver as server, type:
-  ```bash
-  python ark.py -s
-  ```
-
 - The ark-resolver can also be used as a command-line tool for converting between
   resource IRIs and ARK URLs, using the same configuration file.
 
-For usage information, run `./ark.py --help`, and see the sample configuration
+For usage information, run `just ark-cli --help`, and see the sample configuration
 file `ark-config.ini` and the sample project registry file `ark-registry.ini`.
 
 In the sample registry file, the redirect URLs are DSP-API URLs,
@@ -46,6 +40,8 @@ uv sync
 
 
 ## Examples for using the ark-resolver on the command-line
+
+> **Note:** The examples below are not up-to-date.
 
 ### Converting a DSP resource IRI to an ARK URL
 
