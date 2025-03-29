@@ -59,7 +59,7 @@ pythonpath = ["."]
 strict = true
 
 [tool.ruff]
-line-length = 120
+line-length = 140
 
 [tool.ruff.lint]
 select = [
@@ -83,12 +83,13 @@ select = [
     "ARG",   # flake8-unused-arguments
     "PGH",   # pygrep-hooks: A collection of fast, cheap, regex based pre-commit hooks
     "UP031", # pyupgrade: printf-string-formatting
-    "D101",  # pydocstyle: undocumented-public-class
-    "D102",  # pydocstyle: undocumented-public-method
-    "D103",  # pydocstyle: undocumented-public-function
     "D417",  # pydocstyle: undocumented-param
     "B023",  # flake8-bugbear: function-uses-loop-variable
-    "FIX",   # flake8-fixme: checks for FIXME, TODO, XXX, etc.
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = [
+    "S101", # flake8-bandit: use of assert
 ]
 
 [tool.ruff.lint.pydocstyle]
