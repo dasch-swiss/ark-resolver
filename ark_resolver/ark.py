@@ -28,7 +28,7 @@ from sanic import HTTPResponse
 from sanic import Sanic
 from sanic import response
 from sanic.log import logger
-from sanic_cors import CORS
+from sanic_cors import CORS  # type: ignore[import-untyped]
 from sentry_sdk.integrations.opentelemetry import SentryPropagator
 from sentry_sdk.integrations.opentelemetry import SentrySpanProcessor
 from sentry_sdk.integrations.rust_tracing import RustTracingIntegration
@@ -199,9 +199,9 @@ async def catch_all(_, path="") -> HTTPResponse:
         span.set_attribute("ark_id", ark_id_decoded)  # Attach ARK ID as metadata
 
         try:
-            redirect_url = ark_url.ArkUrlInfo(settings=app.config.settings, ark_id=ark_id_decoded).to_redirect_url()
+            redirect_url = ArkUrlInfo(settings=app.config.settings, ark_id=ark_id_decoded).to_redirect_url()
             span.set_status(Status(StatusCode.OK))  # Mark as successful
-        except ark_url.ArkUrlException as ex:
+        except ArkUrlException as ex:
             span.set_status(Status(StatusCode.ERROR, "Invalid ARK ID"))
             logger.error(f"Invalid ARK ID: {ark_id_decoded}")
             return response.text(body=ex.message, status=400)

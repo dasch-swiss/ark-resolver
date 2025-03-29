@@ -6,6 +6,7 @@
 import base64
 import uuid
 from configparser import SectionProxy
+from dataclasses import dataclass
 from string import Template
 from urllib import parse
 
@@ -18,13 +19,13 @@ from ark_resolver.ark_settings import ArkUrlSettings
 TIMESTAMP_LENGTH = 8
 
 
+@dataclass
 class ArkUrlException(Exception):
     """
     Exception used in the context of ARK URLs
     """
 
-    def __init__(self, message):
-        self.message = message
+    message: str
 
 
 class ArkUrlInfo:
@@ -245,13 +246,13 @@ def unescape_and_validate_uuid(ark_url, escaped_uuid) -> str:
     return unescaped_uuid[0:-1]
 
 
+@dataclass
 class ArkUrlFormatter:
     """
     Handles formatting of DSP resource IRIs into ARK URLs
     """
 
-    def __init__(self, settings):
-        self.settings = settings
+    settings: ArkUrlSettings
 
     def resource_iri_to_ark_url(self, resource_iri, value_id=None, timestamp=None) -> str:
         """

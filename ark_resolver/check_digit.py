@@ -3,6 +3,7 @@
 # Copyright © 2021 - 2025 Swiss National Data and Service Center for the Humanities and/or DaSCH Service Platform contributors.
 # SPDX-License-Identifier: Apache-2.0
 
+from dataclasses import dataclass
 
 #################################################################################################
 # Functions for generating and validating check codes for base64url-encoded IDs. The algorithm
@@ -10,13 +11,14 @@
 
 
 # The base64url alphabet (without padding) from RFC 4648, Table 2.
+
 base64url_alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
 base64url_alphabet_length = len(base64url_alphabet)
 
 
+@dataclass
 class CheckDigitException(Exception):
-    def __init__(self, message):
-        self.message = message
+    message: str
 
 
 # Checks whether a code with a check digit is valid.

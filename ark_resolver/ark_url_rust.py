@@ -6,18 +6,14 @@
 import base64
 import logging
 import uuid
+from dataclasses import dataclass
 from string import Template
 from urllib import parse
 
 import ark_resolver.check_digit as check_digit_py
-<<<<<<< ours
-||||||| ancestor
-from ark_resolver._rust import ArkUrlSettings  # type: ignore[import-untyped]
-=======
 
 # TODO: the rust module should does not seem to be typed in python land.
-from ark_resolver._rust import ArkUrlSettings  # type: ignore[import-untyped]
->>>>>>> theirs
+from ark_resolver._rust import ArkUrlSettings  # type: ignore[import-untyped]  # type: ignore[import-untyped]
 from ark_resolver.ark_url import ArkUrlException
 
 #################################################################################################
@@ -250,13 +246,13 @@ def unescape_and_validate_uuid(ark_url, escaped_uuid) -> str:
     return unescaped_uuid[0:-1]
 
 
+@dataclass
 class ArkUrlFormatter:
     """
     Handles formatting of DSP resource IRIs into ARK URLs
     """
 
-    def __init__(self, settings):
-        self.settings = settings
+    settings: ArkUrlSettings
 
     def resource_iri_to_ark_url(self, resource_iri, value_id=None, timestamp=None) -> str:
         """
