@@ -10,12 +10,10 @@
 # For help on command-line options, run with --help.
 #################################################################################################
 
-import argparse
 import configparser
 import hashlib
 import hmac
 import os
-import sys
 from asyncio import sleep
 from io import StringIO
 from urllib.parse import unquote
@@ -38,8 +36,7 @@ from sentry_sdk.integrations.rust_tracing import RustTracingIntegration
 
 import ark_resolver.check_digit as check_digit_py
 import ark_resolver.health
-from ark_resolver import _rust
-from ark_resolver import ark_url
+from ark_resolver import _rust  # type: ignore[attr-defined]
 
 #################################################################################################
 # OpenTelemetry
@@ -283,60 +280,3 @@ def load_settings(config_path: str) -> ark_url.ArkUrlSettings:
     settings = ark_url.ArkUrlSettings(config)
 
     return settings
-
-
-#################################################################################################
-# Command-line invocation.
-
-
-def main() -> None:
-    """
-    Main method for app started as CLI
-    """
-    # parses the command-line arguments
-    default_config_path = "ark-config.ini"
-    parser = argparse.ArgumentParser(description="Convert between DSP resource IRIs and ARK URLs.")
-    parser.add_argument("-c", "--config", help="config file (default {})".format(default_config_path))
-    group = parser.add_mutually_exclusive_group()
-    group.add_argument("-s", "--server", help="start server", action="store_true")
-    group.add_argument("-i", "--iri", help="print the converted ARK URL from a given DSP resource IRI (add -v and -d optionally)")
-    group.add_argument("-a", "--ark", help="print the converted DSP resource IRI (requires -r) or DSP URL from a given ARK ID")
-    parser.add_argument("-r", "--resource", help="generate resource IRI", action="store_true")
-    parser.add_argument("-v", "--value", help="value UUID (has to be provided with -i)")
-    parser.add_argument("-d", "--date", help="DSP ARK timestamp (has to be provided with -i)")
-    args = parser.parse_args()
-
-    # reads the config and registry files
-    if args.config is not None:
-        config_path = args.config
-    else:
-        config_path = default_config_path
-
-    try:
-        settings = load_settings(config_path)
-
-        if args.server:
-            # starts the app as server
-            server(settings)
-        elif args.iri:
-            # prints the converted ARK URL from a given DSP resource IRI
-            print(ark_url.ArkUrlFormatter(settings).resource_iri_to_ark_url(args.iri, args.value, args.date))
-        elif args.ark:
-            if args.resource:
-                # prints the converted DSP resource IRI from a given ARK URL
-                print(ark_url.ArkUrlInfo(settings, args.ark).to_resource_iri())
-            else:
-                # prints the converted DSP URL from a given ARK URL
-                print(ark_url.ArkUrlInfo(settings, args.ark).to_redirect_url())
-        else:
-            parser.print_help()
-    except ark_url.ArkUrlException as ex:
-        print(ex.message)
-        sys.exit(1)
-    except check_digit_py.CheckDigitException as ex:
-        print(ex.message)
-        sys.exit(1)
-
-
-if __name__ == "__main__":
-    main()
