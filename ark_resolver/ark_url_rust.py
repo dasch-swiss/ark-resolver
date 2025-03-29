@@ -14,7 +14,6 @@ from ark_resolver.ark_url import ArkUrlException
 
 #################################################################################################
 # Tools for generating and parsing DSP ARK URLs.
-
 TIMESTAMP_LENGTH = 8
 
 
