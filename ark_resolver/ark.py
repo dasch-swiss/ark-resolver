@@ -35,6 +35,8 @@ from sentry_sdk.integrations.rust_tracing import RustTracingIntegration
 
 import ark_resolver.check_digit as check_digit_py
 import ark_resolver.health
+
+# TODO: rust types don't seem to work with mypy
 from ark_resolver import _rust  # type: ignore[attr-defined]
 from ark_resolver.ark_settings import ArkUrlSettings
 from ark_resolver.ark_settings import load_settings

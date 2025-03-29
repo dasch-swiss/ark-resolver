@@ -16,7 +16,7 @@ def main() -> None:
     # parses the command-line arguments
     default_config_path = "ark-config.ini"
     parser = ArgumentParser(description="Convert between DSP resource IRIs and ARK URLs.")
-    parser.add_argument("-c", "--config", help="config file (default {})".format(default_config_path))
+    parser.add_argument("-c", "--config", help=f"config file (default '{default_config_path}')")
     group = parser.add_mutually_exclusive_group()
     group.add_argument("-s", "--server", help="start server", action="store_true")
     group.add_argument("-i", "--iri", help="print the converted ARK URL from a given DSP resource IRI (add -v and -d optionally)")
