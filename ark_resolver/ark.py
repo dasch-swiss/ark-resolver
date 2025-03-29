@@ -17,6 +17,7 @@ import hmac
 import os
 from asyncio import sleep
 from io import StringIO
+from urllib.parse import unquote
 
 import requests
 import sentry_sdk
@@ -185,29 +186,32 @@ async def catch_all(_, path="") -> HTTPResponse:
         msg = f"Invalid ARK ID: {path}"
         return response.text(body=msg, status=400)
 
+    # Decode the ARK ID (idempotent operation).
+    ark_id_decoded = unquote(path)
+
     with tracer.start_as_current_span("redirect") as span:
-        span.set_attribute("ark_id", path)  # Attach ARK ID as metadata
+        span.set_attribute("ark_id", ark_id_decoded)  # Attach ARK ID as metadata
 
         try:
-            redirect_url = ark_url.ArkUrlInfo(settings=app.config.settings, ark_id=path).to_redirect_url()
+            redirect_url = ark_url.ArkUrlInfo(settings=app.config.settings, ark_id=ark_id_decoded).to_redirect_url()
             span.set_status(Status(StatusCode.OK))  # Mark as successful
         except ark_url.ArkUrlException as ex:
             span.set_status(Status(StatusCode.ERROR, "Invalid ARK ID"))
-            logger.error(f"Invalid ARK ID: {path}")
+            logger.error(f"Invalid ARK ID: {ark_id_decoded}")
             return response.text(body=ex.message, status=400)
 
         except check_digit_py.CheckDigitException as ex:
             span.set_status(Status(StatusCode.ERROR, "Check Digit Error"))
-            logger.error(f"Invalid ARK ID: {path}", exc_info=ex)
+            logger.error(f"Invalid ARK ID: {ark_id_decoded}", exc_info=ex)
             return response.text(body=ex.message, status=400)
 
         except KeyError as ex:
             span.set_status(Status(StatusCode.ERROR, "KeyError"))
-            logger.error(f"Invalid ARK ID: {path}", exc_info=ex)
+            logger.error(f"Invalid ARK ID: {ark_id_decoded}", exc_info=ex)
             return response.text(body="Invalid ARK ID", status=400)
 
         span.add_event("Redirecting", {"redirect_url": redirect_url})
-        logger.info(f"Redirecting {path} to {redirect_url}")
+        logger.info(f"Redirecting {ark_id_decoded} to {redirect_url}")
         return response.redirect(redirect_url)
 
 
