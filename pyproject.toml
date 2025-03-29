@@ -86,6 +86,10 @@ select = [
     "D417",  # pydocstyle: undocumented-param
     "B023",  # flake8-bugbear: function-uses-loop-variable
 ]
+ignore = [
+    "S104",    # flake8-bugbear: hardcoded-bind-all-interfaces
+    "PLR0912", # pylint: too-many-branches  # TODO: enable once fixed
+]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = [

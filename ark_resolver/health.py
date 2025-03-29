@@ -21,7 +21,7 @@ async def check_external_api():
 
 
 @health_bp.get("/")
-async def health(request):
+async def health(_):
     """Health check endpoint"""
     db_status = await check_database()
     api_status = await check_external_api()

@@ -14,6 +14,8 @@ import ark_resolver.check_digit as check_digit_py
 #################################################################################################
 # Tools for generating and parsing DSP ARK URLs.
 
+TIMESTAMP_LENGTH = 8
+
 
 class ArkUrlSettings:
     """
@@ -113,7 +115,7 @@ class ArkUrlInfo:
 
             submitted_timestamp = match.group(3)
 
-            if submitted_timestamp is None or len(submitted_timestamp) < 8:
+            if submitted_timestamp is None or len(submitted_timestamp) < TIMESTAMP_LENGTH:
                 self.timestamp = None
             else:
                 self.timestamp = submitted_timestamp
@@ -244,7 +246,7 @@ class ArkUrlInfo:
                 request_template = Template(project_config["PhpResourceVersionRedirectUrl"])
 
                 # The PHP server only takes timestamps in the format YYYYMMDD
-                template_dict["timestamp"] = self.timestamp[0:8]
+                template_dict["timestamp"] = self.timestamp[0:TIMESTAMP_LENGTH]
 
         # it's a project
         else:

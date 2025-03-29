@@ -15,6 +15,7 @@ import configparser
 import hashlib
 import hmac
 import os
+import sys
 from asyncio import sleep
 from io import StringIO
 from urllib.parse import unquote
@@ -274,7 +275,7 @@ def load_settings(config_path: str) -> ark_url.ArkUrlSettings:
     registry_path = config["DEFAULT"]["ArkRegistry"]
 
     if registry_path.startswith("http"):
-        registry_str = requests.get(registry_path).text
+        registry_str = requests.get(registry_path, timeout=10).text
         config.read_string(registry_str, source=registry_path)
     else:
         config.read_file(open(registry_path))
@@ -331,10 +332,10 @@ def main() -> None:
             parser.print_help()
     except ark_url.ArkUrlException as ex:
         print(ex.message)
-        exit(1)
+        sys.exit(1)
     except check_digit_py.CheckDigitException as ex:
         print(ex.message)
-        exit(1)
+        sys.exit(1)
 
 
 if __name__ == "__main__":
