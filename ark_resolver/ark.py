@@ -24,16 +24,21 @@ import sentry_sdk
 from opentelemetry import trace
 from opentelemetry.propagate import set_global_textmap
 from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.trace import Status, StatusCode
-from sanic import HTTPResponse, Sanic, response
+from opentelemetry.trace import Status
+from opentelemetry.trace import StatusCode
+from sanic import HTTPResponse
+from sanic import Sanic
+from sanic import response
 from sanic.log import logger
 from sanic_cors import CORS
-from sentry_sdk.integrations.opentelemetry import SentryPropagator, SentrySpanProcessor
+from sentry_sdk.integrations.opentelemetry import SentryPropagator
+from sentry_sdk.integrations.opentelemetry import SentrySpanProcessor
 from sentry_sdk.integrations.rust_tracing import RustTracingIntegration
 
 import ark_resolver.check_digit as check_digit_py
 import ark_resolver.health
-from ark_resolver import _rust, ark_url
+from ark_resolver import _rust
+from ark_resolver import ark_url
 
 #################################################################################################
 # OpenTelemetry
@@ -56,7 +61,7 @@ tracer = trace.get_tracer(__name__)
 
 Sanic.start_method = "fork"
 
-app = Sanic('ark_resolver')
+app = Sanic("ark_resolver")
 CORS(app)
 
 # Register health check route
@@ -133,10 +138,7 @@ async def safe_config_head(_) -> HTTPResponse:
     """
     config_str = get_safe_config()
 
-    headers = {
-        "Content-Length": str(len(config_str)),
-        "Content-Type": "text/plain; charset=utf-8"
-    }
+    headers = {"Content-Length": str(len(config_str)), "Content-Type": "text/plain; charset=utf-8"}
 
     return response.text("", headers=headers)
 
@@ -158,7 +160,7 @@ async def reload(req) -> HTTPResponse:
         if not signature_header.startswith("sha1="):
             return response.text("Unauthorized", status=401)
 
-        submitted_signature = signature_header.split('=')[1]
+        submitted_signature = signature_header.split("=")[1]
 
         # Compute a signature for the request using the configured GitHub secret.
         secret = app.config.settings.top_config["ArkGitHubSecret"]
@@ -176,10 +178,11 @@ async def reload(req) -> HTTPResponse:
             span.set_status(Status(StatusCode.ERROR))
             return response.text("Unauthorized", status=401)
 
-@app.get('/<path:path>')
+
+@app.get("/<path:path>")
 async def catch_all(_, path="") -> HTTPResponse:
     """
-        Catch all URL. Tries to redirect the given ARK ID.
+    Catch all URL. Tries to redirect the given ARK ID.
     """
     # Check if the path could be a valid ARK ID.
     if not path.startswith("ark:/"):
@@ -236,6 +239,7 @@ async def schedule_reload() -> None:
 #################################################################################################
 # Reload config
 
+
 def reload_config() -> None:
     settings = load_settings(app.config.config_path)
     app.config.settings = settings
@@ -244,6 +248,7 @@ def reload_config() -> None:
 
 #################################################################################################
 # Loading of config and registry files.
+
 
 def load_settings(config_path: str) -> ark_url.ArkUrlSettings:
     """
@@ -259,7 +264,7 @@ def load_settings(config_path: str) -> ark_url.ArkUrlSettings:
         "ArkNaan": os.environ.get("ARK_NAAN", "00000"),
         "ArkHttpsProxy": os.environ.get("ARK_HTTPS_PROXY", "true"),
         "ArkRegistry": os.environ.get("ARK_REGISTRY", "ark-registry.ini"),
-        "ArkGitHubSecret": os.environ.get("ARK_GITHUB_SECRET", "")
+        "ArkGitHubSecret": os.environ.get("ARK_GITHUB_SECRET", ""),
     }
 
     # Read the config and registry files.
@@ -282,6 +287,7 @@ def load_settings(config_path: str) -> ark_url.ArkUrlSettings:
 #################################################################################################
 # Command-line invocation.
 
+
 def main() -> None:
     """
     Main method for app started as CLI
@@ -292,10 +298,8 @@ def main() -> None:
     parser.add_argument("-c", "--config", help="config file (default {})".format(default_config_path))
     group = parser.add_mutually_exclusive_group()
     group.add_argument("-s", "--server", help="start server", action="store_true")
-    group.add_argument("-i", "--iri",
-                       help="print the converted ARK URL from a given DSP resource IRI (add -v and -d optionally)")
-    group.add_argument("-a", "--ark",
-                       help="print the converted DSP resource IRI (requires -r) or DSP URL from a given ARK ID")
+    group.add_argument("-i", "--iri", help="print the converted ARK URL from a given DSP resource IRI (add -v and -d optionally)")
+    group.add_argument("-a", "--ark", help="print the converted DSP resource IRI (requires -r) or DSP URL from a given ARK ID")
     parser.add_argument("-r", "--resource", help="generate resource IRI", action="store_true")
     parser.add_argument("-v", "--value", help="value UUID (has to be provided with -i)")
     parser.add_argument("-d", "--date", help="DSP ARK timestamp (has to be provided with -i)")
