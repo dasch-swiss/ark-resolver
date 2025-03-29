@@ -18,6 +18,7 @@ import os
 import sys
 from asyncio import sleep
 from io import StringIO
+from typing import Any
 from urllib.parse import unquote
 
 import requests
@@ -28,18 +29,22 @@ from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.trace import Status
 from opentelemetry.trace import StatusCode
 from sanic import HTTPResponse
+from sanic import Request
 from sanic import Sanic
 from sanic import response
 from sanic.log import logger
-from sanic_cors import CORS
+from sanic_cors import CORS  # type: ignore[import-untyped]
 from sentry_sdk.integrations.opentelemetry import SentryPropagator
 from sentry_sdk.integrations.opentelemetry import SentrySpanProcessor
 from sentry_sdk.integrations.rust_tracing import RustTracingIntegration
 
 import ark_resolver.check_digit as check_digit_py
 import ark_resolver.health
-from ark_resolver import _rust
-from ark_resolver import ark_url
+from ark_resolver import _rust  # type: ignore[attr-defined]
+from ark_resolver.ark_url import ArkUrlException
+from ark_resolver.ark_url import ArkUrlFormatter
+from ark_resolver.ark_url import ArkUrlInfo
+from ark_resolver.ark_url import ArkUrlSettings
 
 #################################################################################################
 # OpenTelemetry
@@ -70,7 +75,7 @@ app.blueprint(ark_resolver.health.health_bp)
 
 
 @app.before_server_start
-async def init_sentry(_):
+async def init_sentry(_: Any) -> None:
     sentry_dsn = os.environ.get("ARK_SENTRY_DSN", None)
     sentry_debug = os.environ.get("ARK_SENTRY_DEBUG", "False")
     sentry_environment = os.environ.get("ARK_SENTRY_ENVIRONMENT", None)
@@ -78,7 +83,7 @@ async def init_sentry(_):
     if sentry_dsn:
         sentry_sdk.init(
             dsn=sentry_dsn,
-            debug=sentry_debug,
+            debug=sentry_debug,  # type: ignore[arg-type]
             environment=sentry_environment,
             release=sentry_release,
             # Add data like request headers and IP for users;
@@ -125,7 +130,7 @@ def get_safe_config() -> str:
 
 
 @app.get("/config")
-async def safe_config_get(_) -> HTTPResponse:
+async def safe_config_get(_: Request) -> HTTPResponse:
     """
     Returns the app's configuration
     """
@@ -133,7 +138,7 @@ async def safe_config_get(_) -> HTTPResponse:
 
 
 @app.head("/config")
-async def safe_config_head(_) -> HTTPResponse:
+async def safe_config_head(_: Request) -> HTTPResponse:
     """
     Returns only the head of the config response
     """
@@ -145,12 +150,14 @@ async def safe_config_head(_) -> HTTPResponse:
 
 
 @app.post("/reload")
-async def reload(req) -> HTTPResponse:
+async def reload(req: Request) -> HTTPResponse:
     """
     Requests reloading of the configuration. Checks if the request is authorized.
     """
+    print(type(req))
+    print(req)
     with tracer.start_as_current_span("reload") as span:
-        span.set_attribute("request", req)  # Attach ARK ID as metadata
+        span.set_attribute("request", "reload config")
 
         # Get the signature submitted with the request.
         if "X-Hub-Signature" not in req.headers:
@@ -181,7 +188,7 @@ async def reload(req) -> HTTPResponse:
 
 
 @app.get("/<path:path>")
-async def catch_all(_, path="") -> HTTPResponse:
+async def catch_all(_: Request, path: str = "") -> HTTPResponse:
     """
     Catch all URL. Tries to redirect the given ARK ID.
     """
@@ -197,9 +204,9 @@ async def catch_all(_, path="") -> HTTPResponse:
         span.set_attribute("ark_id", ark_id_decoded)  # Attach ARK ID as metadata
 
         try:
-            redirect_url = ark_url.ArkUrlInfo(settings=app.config.settings, ark_id=ark_id_decoded).to_redirect_url()
+            redirect_url = ArkUrlInfo(settings=app.config.settings, ark_id=ark_id_decoded).to_redirect_url()
             span.set_status(Status(StatusCode.OK))  # Mark as successful
-        except ark_url.ArkUrlException as ex:
+        except ArkUrlException as ex:
             span.set_status(Status(StatusCode.ERROR, "Invalid ARK ID"))
             logger.error(f"Invalid ARK ID: {ark_id_decoded}")
             return response.text(body=ex.message, status=400)
@@ -219,7 +226,7 @@ async def catch_all(_, path="") -> HTTPResponse:
         return response.redirect(redirect_url)
 
 
-def server(settings) -> None:
+def server(settings: ArkUrlSettings) -> None:
     """
     Starts the app as server with the given settings.
     """
@@ -251,7 +258,7 @@ def reload_config() -> None:
 # Loading of config and registry files.
 
 
-def load_settings(config_path: str) -> ark_url.ArkUrlSettings:
+def load_settings(config_path: str) -> ArkUrlSettings:
     """
     Loads configuration from given path and returns an ArkUrlSettings.
     """
@@ -280,7 +287,7 @@ def load_settings(config_path: str) -> ark_url.ArkUrlSettings:
     else:
         config.read_file(open(registry_path))
 
-    settings = ark_url.ArkUrlSettings(config)
+    settings = ArkUrlSettings(config)
 
     return settings
 
@@ -320,17 +327,17 @@ def main() -> None:
             server(settings)
         elif args.iri:
             # prints the converted ARK URL from a given DSP resource IRI
-            print(ark_url.ArkUrlFormatter(settings).resource_iri_to_ark_url(args.iri, args.value, args.date))
+            print(ArkUrlFormatter(settings).resource_iri_to_ark_url(args.iri, args.value, args.date))
         elif args.ark:
             if args.resource:
                 # prints the converted DSP resource IRI from a given ARK URL
-                print(ark_url.ArkUrlInfo(settings, args.ark).to_resource_iri())
+                print(ArkUrlInfo(settings, args.ark).to_resource_iri())
             else:
                 # prints the converted DSP URL from a given ARK URL
-                print(ark_url.ArkUrlInfo(settings, args.ark).to_redirect_url())
+                print(ArkUrlInfo(settings, args.ark).to_redirect_url())
         else:
             parser.print_help()
-    except ark_url.ArkUrlException as ex:
+    except ArkUrlException as ex:
         print(ex.message)
         sys.exit(1)
     except check_digit_py.CheckDigitException as ex:
