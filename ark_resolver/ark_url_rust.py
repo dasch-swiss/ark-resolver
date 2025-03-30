@@ -107,13 +107,7 @@ class ArkUrlInfo:
             return self.settings.default_config.get("TopLevelObjectUrl")  # type: ignore[no-any-return]
         else:
             project_config = self.settings.get_project_config(self.project_id)
-
-            if project_config.get_boolean("UsePhp"):
-                # return the redirect URL of a PHP-SALSAH object
-                return self.to_php_redirect_url(project_config)
-            else:
-                # return the redirect URL of a DSP object
-                return self.to_dsp_redirect_url(project_config)
+            return self.to_dsp_redirect_url(project_config)
 
     def to_resource_iri(self) -> str:
         """

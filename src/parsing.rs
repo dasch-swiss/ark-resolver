@@ -46,9 +46,16 @@ mod tests {
     #[test]
     fn test_project_id_regex() {
         let re = Regex::new(&format!(r"^{}$", PROJECT_ID_PATTERN)).unwrap();
+
+        // Valid project IDs
         assert!(re.is_match("0000"));
         assert!(re.is_match("fFfF"));
         assert!(re.is_match("FFFF"));
+        assert!(re.is_match("080E"));
+        assert!(re.is_match("080e"));
+
+        // Invalid project IDs
+        assert!(!re.is_match("000"));
         assert!(!re.is_match("00000"));
         assert!(!re.is_match("FFFFF"));
     }
