@@ -33,7 +33,7 @@ class ArkUrlInfo:
     Represents the information retrieved from a DSP ARK ID.
     """
 
-    def __init__(self, settings, ark_id):
+    def __init__(self, settings: ArkUrlSettings, ark_id: str) -> None:
         self.settings = settings
 
         match = settings.ark_path_regex.match(ark_id)
@@ -66,18 +66,18 @@ class ArkUrlInfo:
                 if escaped_value_id_with_check_digit is not None:
                     self.value_id = unescape_and_validate_uuid(ark_url=ark_id, escaped_uuid=escaped_value_id_with_check_digit)
                 else:
-                    self.value_id = None
+                    self.value_id = None  # type: ignore[assignment]
 
                 self.timestamp = match.group(5)
             else:
-                self.resource_id = None
-                self.value_id = None
+                self.resource_id = None  # type: ignore[assignment]
+                self.value_id = None  # type: ignore[assignment]
                 self.timestamp = None
         elif self.url_version == 0:
             # Version 0.
             self.project_id = match.group(1).upper()
             self.resource_id = match.group(2)
-            self.value_id = None
+            self.value_id = None  # type: ignore[assignment]
 
             submitted_timestamp = match.group(3)
 
@@ -136,14 +136,15 @@ class ArkUrlInfo:
             generic_namespace_url = uuid.NAMESPACE_URL
             dasch_uuid_ns = uuid.uuid5(generic_namespace_url, "https://dasch.swiss")  # cace8b00-717e-50d5-bcb9-486f39d733a2
             resource_id = template_dict["resource_id"]
-            dsp_iri = base64.urlsafe_b64encode(uuid.uuid5(dasch_uuid_ns, resource_id).bytes).decode("utf-8")
+            dsp_iri = base64.urlsafe_b64encode(uuid.uuid5(dasch_uuid_ns, resource_id).bytes).decode("utf-8")  # type: ignore[arg-type]
             # remove the padding ('==') from the end of the string
             dsp_iri = dsp_iri[:-2]
             template_dict["resource_id"] = dsp_iri
 
         return resource_iri_template.substitute(template_dict)
 
-    def to_dsp_redirect_url(self, project_config) -> str:
+    # TODO: these types from ConfigParser are really messed-up and should be changed to something type-safe
+    def to_dsp_redirect_url(self, project_config: SectionProxy) -> str:
         """
         In case it's called on a DSP object (either version 0 or version 1), converts an ARK URL to the URL that the
         client should be redirected to according to its type (project, resource, or value)
@@ -189,7 +190,7 @@ class ArkUrlInfo:
 
         return request_template.substitute(template_dict)
 
-    def to_php_redirect_url(self, project_config) -> str:
+    def to_php_redirect_url(self, project_config: SectionProxy) -> str:
         """
         In case it's called on a PHP-SALSAH object, converts the ARK URL to the URL that the client should be
         redirected to.
@@ -222,7 +223,7 @@ class ArkUrlInfo:
         return request_template.substitute(template_dict)
 
 
-def add_check_digit_and_escape(uuid) -> str:
+def add_check_digit_and_escape(uuid: str) -> str:
     """
     Adds a check digit to a Base64-encoded UUID, and escapes the result.
     """
@@ -233,7 +234,7 @@ def add_check_digit_and_escape(uuid) -> str:
     return uuid_with_check_digit.replace("-", "=")
 
 
-def unescape_and_validate_uuid(ark_url, escaped_uuid) -> str:
+def unescape_and_validate_uuid(ark_url: str, escaped_uuid: str) -> str:
     """
     Unescapes a Base64-encoded UUID, validates its check digit, and returns the unescaped UUID without the check digit.
     """
@@ -251,10 +252,10 @@ class ArkUrlFormatter:
     """
     Handles formatting of DSP resource IRIs into ARK URLs
     """
-
+    
     settings: ArkUrlSettings
 
-    def resource_iri_to_ark_url(self, resource_iri, value_id=None, timestamp=None) -> str:
+    def resource_iri_to_ark_url(self, resource_iri: str, value_id: str | None = None, timestamp: str | None = None) -> str:
         """
         Converts a DSP resource IRI to an ARK URL.
         """
@@ -282,7 +283,9 @@ class ArkUrlFormatter:
             timestamp=timestamp,
         )
 
-    def format_ark_url(self, project_id, resource_id_with_check_digit, value_id_with_check_digit, timestamp) -> str:
+    def format_ark_url(
+        self, project_id: str, resource_id_with_check_digit: str, value_id_with_check_digit: str | None, timestamp: str | None
+    ) -> str:
         """
         Formats and returns a DSP ARK URL from the given parameters and configuration.
         """
