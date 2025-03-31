@@ -4,7 +4,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import base64
-import logging
 import uuid
 from configparser import SectionProxy
 from string import Template
@@ -107,13 +106,7 @@ class ArkUrlInfo:
             return self.settings.default_config.get("TopLevelObjectUrl")  # type: ignore[no-any-return]
         else:
             project_config = self.settings.get_project_config(self.project_id)
-
-            if project_config.get_boolean("UsePhp"):
-                # return the redirect URL of a PHP-SALSAH object
-                return self.to_php_redirect_url(project_config)
-            else:
-                # return the redirect URL of a DSP object
-                return self.to_dsp_redirect_url(project_config)
+            return self.to_dsp_redirect_url(project_config)
 
     def to_resource_iri(self) -> str:
         """
@@ -185,39 +178,6 @@ class ArkUrlInfo:
         project_iri = project_iri_template.substitute(template_dict)
         url_encoded_project_iri = parse.quote(project_iri, safe="")
         template_dict["project_iri"] = url_encoded_project_iri
-
-        return request_template.substitute(template_dict)
-
-    def to_php_redirect_url(self, project_config: SectionProxy) -> str:
-        """
-        In case it's called on a PHP-SALSAH object, converts the ARK URL to the URL that the client should be
-        redirected to.
-        """
-        template_dict = self.template_dict.copy()
-        template_dict["host"] = project_config.get("Host")
-
-        # it's a resource
-        if self.resource_id is not None:
-            try:
-                resource_int_id = (int(self.resource_id, 16) // self.settings.resource_int_id_factor) - 1
-            except ValueError:
-                logging.exception(f"Invalid resource ID: {self.resource_id}")
-                raise ArkUrlException(f"Invalid resource ID: {self.resource_id}")
-
-            template_dict["resource_int_id"] = resource_int_id
-
-            if self.timestamp is None:
-                request_template = Template(project_config.get("PhpResourceRedirectUrl"))  # type: ignore[arg-type]
-            else:
-                request_template = Template(project_config.get("PhpResourceVersionRedirectUrl"))  # type: ignore[arg-type]
-
-                # The PHP server only takes timestamps in the format YYYYMMDD
-                template_dict["timestamp"] = self.timestamp[0:TIMESTAMP_LENGTH]
-
-        # it's a project
-        else:
-            request_template = Template(project_config.get("DSPProjectRedirectUrl"))
-            template_dict["project_host"] = project_config.get("ProjectHost")
 
         return request_template.substitute(template_dict)
 

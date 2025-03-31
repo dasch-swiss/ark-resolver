@@ -28,7 +28,7 @@ class ArkUrlSettings:
         self.config = config
         self.top_config = config["DEFAULT"]
         self.dsp_ark_version = 1
-        self.project_id_pattern = "([0-9A-F]+)"
+        self.project_id_pattern = "([0-9A-Fa-f]{4})"
         self.uuid_pattern = "([A-Za-z0-9_=]+)"
         self.project_id_regex = re.compile("^" + self.project_id_pattern + "$")
         self.resource_iri_regex = re.compile("^http://rdfh.ch/" + self.project_id_pattern + "/([A-Za-z0-9_-]+)$")
@@ -50,7 +50,9 @@ class ArkUrlSettings:
         self.ark_url_regex = re.compile("^https?://" + self.top_config["ArkExternalHost"] + "/" + self.ark_path_pattern + "$")
 
         # Patterns for matching PHP-SALSAH ARK version 0 URLs.
-        self.v0_ark_path_pattern = "ark:/" + self.top_config["ArkNaan"] + r"/([0-9A-Fa-f]+)-([A-Za-z0-9]+)-[A-Za-z0-9]+(?:\.([0-9]{6,8}))?"
+        self.v0_ark_path_pattern = (
+            "ark:/" + self.top_config["ArkNaan"] + r"/([0-9A-Fa-f]{4})-([A-Za-z0-9]+)-[A-Za-z0-9]+(?:\.([0-9]{6,8}))?"
+        )
         self.v0_ark_path_regex = re.compile("^" + self.v0_ark_path_pattern + "$")
         self.v0_ark_url_regex = re.compile("^https?://" + self.top_config["ArkExternalHost"] + "/" + self.v0_ark_path_pattern + "$")
 
@@ -91,7 +93,10 @@ class ArkUrlInfo:
         # Which version of ARK ID did we match?
         if self.url_version == settings.dsp_ark_version:
             # Version 1.
-            self.project_id = match.group(2)
+            if match.group(2) is not None:
+                self.project_id = match.group(2).upper()
+            else:
+                self.project_id = None
             escaped_resource_id_with_check_digit = match.group(3)
 
             if escaped_resource_id_with_check_digit is not None:
@@ -146,13 +151,7 @@ class ArkUrlInfo:
             return self.settings.top_config["TopLevelObjectUrl"]
         else:
             project_config = self.settings.config[self.project_id]
-
-            if project_config.getboolean("UsePhp"):
-                # return the redirect URL of a PHP-SALSAH object
-                return self.to_php_redirect_url(project_config)
-            else:
-                # return the redirect URL of a DSP object
-                return self.to_dsp_redirect_url(project_config)
+            return self.to_dsp_redirect_url(project_config)
 
     def to_resource_iri(self) -> str:
         """
@@ -223,38 +222,6 @@ class ArkUrlInfo:
         project_iri = project_iri_template.substitute(template_dict)
         url_encoded_project_iri = parse.quote(project_iri, safe="")
         template_dict["project_iri"] = url_encoded_project_iri
-
-        return request_template.substitute(template_dict)
-
-    def to_php_redirect_url(self, project_config: SectionProxy) -> str:
-        """
-        In case it's called on a PHP-SALSAH object, converts the ARK URL to the URL that the client should be
-        redirected to.
-        """
-        template_dict = self.template_dict.copy()
-        template_dict["host"] = project_config["Host"]
-
-        # it's a resource
-        if self.resource_id is not None:
-            try:
-                resource_int_id = (int(self.resource_id, 16) // self.settings.resource_int_id_factor) - 1
-            except ValueError:
-                raise ArkUrlException(f"Invalid resource ID: {self.resource_id}")
-
-            template_dict["resource_int_id"] = resource_int_id
-
-            if self.timestamp is None:
-                request_template = Template(project_config["PhpResourceRedirectUrl"])
-            else:
-                request_template = Template(project_config["PhpResourceVersionRedirectUrl"])
-
-                # The PHP server only takes timestamps in the format YYYYMMDD
-                template_dict["timestamp"] = self.timestamp[0:TIMESTAMP_LENGTH]
-
-        # it's a project
-        else:
-            request_template = Template(project_config["DSPProjectRedirectUrl"])
-            template_dict["project_host"] = project_config["ProjectHost"]
 
         return request_template.substitute(template_dict)
 
