@@ -60,6 +60,7 @@ def test_ark_url_info_redirect_project(settings):
     redirect_url = ark_url_info.to_redirect_url()
     assert redirect_url == "http://other-meta.dasch.swiss/projects/0006"
 
+
 def test_ark_url_case_insensitive_project(settings):
     # parse and redirect an ARK URL with UPPERCASE project ID
     ark_url_info = ArkUrlInfo(settings, "ark:/00000/1/080E")
@@ -70,6 +71,7 @@ def test_ark_url_case_insensitive_project(settings):
     ark_url_info = ArkUrlInfo(settings, "ark:/00000/1/080e")
     redirect_url = ark_url_info.to_redirect_url()
     assert redirect_url == "http://meta.dasch.swiss/projects/080E"
+
 
 def test_ark_url_info_redirect_resource(settings):
     # parse and redirect an ARK URL of a DSP resource without a timestamp
@@ -140,7 +142,6 @@ def test_ark_url_info_redirect_salsah_ark(settings):
     ark_url_info = ArkUrlInfo(settings, "ark:/00000/080e-76bb2132d30d6-0.2019111")
     redirect_url = ark_url_info.to_redirect_url()
     assert redirect_url == "http://app.dasch.swiss/resource/080E/-iFD-q9xVUWzCaM7lDaLpg"
-
 
 
 def test_conversion_to_resource_iri_with_ark_version_0(settings):

@@ -4,7 +4,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import base64
-import logging
 import uuid
 from configparser import SectionProxy
 from string import Template
