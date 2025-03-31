@@ -6,15 +6,18 @@
 import base64
 import logging
 import uuid
+from configparser import SectionProxy
 from string import Template
 from urllib import parse
 
 import ark_resolver.check_digit as check_digit_py
+
+# TODO: the rust module does not seem to be typed in python land.
+from ark_resolver._rust import ArkUrlSettings  # type: ignore[import-untyped]
 from ark_resolver.ark_url import ArkUrlException
 
 #################################################################################################
 # Tools for generating and parsing DSP ARK URLs.
-
 TIMESTAMP_LENGTH = 8
 
 
@@ -23,7 +26,7 @@ class ArkUrlInfo:
     Represents the information retrieved from a DSP ARK ID.
     """
 
-    def __init__(self, settings, ark_id):
+    def __init__(self, settings: ArkUrlSettings, ark_id: str) -> None:
         self.settings = settings
 
         match = settings.match_ark_path(ark_id)
@@ -57,18 +60,18 @@ class ArkUrlInfo:
                 if escaped_value_id_with_check_digit is not None:
                     self.value_id = unescape_and_validate_uuid(ark_url=ark_id, escaped_uuid=escaped_value_id_with_check_digit)
                 else:
-                    self.value_id = None
+                    self.value_id = None  # type: ignore[assignment]
 
                 self.timestamp = match[4]
             else:
-                self.resource_id = None
-                self.value_id = None
+                self.resource_id = None  # type: ignore[assignment]
+                self.value_id = None  # type: ignore[assignment]
                 self.timestamp = None
         elif self.url_version == 0:
             # Version 0.
             self.project_id = match[0].upper()
             self.resource_id = match[1]
-            self.value_id = None
+            self.value_id = None  # type: ignore[assignment]
 
             submitted_timestamp = match[2]
 
@@ -101,7 +104,7 @@ class ArkUrlInfo:
         """
         if self.project_id is None:
             # return the redirect URL of the top level object
-            return self.settings.default_config.get("TopLevelObjectUrl")
+            return self.settings.default_config.get("TopLevelObjectUrl")  # type: ignore[no-any-return]
         else:
             project_config = self.settings.get_project_config(self.project_id)
 
@@ -137,14 +140,15 @@ class ArkUrlInfo:
 
         return resource_iri_template.substitute(template_dict)
 
-    def to_dsp_redirect_url(self, project_config) -> str:
+    # TODO: these types from ConfigParser are really messed-up and should be changed to something type-safe
+    def to_dsp_redirect_url(self, project_config: SectionProxy) -> str:
         """
         In case it's called on a DSP object (either version 0 or version 1), converts an ARK URL to the URL that the
         client should be redirected to according to its type (project, resource, or value)
         """
 
-        resource_iri_template = Template(project_config.get("DSPResourceIri"))
-        project_iri_template = Template(project_config.get("DSPProjectIri"))
+        resource_iri_template = Template(project_config.get("DSPResourceIri"))  # type: ignore[arg-type]
+        project_iri_template = Template(project_config.get("DSPProjectIri"))  # type: ignore[arg-type]
 
         template_dict = self.template_dict.copy()
         template_dict["host"] = project_config.get("Host")
@@ -163,9 +167,9 @@ class ArkUrlInfo:
         elif self.value_id:
             template_dict["value_id"] = self.value_id
             if self.timestamp is None:
-                request_template = Template(project_config.get("DSPValueRedirectUrl"))
+                request_template = Template(project_config.get("DSPValueRedirectUrl"))  # type: ignore[arg-type]
             else:
-                request_template = Template(project_config.get("DSPValueVersionRedirectUrl"))
+                request_template = Template(project_config.get("DSPValueVersionRedirectUrl"))  # type: ignore[arg-type]
 
         # in case of a version 0 ARK URL, convert the resource ID to a UUID (base64 encoded)
         if self.url_version == 0:
@@ -184,7 +188,7 @@ class ArkUrlInfo:
 
         return request_template.substitute(template_dict)
 
-    def to_php_redirect_url(self, project_config) -> str:
+    def to_php_redirect_url(self, project_config: SectionProxy) -> str:
         """
         In case it's called on a PHP-SALSAH object, converts the ARK URL to the URL that the client should be
         redirected to.
@@ -203,9 +207,9 @@ class ArkUrlInfo:
             template_dict["resource_int_id"] = resource_int_id
 
             if self.timestamp is None:
-                request_template = Template(project_config.get("PhpResourceRedirectUrl"))
+                request_template = Template(project_config.get("PhpResourceRedirectUrl"))  # type: ignore[arg-type]
             else:
-                request_template = Template(project_config.get("PhpResourceVersionRedirectUrl"))
+                request_template = Template(project_config.get("PhpResourceVersionRedirectUrl"))  # type: ignore[arg-type]
 
                 # The PHP server only takes timestamps in the format YYYYMMDD
                 template_dict["timestamp"] = self.timestamp[0:TIMESTAMP_LENGTH]
@@ -218,7 +222,7 @@ class ArkUrlInfo:
         return request_template.substitute(template_dict)
 
 
-def add_check_digit_and_escape(uuid) -> str:
+def add_check_digit_and_escape(uuid: str) -> str:
     """
     Adds a check digit to a Base64-encoded UUID, and escapes the result.
     """
@@ -229,7 +233,7 @@ def add_check_digit_and_escape(uuid) -> str:
     return uuid_with_check_digit.replace("-", "=")
 
 
-def unescape_and_validate_uuid(ark_url, escaped_uuid) -> str:
+def unescape_and_validate_uuid(ark_url: str, escaped_uuid: str) -> str:
     """
     Unescapes a Base64-encoded UUID, validates its check digit, and returns the unescaped UUID without the check digit.
     """
@@ -247,10 +251,10 @@ class ArkUrlFormatter:
     Handles formatting of DSP resource IRIs into ARK URLs
     """
 
-    def __init__(self, settings):
+    def __init__(self, settings: ArkUrlSettings) -> None:
         self.settings = settings
 
-    def resource_iri_to_ark_url(self, resource_iri, value_id=None, timestamp=None) -> str:
+    def resource_iri_to_ark_url(self, resource_iri: str, value_id: str | None = None, timestamp: str | None = None) -> str:
         """
         Converts a DSP resource IRI to an ARK URL.
         """
@@ -278,7 +282,9 @@ class ArkUrlFormatter:
             timestamp=timestamp,
         )
 
-    def format_ark_url(self, project_id, resource_id_with_check_digit, value_id_with_check_digit, timestamp) -> str:
+    def format_ark_url(
+        self, project_id: str, resource_id_with_check_digit: str, value_id_with_check_digit: str | None, timestamp: str | None
+    ) -> str:
         """
         Formats and returns a DSP ARK URL from the given parameters and configuration.
         """

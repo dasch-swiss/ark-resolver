@@ -2,6 +2,8 @@ import os
 import time
 
 from sanic import Blueprint
+from sanic import HTTPResponse
+from sanic import Request
 from sanic import json
 
 health_bp = Blueprint("health", url_prefix="/health")
@@ -10,18 +12,18 @@ health_bp = Blueprint("health", url_prefix="/health")
 start_time = time.time()
 
 
-async def check_database():
+async def check_database() -> str:
     """Simulate a database check (Replace with actual DB check)"""
     return "ok"
 
 
-async def check_external_api():
+async def check_external_api() -> str:
     """Simulate an external API check (Replace with real API health check)"""
     return "ok"
 
 
 @health_bp.get("/")
-async def health(_):
+async def health(_: Request) -> HTTPResponse:
     """Health check endpoint"""
     db_status = await check_database()
     api_status = await check_external_api()

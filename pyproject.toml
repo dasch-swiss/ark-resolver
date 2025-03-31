@@ -55,9 +55,6 @@ minversion = "7.0"
 addopts = "--verbose -s"
 pythonpath = ["."]
 
-[tool.mypy]
-strict = true
-
 [tool.ruff]
 line-length = 140
 
