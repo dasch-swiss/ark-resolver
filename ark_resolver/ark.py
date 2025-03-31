@@ -226,7 +226,6 @@ async def catch_all(_: Request, path: str = "") -> HTTPResponse:
 
 
 def start_server(config_path: str, settings: ArkUrlSettings) -> None:
-
     """
     Starts the app as server with the given settings.
     """

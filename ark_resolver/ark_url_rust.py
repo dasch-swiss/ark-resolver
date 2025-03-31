@@ -6,6 +6,7 @@
 import base64
 import logging
 import uuid
+from configparser import SectionProxy
 from dataclasses import dataclass
 from string import Template
 from urllib import parse
@@ -253,7 +254,6 @@ class ArkUrlFormatter:
     """
 
     settings: ArkUrlSettings
-
 
     def resource_iri_to_ark_url(self, resource_iri: str, value_id: str | None = None, timestamp: str | None = None) -> str:
         """

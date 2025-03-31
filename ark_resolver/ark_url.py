@@ -252,7 +252,7 @@ class ArkUrlFormatter:
     """
     Handles formatting of DSP resource IRIs into ARK URLs
     """
-    
+
     settings: ArkUrlSettings
 
     def resource_iri_to_ark_url(self, resource_iri: str, value_id: str | None = None, timestamp: str | None = None) -> str:

@@ -20,7 +20,6 @@ upgrade:
 
 # Run all rust fmt and clippy checks
 rustcheck:
-    just --check --fmt --unstable
     cargo +nightly fmt --check
     cargo clippy -- -D warnings
 
@@ -31,6 +30,7 @@ pycheck:
 
 # Run all checks
 check: rustcheck pycheck
+    just --check --fmt --unstable
 
 # Format all rust code
 rustfmt:
@@ -91,7 +91,6 @@ docker-publish-intel:
 # build amd run docker image
 docker-run: docker-build-arm
     docker compose up -d
-    
 
 # Output the BUILD_TAG
 docker-image-tag:
