@@ -11,9 +11,11 @@ from urllib import parse
 
 import ark_resolver.check_digit as check_digit_py
 
-
 #################################################################################################
 # Tools for generating and parsing DSP ARK URLs.
+
+TIMESTAMP_LENGTH = 8
+
 
 class ArkUrlSettings:
     """
@@ -31,18 +33,24 @@ class ArkUrlSettings:
         self.resource_int_id_factor = 982451653
 
         # Patterns for matching DSP ARK version 1 URLs.
-        self.ark_path_pattern = "ark:/" + self.top_config[
-            "ArkNaan"] + "/([0-9]+)(?:/" + self.project_id_pattern + "(?:/" + self.uuid_pattern + "(?:/" + self.uuid_pattern + r")?(?:\.([0-9]{8}T[0-9]{6,15}Z))?)?)?"
+        self.ark_path_pattern = (
+            "ark:/"
+            + self.top_config["ArkNaan"]
+            + "/([0-9]+)(?:/"
+            + self.project_id_pattern
+            + "(?:/"
+            + self.uuid_pattern
+            + "(?:/"
+            + self.uuid_pattern
+            + r")?(?:\.([0-9]{8}T[0-9]{6,15}Z))?)?)?"
+        )
         self.ark_path_regex = re.compile("^" + self.ark_path_pattern + "$")
-        self.ark_url_regex = re.compile(
-            "^https?://" + self.top_config["ArkExternalHost"] + "/" + self.ark_path_pattern + "$")
+        self.ark_url_regex = re.compile("^https?://" + self.top_config["ArkExternalHost"] + "/" + self.ark_path_pattern + "$")
 
         # Patterns for matching PHP-SALSAH ARK version 0 URLs.
-        self.v0_ark_path_pattern = "ark:/" + self.top_config[
-            "ArkNaan"] + r"/([0-9A-Fa-f]+)-([A-Za-z0-9]+)-[A-Za-z0-9]+(?:\.([0-9]{6,8}))?"
+        self.v0_ark_path_pattern = "ark:/" + self.top_config["ArkNaan"] + r"/([0-9A-Fa-f]+)-([A-Za-z0-9]+)-[A-Za-z0-9]+(?:\.([0-9]{6,8}))?"
         self.v0_ark_path_regex = re.compile("^" + self.v0_ark_path_pattern + "$")
-        self.v0_ark_url_regex = re.compile(
-            "^https?://" + self.top_config["ArkExternalHost"] + "/" + self.v0_ark_path_pattern + "$")
+        self.v0_ark_url_regex = re.compile("^https?://" + self.top_config["ArkExternalHost"] + "/" + self.v0_ark_path_pattern + "$")
 
 
 class ArkUrlException(Exception):
@@ -85,18 +93,12 @@ class ArkUrlInfo:
             escaped_resource_id_with_check_digit = match.group(3)
 
             if escaped_resource_id_with_check_digit is not None:
-                self.resource_id = unescape_and_validate_uuid(
-                    ark_url=ark_id,
-                    escaped_uuid=escaped_resource_id_with_check_digit
-                )
+                self.resource_id = unescape_and_validate_uuid(ark_url=ark_id, escaped_uuid=escaped_resource_id_with_check_digit)
 
                 escaped_value_id_with_check_digit = match.group(4)
 
                 if escaped_value_id_with_check_digit is not None:
-                    self.value_id = unescape_and_validate_uuid(
-                        ark_url=ark_id,
-                        escaped_uuid=escaped_value_id_with_check_digit
-                    )
+                    self.value_id = unescape_and_validate_uuid(ark_url=ark_id, escaped_uuid=escaped_value_id_with_check_digit)
                 else:
                     self.value_id = None
 
@@ -113,7 +115,7 @@ class ArkUrlInfo:
 
             submitted_timestamp = match.group(3)
 
-            if submitted_timestamp is None or len(submitted_timestamp) < 8:
+            if submitted_timestamp is None or len(submitted_timestamp) < TIMESTAMP_LENGTH:
                 self.timestamp = None
             else:
                 self.timestamp = submitted_timestamp
@@ -123,14 +125,13 @@ class ArkUrlInfo:
             if not project_config.getboolean("AllowVersion0"):
                 raise ArkUrlException(f"Invalid ARK ID (version 0 not allowed): {ark_id}")
         else:
-            raise ArkUrlException(
-                f"Invalid ARK ID {ark_id}. The version of the ARK ID doesn't match the version defined in the settings.")
+            raise ArkUrlException(f"Invalid ARK ID {ark_id}. The version of the ARK ID doesn't match the version defined in the settings.")
 
         self.template_dict = {
             "url_version": self.url_version,
             "project_id": self.project_id,
             "resource_id": self.resource_id,
-            "timestamp": self.timestamp
+            "timestamp": self.timestamp,
         }
 
     def to_redirect_url(self) -> str:
@@ -167,8 +168,7 @@ class ArkUrlInfo:
             # in case of an ARK URL version 0, the resource_id generated from the salsah ID has to be converted to a
             # base64 UUID version 5
             generic_namespace_url = uuid.NAMESPACE_URL
-            dasch_uuid_ns = uuid.uuid5(generic_namespace_url,
-                                       "https://dasch.swiss")  # cace8b00-717e-50d5-bcb9-486f39d733a2
+            dasch_uuid_ns = uuid.uuid5(generic_namespace_url, "https://dasch.swiss")  # cace8b00-717e-50d5-bcb9-486f39d733a2
             resource_id = template_dict["resource_id"]
             dsp_iri = base64.urlsafe_b64encode(uuid.uuid5(dasch_uuid_ns, resource_id).bytes).decode("utf-8")
             # remove the padding ('==') from the end of the string
@@ -246,7 +246,7 @@ class ArkUrlInfo:
                 request_template = Template(project_config["PhpResourceVersionRedirectUrl"])
 
                 # The PHP server only takes timestamps in the format YYYYMMDD
-                template_dict["timestamp"] = self.timestamp[0:8]
+                template_dict["timestamp"] = self.timestamp[0:TIMESTAMP_LENGTH]
 
         # it's a project
         else:
@@ -264,7 +264,7 @@ def add_check_digit_and_escape(uuid) -> str:
     uuid_with_check_digit = uuid + check_digit
 
     # Escape '-' as '=' in the resource ID and check digit, because '-' can be ignored in ARK URLs.
-    return uuid_with_check_digit.replace('-', '=')
+    return uuid_with_check_digit.replace("-", "=")
 
 
 def unescape_and_validate_uuid(ark_url, escaped_uuid) -> str:
@@ -272,7 +272,7 @@ def unescape_and_validate_uuid(ark_url, escaped_uuid) -> str:
     Unescapes a Base64-encoded UUID, validates its check digit, and returns the unescaped UUID without the check digit.
     """
     # '-' is escaped as '=' in the UUID and check digit, because '-' can be ignored in ARK URLs.
-    unescaped_uuid = escaped_uuid.replace('=', '-')
+    unescaped_uuid = escaped_uuid.replace("=", "-")
 
     if not check_digit_py.is_valid(unescaped_uuid):
         raise ArkUrlException(f"Invalid ARK ID: {ark_url}")
@@ -313,14 +313,10 @@ class ArkUrlFormatter:
             project_id=project_id,
             resource_id_with_check_digit=escaped_resource_id_with_check_digit,
             value_id_with_check_digit=escaped_value_id_with_check_digit,
-            timestamp=timestamp
+            timestamp=timestamp,
         )
 
-    def format_ark_url(self,
-                       project_id,
-                       resource_id_with_check_digit,
-                       value_id_with_check_digit,
-                       timestamp) -> str:
+    def format_ark_url(self, project_id, resource_id_with_check_digit, value_id_with_check_digit, timestamp) -> str:
         """
         Formats and returns a DSP ARK URL from the given parameters and configuration.
         """
@@ -335,7 +331,7 @@ class ArkUrlFormatter:
             self.settings.top_config["ArkNaan"],
             self.settings.dsp_ark_version,
             project_id,
-            resource_id_with_check_digit
+            resource_id_with_check_digit,
         )
 
         # If there's a value UUID, add it.

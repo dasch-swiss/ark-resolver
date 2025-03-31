@@ -4,18 +4,18 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import base64
-import uuid
 import logging
+import uuid
 from string import Template
 from urllib import parse
 
-from ark_resolver.ark_url import ArkUrlException
 import ark_resolver.check_digit as check_digit_py
-
+from ark_resolver.ark_url import ArkUrlException
 
 #################################################################################################
 # Tools for generating and parsing DSP ARK URLs.
 
+TIMESTAMP_LENGTH = 8
 
 
 class ArkUrlInfo:
@@ -50,18 +50,12 @@ class ArkUrlInfo:
 
             if escaped_resource_id_with_check_digit is not None:
                 # TODO: move to rust
-                self.resource_id = unescape_and_validate_uuid(
-                    ark_url=ark_id,
-                    escaped_uuid=escaped_resource_id_with_check_digit
-                )
+                self.resource_id = unescape_and_validate_uuid(ark_url=ark_id, escaped_uuid=escaped_resource_id_with_check_digit)
 
                 escaped_value_id_with_check_digit = match[3]
 
                 if escaped_value_id_with_check_digit is not None:
-                    self.value_id = unescape_and_validate_uuid(
-                        ark_url=ark_id,
-                        escaped_uuid=escaped_value_id_with_check_digit
-                    )
+                    self.value_id = unescape_and_validate_uuid(ark_url=ark_id, escaped_uuid=escaped_value_id_with_check_digit)
                 else:
                     self.value_id = None
 
@@ -78,7 +72,7 @@ class ArkUrlInfo:
 
             submitted_timestamp = match[2]
 
-            if submitted_timestamp is None or len(submitted_timestamp) < 8:
+            if submitted_timestamp is None or len(submitted_timestamp) < TIMESTAMP_LENGTH:
                 self.timestamp = None
             else:
                 self.timestamp = submitted_timestamp
@@ -97,7 +91,7 @@ class ArkUrlInfo:
             "url_version": self.url_version,
             "project_id": self.project_id,
             "resource_id": self.resource_id,
-            "timestamp": self.timestamp
+            "timestamp": self.timestamp,
         }
 
     def to_redirect_url(self) -> str:
@@ -214,7 +208,7 @@ class ArkUrlInfo:
                 request_template = Template(project_config.get("PhpResourceVersionRedirectUrl"))
 
                 # The PHP server only takes timestamps in the format YYYYMMDD
-                template_dict["timestamp"] = self.timestamp[0:8]
+                template_dict["timestamp"] = self.timestamp[0:TIMESTAMP_LENGTH]
 
         # it's a project
         else:
@@ -232,7 +226,7 @@ def add_check_digit_and_escape(uuid) -> str:
     uuid_with_check_digit = uuid + check_digit
 
     # Escape '-' as '=' in the resource ID and check digit, because '-' can be ignored in ARK URLs.
-    return uuid_with_check_digit.replace('-', '=')
+    return uuid_with_check_digit.replace("-", "=")
 
 
 def unescape_and_validate_uuid(ark_url, escaped_uuid) -> str:
@@ -240,7 +234,7 @@ def unescape_and_validate_uuid(ark_url, escaped_uuid) -> str:
     Unescapes a Base64-encoded UUID, validates its check digit, and returns the unescaped UUID without the check digit.
     """
     # '-' is escaped as '=' in the UUID and check digit, because '-' can be ignored in ARK URLs.
-    unescaped_uuid = escaped_uuid.replace('=', '-')
+    unescaped_uuid = escaped_uuid.replace("=", "-")
 
     if not check_digit_py.is_valid(unescaped_uuid):
         raise ArkUrlException(f"Invalid ARK ID: {ark_url}")
@@ -281,14 +275,10 @@ class ArkUrlFormatter:
             project_id=project_id,
             resource_id_with_check_digit=escaped_resource_id_with_check_digit,
             value_id_with_check_digit=escaped_value_id_with_check_digit,
-            timestamp=timestamp
+            timestamp=timestamp,
         )
 
-    def format_ark_url(self,
-                       project_id,
-                       resource_id_with_check_digit,
-                       value_id_with_check_digit,
-                       timestamp) -> str:
+    def format_ark_url(self, project_id, resource_id_with_check_digit, value_id_with_check_digit, timestamp) -> str:
         """
         Formats and returns a DSP ARK URL from the given parameters and configuration.
         """
@@ -303,7 +293,7 @@ class ArkUrlFormatter:
             self.settings.ark_config.get("ArkNaan"),
             self.settings.dsp_ark_version,
             project_id,
-            resource_id_with_check_digit
+            resource_id_with_check_digit,
         )
 
         # If there's a value UUID, add it.

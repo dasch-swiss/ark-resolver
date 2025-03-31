@@ -3,7 +3,9 @@ import os
 import pytest
 
 from ark_resolver import ark
-from ark_resolver.ark_url import ArkUrlException, ArkUrlFormatter, ArkUrlInfo
+from ark_resolver.ark_url import ArkUrlException
+from ark_resolver.ark_url import ArkUrlFormatter
+from ark_resolver.ark_url import ArkUrlInfo
 
 
 @pytest.fixture(scope="module")
@@ -12,6 +14,7 @@ def settings():
     config_path = "ark_resolver/ark-config.ini"
     os.environ["ARK_REGISTRY"] = "ark_resolver/ark-registry.ini"
     return ark.load_settings(config_path)
+
 
 def test_ark_url_formatter(settings):
     ark_url_formatter = ArkUrlFormatter(settings)
@@ -30,15 +33,16 @@ def test_ark_url_formatter(settings):
     assert ark_url == "https://ark.example.org/ark:/00000/1/0001/cmfk1DMHRBiR4=_6HXpEFAn/pLlW4ODASumZfZFbJdpw1gu"
 
     # generate an ARK URL from a resource IRI and value UUID with a timestamp
-    ark_url = ark_url_formatter.resource_iri_to_ark_url(resource_iri=resource_iri, value_id=value_id,
-                                                        timestamp="20180604T085622513Z")
+    ark_url = ark_url_formatter.resource_iri_to_ark_url(resource_iri=resource_iri, value_id=value_id, timestamp="20180604T085622513Z")
     assert ark_url == "https://ark.example.org/ark:/00000/1/0001/cmfk1DMHRBiR4=_6HXpEFAn/pLlW4ODASumZfZFbJdpw1gu.20180604T085622513Z"
+
 
 def test_ark_url_info_redirect_top_level_object(settings):
     # parse and redirect an ARK URL representing the top-level object
     ark_url_info = ArkUrlInfo(settings, "ark:/00000/1")
     redirect_url = ark_url_info.to_redirect_url()
     assert redirect_url == "http://dasch.swiss"
+
 
 def test_ark_url_info_redirect_project(settings):
     # parse and redirect an ARK URL of a project with default project host, i.e. without specified project host
@@ -50,6 +54,7 @@ def test_ark_url_info_redirect_project(settings):
     ark_url_info = ArkUrlInfo(settings, "ark:/00000/1/0004")
     redirect_url = ark_url_info.to_redirect_url()
     assert redirect_url == "http://other-meta.dasch.swiss/projects/0004"
+
 
 def test_ark_url_info_redirect_resource(settings):
     # parse and redirect an ARK URL of a DSP resource without a timestamp
@@ -94,6 +99,7 @@ def test_ark_url_info_redirect_value(settings):
     redirect_url = ark_url_info.to_redirect_url()
     assert redirect_url == "http://0.0.0.0:4200/resources/0005/SQkTPdHdTzq_gqbwj6QR-A/-SSbnPK3Q7WWxzBT1UPpRg"
 
+
 def test_ark_url_info_redirect_salsah_resource(settings):
     # parse and redirect a version 1 ARK URL of a PHP-SALSAH resource without a timestamp
     ark_url_info = ArkUrlInfo(settings, "ark:/00000/1/0803/751e0b8am")
@@ -120,6 +126,7 @@ def test_ark_url_info_redirect_salsah_resource(settings):
     redirect_url = ark_url_info.to_redirect_url()
     assert redirect_url == "http://data.dasch.swiss/resources/2126045"
 
+
 def test_ark_url_info_redirect_salsah_project(settings):
     # parse and redirect an ARK URL of a project on Salsah with default project host, i.e. without specified project host
     ark_url_info = ArkUrlInfo(settings, "ark:/00000/1/0803")
@@ -130,6 +137,7 @@ def test_ark_url_info_redirect_salsah_project(settings):
     ark_url_info = ArkUrlInfo(settings, "ark:/00000/1/0006")
     redirect_url = ark_url_info.to_redirect_url()
     assert redirect_url == "http://other-meta.dasch.swiss/projects/0006"
+
 
 def test_ark_url_info_redirect_salsah_ark(settings):
     # parse and redirect a version 0 ARK URL of a PHP-SALSAH resource which is on DSP (migrated from salsah to DSP) without a timestamp
@@ -142,17 +150,20 @@ def test_ark_url_info_redirect_salsah_ark(settings):
     redirect_url = ark_url_info.to_redirect_url()
     assert redirect_url == "http://0.0.0.0:4200/resource/0002/Ef9heHjPWDS7dMR_gGax2Q?version=20190129"
 
+
 def test_conversion_to_resource_iri_with_ark_version_0(settings):
     # convert a version 0 ARK URL to a DSP resource IRI
     ark_url_info = ArkUrlInfo(settings, "ark:/00000/0002-751e0b8a-6.2021519")
     resource_iri = ark_url_info.to_resource_iri()
     assert resource_iri == "http://rdfh.ch/0002/70aWaB2kWsuiN6ujYgM0ZQ"
 
+
 def test_conversion_to_resource_iri_with_ark_version_1(settings):
     # convert a version 1 ARK URL to a DSP resource IRI
     ark_url_info = ArkUrlInfo(settings, "ark:/00000/1/0002/0_sWRg5jT3S0PLxakX9ffg1.20210712T074927466631Z")
     resource_iri = ark_url_info.to_resource_iri()
     assert resource_iri == "http://rdfh.ch/0002/0_sWRg5jT3S0PLxakX9ffg"
+
 
 def test_reject_ark_with_wrong_digit(settings):
     # reject an ARK URL that doesn't pass check digit validation

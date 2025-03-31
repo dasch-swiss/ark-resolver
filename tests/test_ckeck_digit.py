@@ -1,5 +1,6 @@
 from ark_resolver import check_digit as ckeck_digit_py
 
+
 def test_base64url_check_digit():
     correct_resource_id = "cmfk1DMHRBiR4-_6HXpEFA"
 

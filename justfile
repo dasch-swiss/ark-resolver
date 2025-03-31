@@ -18,15 +18,31 @@ install:
 upgrade:
     uv lock --upgrade
 
-# Run all fmt and clippy checks
-check:
+# Run all rust fmt and clippy checks
+rustcheck:
     just --check --fmt --unstable
     cargo +nightly fmt --check
     cargo clippy -- -D warnings
 
+# Run all python checks
+pycheck:
+    uv run ruff format --check .
+    uv run ruff check .
+
+# Run all checks
+check: rustcheck pycheck
+
 # Format all rust code
-fmt:
+rustfmt:
     cargo +nightly fmt
+
+# Format all python code
+pyfmt:
+    uv run ruff format .
+    uv run ruff check . --fix
+
+# Format all code
+fmt: rustfmt pyfmt
 
 # Fix justfile formatting. Warning: will change existing file. Please first use check.
 fix:
