@@ -17,6 +17,7 @@ import os
 from asyncio import sleep
 from io import StringIO
 from typing import cast
+from typing import Any
 from urllib.parse import unquote
 
 import sentry_sdk
@@ -26,6 +27,7 @@ from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.trace import Status
 from opentelemetry.trace import StatusCode
 from sanic import HTTPResponse
+from sanic import Request
 from sanic import Sanic
 from sanic import response
 from sanic.log import logger
@@ -77,7 +79,7 @@ def app_settings() -> ArkUrlSettings:
 
 
 @app.before_server_start
-async def init_sentry(_):
+async def init_sentry(_: Any) -> None:
     sentry_dsn = os.environ.get("ARK_SENTRY_DSN", None)
     sentry_debug = os.environ.get("ARK_SENTRY_DEBUG", "False")
     sentry_environment = os.environ.get("ARK_SENTRY_ENVIRONMENT", None)
@@ -85,7 +87,7 @@ async def init_sentry(_):
     if sentry_dsn:
         sentry_sdk.init(
             dsn=sentry_dsn,
-            debug=sentry_debug,
+            debug=sentry_debug,  # type: ignore[arg-type]
             environment=sentry_environment,
             release=sentry_release,
             # Add data like request headers and IP for users;
@@ -132,7 +134,7 @@ def get_safe_config() -> str:
 
 
 @app.get("/config")
-async def safe_config_get(_) -> HTTPResponse:
+async def safe_config_get(_: Request) -> HTTPResponse:
     """
     Returns the app's configuration
     """
@@ -140,7 +142,7 @@ async def safe_config_get(_) -> HTTPResponse:
 
 
 @app.head("/config")
-async def safe_config_head(_) -> HTTPResponse:
+async def safe_config_head(_: Request) -> HTTPResponse:
     """
     Returns only the head of the config response
     """
@@ -152,12 +154,14 @@ async def safe_config_head(_) -> HTTPResponse:
 
 
 @app.post("/reload")
-async def reload(req) -> HTTPResponse:
+async def reload(req: Request) -> HTTPResponse:
     """
     Requests reloading of the configuration. Checks if the request is authorized.
     """
+    print(type(req))
+    print(req)
     with tracer.start_as_current_span("reload") as span:
-        span.set_attribute("request", req)  # Attach ARK ID as metadata
+        span.set_attribute("request", "reload config")
 
         # Get the signature submitted with the request.
         if "X-Hub-Signature" not in req.headers:
@@ -188,7 +192,7 @@ async def reload(req) -> HTTPResponse:
 
 
 @app.get("/<path:path>")
-async def catch_all(_, path="") -> HTTPResponse:
+async def catch_all(_: Request, path: str = "") -> HTTPResponse:
     """
     Catch all URL. Tries to redirect the given ARK ID.
     """

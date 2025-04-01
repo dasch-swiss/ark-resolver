@@ -33,7 +33,7 @@ class ArkUrlInfo:
     Represents the information retrieved from a DSP ARK ID.
     """
 
-    def __init__(self, settings, ark_id):
+    def __init__(self, settings: ArkUrlSettings, ark_id: str) -> None:
         self.settings = settings
 
         match = settings.ark_path_regex.match(ark_id)
@@ -55,7 +55,10 @@ class ArkUrlInfo:
         # Which version of ARK ID did we match?
         if self.url_version == settings.dsp_ark_version:
             # Version 1.
-            self.project_id = match.group(2)
+            if match.group(2) is not None:
+                self.project_id = match.group(2).upper()
+            else:
+                self.project_id = None
             escaped_resource_id_with_check_digit = match.group(3)
 
             if escaped_resource_id_with_check_digit is not None:
@@ -66,18 +69,18 @@ class ArkUrlInfo:
                 if escaped_value_id_with_check_digit is not None:
                     self.value_id = _unescape_and_validate_uuid(ark_url=ark_id, escaped_uuid=escaped_value_id_with_check_digit)
                 else:
-                    self.value_id = None
+                    self.value_id = None  # type: ignore[assignment]
 
                 self.timestamp = match.group(5)
             else:
-                self.resource_id = None
-                self.value_id = None
+                self.resource_id = None  # type: ignore[assignment]
+                self.value_id = None  # type: ignore[assignment]
                 self.timestamp = None
         elif self.url_version == 0:
             # Version 0.
             self.project_id = match.group(1).upper()
             self.resource_id = match.group(2)
-            self.value_id = None
+            self.value_id = None  # type: ignore[assignment]
 
             submitted_timestamp = match.group(3)
 
@@ -112,13 +115,7 @@ class ArkUrlInfo:
             return self.settings.top_config["TopLevelObjectUrl"]
         else:
             project_config = self.settings.config[self.project_id]
-
-            if project_config.getboolean("UsePhp"):
-                # return the redirect URL of a PHP-SALSAH object
-                return self._to_php_redirect_url(project_config)
-            else:
-                # return the redirect URL of a DSP object
-                return self._to_dsp_redirect_url(project_config)
+            return self._to_dsp_redirect_url(project_config)
 
     def to_resource_iri(self) -> str:
         """
@@ -138,7 +135,7 @@ class ArkUrlInfo:
             generic_namespace_url = uuid.NAMESPACE_URL
             dasch_uuid_ns = uuid.uuid5(generic_namespace_url, "https://dasch.swiss")  # cace8b00-717e-50d5-bcb9-486f39d733a2
             resource_id = template_dict["resource_id"]
-            dsp_iri = base64.urlsafe_b64encode(uuid.uuid5(dasch_uuid_ns, resource_id).bytes).decode("utf-8")
+            dsp_iri = base64.urlsafe_b64encode(uuid.uuid5(dasch_uuid_ns, resource_id).bytes).decode("utf-8")  # type: ignore[arg-type]
             # remove the padding ('==') from the end of the string
             dsp_iri = dsp_iri[:-2]
             template_dict["resource_id"] = dsp_iri
@@ -192,40 +189,9 @@ class ArkUrlInfo:
 
         return request_template.substitute(template_dict)
 
-    def _to_php_redirect_url(self, project_config: SectionProxy) -> str:
-        """
-        In case it's called on a PHP-SALSAH object, converts the ARK URL to the URL that the client should be
-        redirected to.
-        """
-        template_dict = self.template_dict.copy()
-        template_dict["host"] = project_config["Host"]
-
-        # it's a resource
-        if self.resource_id is not None:
-            try:
-                resource_int_id = (int(self.resource_id, 16) // self.settings.resource_int_id_factor) - 1
-            except ValueError:
-                raise ArkUrlException(f"Invalid resource ID: {self.resource_id}")
-
-            template_dict["resource_int_id"] = resource_int_id
-
-            if self.timestamp is None:
-                request_template = Template(project_config["PhpResourceRedirectUrl"])
-            else:
-                request_template = Template(project_config["PhpResourceVersionRedirectUrl"])
-
-                # The PHP server only takes timestamps in the format YYYYMMDD
-                template_dict["timestamp"] = self.timestamp[0:TIMESTAMP_LENGTH]
-
-        # it's a project
-        else:
-            request_template = Template(project_config["DSPProjectRedirectUrl"])
-            template_dict["project_host"] = project_config["ProjectHost"]
-
-        return request_template.substitute(template_dict)
-
 
 def _add_check_digit_and_escape(uuid: str) -> str:
+=======
     """
     Adds a check digit to a Base64-encoded UUID, and escapes the result.
     """
@@ -257,7 +223,7 @@ class ArkUrlFormatter:
 
     settings: ArkUrlSettings
 
-    def resource_iri_to_ark_url(self, resource_iri, value_id=None, timestamp=None) -> str:
+    def resource_iri_to_ark_url(self, resource_iri: str, value_id: str | None = None, timestamp: str | None = None) -> str:
         """
         Converts a DSP resource IRI to an ARK URL.
         """

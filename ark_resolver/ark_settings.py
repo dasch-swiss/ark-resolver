@@ -29,7 +29,7 @@ class ArkUrlSettings:
     def from_config(config: ConfigParser) -> ArkUrlSettings:
         top_config = config["DEFAULT"]
         dsp_ark_version = 1
-        project_id_pattern = "([0-9A-F]+)"
+        project_id_pattern = "([0-9A-Fa-f]{4})"
         uuid_pattern = "([A-Za-z0-9_=]+)"
         resource_iri_regex = re.compile("^http://rdfh.ch/" + project_id_pattern + "/([A-Za-z0-9_-]+)$")
         resource_int_id_factor = 982451653
@@ -49,7 +49,7 @@ class ArkUrlSettings:
         ark_path_regex = re.compile("^" + ark_path_pattern + "$")
 
         # Patterns for matching PHP-SALSAH ARK version 0 URLs.
-        v0_ark_path_pattern = "ark:/" + top_config["ArkNaan"] + r"/([0-9A-Fa-f]+)-([A-Za-z0-9]+)-[A-Za-z0-9]+(?:\.([0-9]{6,8}))?"
+        v0_ark_path_pattern = "ark:/" + top_config["ArkNaan"] + r"/([0-9A-Fa-f]{4})-([A-Za-z0-9]+)-[A-Za-z0-9]+(?:\.([0-9]{6,8}))?"
         v0_ark_path_regex = re.compile("^" + v0_ark_path_pattern + "$")
 
         return ArkUrlSettings(

@@ -22,7 +22,7 @@ class CheckDigitException(Exception):
 
 
 # Checks whether a code with a check digit is valid.
-def is_valid(code):
+def is_valid(code: str) -> bool:
     if code is None or 0 == len(code):
         return False
 
@@ -34,7 +34,7 @@ def is_valid(code):
 
 
 # Calculates the check digit for a code.
-def calculate_check_digit(code):
+def calculate_check_digit(code: str) -> str:
     if code is None or 0 == len(code):
         raise CheckDigitException("No code provided")
 
@@ -44,7 +44,7 @@ def calculate_check_digit(code):
 
 
 # Calculates the modulus for a code.
-def calculate_modulus(code, includes_check_digit):
+def calculate_modulus(code: str, includes_check_digit: bool) -> int:
     length = len(code)
 
     if not includes_check_digit:
@@ -60,29 +60,29 @@ def calculate_modulus(code, includes_check_digit):
         i += 1
 
     if total == 0:
-        raise CheckDigitException("Invalid code: {}".format(code))
+        raise CheckDigitException(f"Invalid code: {code}")
 
     return total % base64url_alphabet_length
 
 
 # Calculates the weighted value of a character in the code at a specified position.
-def weighted_value(char_value, right_pos):
+def weighted_value(char_value: int, right_pos: int) -> int:
     return char_value * right_pos
 
 
 # Converts a character at a specified position to an integer value.
-def to_int(char):
+def to_int(char: str) -> int:
     char_value = base64url_alphabet.find(char)
 
     if char_value == -1:
-        raise CheckDigitException("Invalid base64url character: '{}'".format(char))
+        raise CheckDigitException(f"Invalid base64url character: '{char}'")
 
     return char_value
 
 
 # Converts an integer value to a check digit.
-def to_check_digit(char_value):
+def to_check_digit(char_value: int) -> str:
     if char_value < 0 or char_value >= base64url_alphabet_length:
-        raise CheckDigitException("Invalid character value: {}".format(char_value))
+        raise CheckDigitException(f"Invalid character value: {char_value}")
 
     return base64url_alphabet[char_value]
