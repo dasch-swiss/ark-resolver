@@ -191,7 +191,6 @@ class ArkUrlInfo:
 
 
 def _add_check_digit_and_escape(uuid: str) -> str:
-=======
     """
     Adds a check digit to a Base64-encoded UUID, and escapes the result.
     """
