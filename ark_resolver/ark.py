@@ -16,8 +16,8 @@ import hmac
 import os
 from asyncio import sleep
 from io import StringIO
-from typing import cast
 from typing import Any
+from typing import cast
 from urllib.parse import unquote
 
 import sentry_sdk
