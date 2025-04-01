@@ -16,6 +16,7 @@ import hmac
 import os
 from asyncio import sleep
 from io import StringIO
+from typing import cast
 from typing import Any
 from urllib.parse import unquote
 
@@ -73,6 +74,10 @@ CORS(app)
 app.blueprint(ark_resolver.health.health_bp)
 
 
+def app_settings() -> ArkUrlSettings:
+    return cast(ArkUrlSettings, app.config.settings)
+
+
 @app.before_server_start
 async def init_sentry(_: Any) -> None:
     sentry_dsn = os.environ.get("ARK_SENTRY_DSN", None)
@@ -115,7 +120,7 @@ def get_safe_config() -> str:
     """
     # Make a copy of the configuration.
     config_output = StringIO()
-    app.config.settings.config.write(config_output)
+    app_settings().config.write(config_output)
     safe_config = configparser.ConfigParser()
     safe_config.read_string(config_output.getvalue())
 
@@ -170,7 +175,7 @@ async def reload(req: Request) -> HTTPResponse:
         submitted_signature = signature_header.split("=")[1]
 
         # Compute a signature for the request using the configured GitHub secret.
-        secret = app.config.settings.top_config["ArkGitHubSecret"]
+        secret = app_settings().top_config["ArkGitHubSecret"]
         computed_signature = hmac.new(secret.encode(), req.body, hashlib.sha1).hexdigest()
 
         # If the submitted signature is the same as the computed one, the request is valid.
@@ -203,7 +208,7 @@ async def catch_all(_: Request, path: str = "") -> HTTPResponse:
         span.set_attribute("ark_id", ark_id_decoded)  # Attach ARK ID as metadata
 
         try:
-            redirect_url = ArkUrlInfo(settings=app.config.settings, ark_id=ark_id_decoded).to_redirect_url()
+            redirect_url = ArkUrlInfo(settings=app_settings(), ark_id=ark_id_decoded).to_redirect_url()
             span.set_status(Status(StatusCode.OK))  # Mark as successful
         except ArkUrlException as ex:
             span.set_status(Status(StatusCode.ERROR, "Invalid ARK ID"))

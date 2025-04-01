@@ -62,12 +62,12 @@ class ArkUrlInfo:
             escaped_resource_id_with_check_digit = match.group(3)
 
             if escaped_resource_id_with_check_digit is not None:
-                self.resource_id = unescape_and_validate_uuid(ark_url=ark_id, escaped_uuid=escaped_resource_id_with_check_digit)
+                self.resource_id = _unescape_and_validate_uuid(ark_url=ark_id, escaped_uuid=escaped_resource_id_with_check_digit)
 
                 escaped_value_id_with_check_digit = match.group(4)
 
                 if escaped_value_id_with_check_digit is not None:
-                    self.value_id = unescape_and_validate_uuid(ark_url=ark_id, escaped_uuid=escaped_value_id_with_check_digit)
+                    self.value_id = _unescape_and_validate_uuid(ark_url=ark_id, escaped_uuid=escaped_value_id_with_check_digit)
                 else:
                     self.value_id = None  # type: ignore[assignment]
 
@@ -110,10 +110,12 @@ class ArkUrlInfo:
         """
         if self.project_id is None:
             # return the redirect URL of the top level object
+            # TODO: is this still needed to be supported?
+            # It redirects https://ark.dasch.swiss/ark:/72163/1 to https://dasch.swiss
             return self.settings.top_config["TopLevelObjectUrl"]
         else:
             project_config = self.settings.config[self.project_id]
-            return self.to_dsp_redirect_url(project_config)
+            return self._to_dsp_redirect_url(project_config)
 
     def to_resource_iri(self) -> str:
         """
@@ -140,8 +142,8 @@ class ArkUrlInfo:
 
         return resource_iri_template.substitute(template_dict)
 
-    # TODO: these types from ConfigParser are really messed-up and should be changed to something type-safe
-    def to_dsp_redirect_url(self, project_config: SectionProxy) -> str:
+    # TODO: these types from ConfigParser are really messy and should be changed to something type-safe
+    def _to_dsp_redirect_url(self, project_config: SectionProxy) -> str:
         """
         In case it's called on a DSP object (either version 0 or version 1), converts an ARK URL to the URL that the
         client should be redirected to according to its type (project, resource, or value)
@@ -188,7 +190,8 @@ class ArkUrlInfo:
         return request_template.substitute(template_dict)
 
 
-def add_check_digit_and_escape(uuid: str) -> str:
+def _add_check_digit_and_escape(uuid: str) -> str:
+=======
     """
     Adds a check digit to a Base64-encoded UUID, and escapes the result.
     """
@@ -199,7 +202,7 @@ def add_check_digit_and_escape(uuid: str) -> str:
     return uuid_with_check_digit.replace("-", "=")
 
 
-def unescape_and_validate_uuid(ark_url: str, escaped_uuid: str) -> str:
+def _unescape_and_validate_uuid(ark_url: str, escaped_uuid: str) -> str:
     """
     Unescapes a Base64-encoded UUID, validates its check digit, and returns the unescaped UUID without the check digit.
     """
@@ -232,23 +235,23 @@ class ArkUrlFormatter:
 
         project_id = match.group(1)
         resource_id = match.group(2)
-        escaped_resource_id_with_check_digit = add_check_digit_and_escape(resource_id)
+        escaped_resource_id_with_check_digit = _add_check_digit_and_escape(resource_id)
 
         # checks if there is a value_id
         if value_id is not None:
-            escaped_value_id_with_check_digit = add_check_digit_and_escape(value_id)
+            escaped_value_id_with_check_digit = _add_check_digit_and_escape(value_id)
         else:
             escaped_value_id_with_check_digit = None
 
         # formats and returns the ARK URL
-        return self.format_ark_url(
+        return self._format_ark_url(
             project_id=project_id,
             resource_id_with_check_digit=escaped_resource_id_with_check_digit,
             value_id_with_check_digit=escaped_value_id_with_check_digit,
             timestamp=timestamp,
         )
 
-    def format_ark_url(
+    def _format_ark_url(
         self, project_id: str, resource_id_with_check_digit: str, value_id_with_check_digit: str | None, timestamp: str | None
     ) -> str:
         """
