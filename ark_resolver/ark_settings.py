@@ -15,7 +15,7 @@ class ArkUrlSettings:
         self.config = config
         self.top_config = config["DEFAULT"]
         self.dsp_ark_version = 1
-        self.project_id_pattern = "([0-9A-F]+)"
+        self.project_id_pattern = f"([0-9A-Fa-f]{4})"
         self.uuid_pattern = "([A-Za-z0-9_=]+)"
         self.project_id_regex = re.compile("^" + self.project_id_pattern + "$")
         self.resource_iri_regex = re.compile("^http://rdfh.ch/" + self.project_id_pattern + "/([A-Za-z0-9_-]+)$")
@@ -37,7 +37,9 @@ class ArkUrlSettings:
         self.ark_url_regex = re.compile("^https?://" + self.top_config["ArkExternalHost"] + "/" + self.ark_path_pattern + "$")
 
         # Patterns for matching PHP-SALSAH ARK version 0 URLs.
-        self.v0_ark_path_pattern = "ark:/" + self.top_config["ArkNaan"] + r"/([0-9A-Fa-f]+)-([A-Za-z0-9]+)-[A-Za-z0-9]+(?:\.([0-9]{6,8}))?"
+        self.v0_ark_path_pattern = (
+            "ark:/" + self.top_config["ArkNaan"] + r"/([0-9A-Fa-f]{4})-([A-Za-z0-9]+)-[A-Za-z0-9]+(?:\.([0-9]{6,8}))?"
+        )
         self.v0_ark_path_regex = re.compile("^" + self.v0_ark_path_pattern + "$")
         self.v0_ark_url_regex = re.compile("^https?://" + self.top_config["ArkExternalHost"] + "/" + self.v0_ark_path_pattern + "$")
 
