@@ -374,11 +374,11 @@ mod tests {
         );
         assert_eq!(
             settings.get_project_config("080e").unwrap().get("Host"),
-            Some(&"data.dasch.swiss".to_string())
+            Some(&"app.dasch.swiss".to_string())
         );
         assert_eq!(
             settings.get_project_config("080E").unwrap().get("Host"),
-            Some(&"data.dasch.swiss".to_string())
+            Some(&"app.dasch.swiss".to_string())
         );
     }
 }
