@@ -100,7 +100,12 @@ class ArkUrlInfo:
         """
         Returns the timestamp of the ARK URL.
         """
-        return self.timestamp
+
+        if self.url_version == 0 and self.timestamp is not None:
+            # If the ARK ID is in V0 format, append time
+            return f"{self.timestamp}T000000Z"
+        else:
+            return self.timestamp
 
     def to_redirect_url(self) -> str:
         """

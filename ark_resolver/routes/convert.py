@@ -39,10 +39,6 @@ async def convert(req: Request, ark_id: str = "") -> HTTPResponse:
             resource_iri = ark_url_info.to_resource_iri()
             timestamp = ark_url_info.get_timestamp()
 
-            if ark_url_info.url_version == 0 and timestamp is not None:
-                # If the ARK ID is in V0 format, append time
-                timestamp = f"{timestamp}T000000Z"
-
             converted_ark_id = ArkUrlFormatter(req.app.config.settings).resource_iri_to_ark_id(
                 resource_iri=resource_iri, timestamp=timestamp
             )

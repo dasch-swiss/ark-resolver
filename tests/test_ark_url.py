@@ -50,7 +50,7 @@ def test_ark_url_formatter_to_id(settings):
     resource_iri = ark_url_info.to_resource_iri()
     timestamp = ark_url_info.get_timestamp()
     ark_id_v1 = ark_url_formatter.resource_iri_to_ark_id(resource_iri, timestamp)
-    assert ark_id_v1 == "ark:/00000/1/0002/Ef9heHjPWDS7dMR_gGax2Q0.20190129"
+    assert ark_id_v1 == "ark:/00000/1/0002/Ef9heHjPWDS7dMR_gGax2Q0.20190129T000000Z"
 
 
 def test_ark_url_info_redirect_top_level_object(settings):
