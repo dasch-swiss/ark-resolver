@@ -246,7 +246,7 @@ class ArkUrlFormatter:
         project_id = match.group(1)
         resource_id = match.group(2)
 
-        esc_res_id = add_check_digit_and_escape(resource_id)
+        esc_res_id = _add_check_digit_and_escape(resource_id)
 
         res = f"ark:/{self.settings.top_config['ArkNaan']}/{self.settings.dsp_ark_version}/{project_id}/{esc_res_id}"
 
