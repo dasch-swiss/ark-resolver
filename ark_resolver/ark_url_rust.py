@@ -6,6 +6,7 @@
 import base64
 import uuid
 from configparser import SectionProxy
+from dataclasses import dataclass
 from string import Template
 from urllib import parse
 
@@ -144,7 +145,7 @@ class ArkUrlInfo:
 
         return resource_iri_template.substitute(template_dict)
 
-    # TODO: these types from ConfigParser are really messed-up and should be changed to something type-safe
+    # TODO: these types from ConfigParser are really messey and should be changed to something type-safe
     def to_dsp_redirect_url(self, project_config: SectionProxy) -> str:
         """
         In case it's called on a DSP object (either version 0 or version 1), converts an ARK URL to the URL that the
@@ -217,13 +218,13 @@ def unescape_and_validate_uuid(ark_url: str, escaped_uuid: str) -> str:
     return unescaped_uuid[0:-1]
 
 
+@dataclass
 class ArkUrlFormatter:
     """
     Handles formatting of DSP resource IRIs into ARK URLs
     """
 
-    def __init__(self, settings: ArkUrlSettings) -> None:
-        self.settings = settings
+    settings: ArkUrlSettings
 
     def resource_iri_to_ark_id(self, resource_iri: str, timestamp: str | None = None) -> str:
         """

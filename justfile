@@ -20,7 +20,6 @@ upgrade:
 
 # Run all rust fmt and clippy checks
 rustcheck:
-    just --check --fmt --unstable
     cargo +nightly fmt --check
     cargo clippy -- -D warnings
 
@@ -31,6 +30,7 @@ pycheck:
 
 # Run all checks
 check: rustcheck pycheck
+    just --check --fmt --unstable
 
 # Format all rust code
 rustfmt:
@@ -58,7 +58,11 @@ pytest: build
 
 # Run ark-resolver locally
 run: build
-    export ARK_REGISTRY="ark_resolver/ark-registry.ini" && uv run ark_resolver/ark.py -s -c ark_resolver/ark-config.ini
+    export ARK_REGISTRY="ark_resolver/ark-registry.ini" && uv run ark_resolver/main.py -s -c ark_resolver/ark-config.ini
+
+# Run ark-resolver as CLI forwarding any arguments (e.g. `just ark-cli --help`)
+ark-cli *ARGS:
+    uv run ark_resolver/main.py {{ ARGS }}
 
 # Run Rust unit tests
 test: build
@@ -83,6 +87,10 @@ docker-build-arm:
 # Build and push linux/amd64 and linux/arm64 Docker images to Docker hub
 docker-publish-intel:
     docker buildx build --platform linux/amd64 -t {{ DOCKER_IMAGE }} --push .
+
+# build amd run docker image
+docker-run: docker-build-arm
+    docker compose up -d
 
 # Output the BUILD_TAG
 docker-image-tag:
