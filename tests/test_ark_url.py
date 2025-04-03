@@ -16,7 +16,7 @@ def settings():
     return ark.load_settings(config_path)
 
 
-def test_ark_url_formatter(settings):
+def test_ark_url_formatter_to_url(settings):
     ark_url_formatter = ArkUrlFormatter(settings)
     # generate an ARK URL from a resource IRI without a timestamp
     resource_iri = "http://rdfh.ch/0001/cmfk1DMHRBiR4-_6HXpEFA"
@@ -35,6 +35,22 @@ def test_ark_url_formatter(settings):
     # generate an ARK URL from a resource IRI and value UUID with a timestamp
     ark_url = ark_url_formatter.resource_iri_to_ark_url(resource_iri=resource_iri, value_id=value_id, timestamp="20180604T085622513Z")
     assert ark_url == "https://ark.example.org/ark:/00000/1/0001/cmfk1DMHRBiR4=_6HXpEFAn/pLlW4ODASumZfZFbJdpw1gu.20180604T085622513Z"
+
+
+def test_ark_url_formatter_to_id(settings):
+    ark_url_formatter = ArkUrlFormatter(settings)
+
+    ark_url_info = ArkUrlInfo(settings, "ark:/00000/0002-779b9990a0c3f-6e")
+    resource_iri = ark_url_info.to_resource_iri()
+    timestamp = ark_url_info.get_timestamp()
+    ark_id_v1 = ark_url_formatter.resource_iri_to_ark_id(resource_iri, timestamp)
+    assert ark_id_v1 == "ark:/00000/1/0002/Ef9heHjPWDS7dMR_gGax2Q0"
+
+    ark_url_info = ArkUrlInfo(settings, "ark:/00000/0002-779b9990a0c3f-6e.20190129")
+    resource_iri = ark_url_info.to_resource_iri()
+    timestamp = ark_url_info.get_timestamp()
+    ark_id_v1 = ark_url_formatter.resource_iri_to_ark_id(resource_iri, timestamp)
+    assert ark_id_v1 == "ark:/00000/1/0002/Ef9heHjPWDS7dMR_gGax2Q0.20190129"
 
 
 def test_ark_url_info_redirect_top_level_object(settings):

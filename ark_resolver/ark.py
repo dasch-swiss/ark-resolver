@@ -23,9 +23,6 @@ from urllib.parse import unquote
 
 import requests
 import sentry_sdk
-from opentelemetry import trace
-from opentelemetry.propagate import set_global_textmap
-from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.trace import Status
 from opentelemetry.trace import StatusCode
 from sanic import HTTPResponse
@@ -34,33 +31,17 @@ from sanic import Sanic
 from sanic import response
 from sanic.log import logger
 from sanic_cors import CORS  # type: ignore[import-untyped]
-from sentry_sdk.integrations.opentelemetry import SentryPropagator
-from sentry_sdk.integrations.opentelemetry import SentrySpanProcessor
 from sentry_sdk.integrations.rust_tracing import RustTracingIntegration
 
 import ark_resolver.check_digit as check_digit_py
-import ark_resolver.health
+import ark_resolver.routes.convert
+import ark_resolver.routes.health
 from ark_resolver import _rust  # type: ignore[attr-defined]
 from ark_resolver.ark_url import ArkUrlException
 from ark_resolver.ark_url import ArkUrlFormatter
 from ark_resolver.ark_url import ArkUrlInfo
 from ark_resolver.ark_url import ArkUrlSettings
-
-#################################################################################################
-# OpenTelemetry
-
-provider = TracerProvider()
-
-# Add both Sentry and Console span processors to the provider
-provider.add_span_processor(SentrySpanProcessor())  # Sentry integration
-
-set_global_textmap(SentryPropagator())
-
-# Sets the global default tracer provider
-trace.set_tracer_provider(provider)
-
-# Creates a tracer from the global tracer provider
-tracer = trace.get_tracer(__name__)
+from ark_resolver.tracing import tracer
 
 #################################################################################################
 # Server implementation.
@@ -71,7 +52,8 @@ app = Sanic("ark_resolver")
 CORS(app)
 
 # Register health check route
-app.blueprint(ark_resolver.health.health_bp)
+app.blueprint(ark_resolver.routes.health.health_bp)
+app.blueprint(ark_resolver.routes.convert.convert_bp)
 
 
 @app.before_server_start
@@ -206,6 +188,7 @@ async def catch_all(_: Request, path: str = "") -> HTTPResponse:
         try:
             redirect_url = ArkUrlInfo(settings=app.config.settings, ark_id=ark_id_decoded).to_redirect_url()
             span.set_status(Status(StatusCode.OK))  # Mark as successful
+
         except ArkUrlException as ex:
             span.set_status(Status(StatusCode.ERROR, "Invalid ARK ID"))
             logger.error(f"Invalid ARK ID: {ark_id_decoded}")
@@ -213,7 +196,7 @@ async def catch_all(_: Request, path: str = "") -> HTTPResponse:
 
         except check_digit_py.CheckDigitException as ex:
             span.set_status(Status(StatusCode.ERROR, "Check Digit Error"))
-            logger.error(f"Invalid ARK ID: {ark_id_decoded}", exc_info=ex)
+            logger.error(f"Invalid ARK ID (wrong check digit): {ark_id_decoded}", exc_info=ex)
             return response.text(body=ex.message, status=400)
 
         except KeyError as ex:
