@@ -55,8 +55,8 @@ async def convert(req: Request, ark_id: str = "") -> HTTPResponse:
             return response.text(body=ex.message, status=400)
 
         except KeyError as ex:
-            span.set_status(Status(StatusCode.ERROR, "KeyError"))
-            logger.error(f"Invalid ARK ID: {ark_id_decoded}", exc_info=ex)
+            span.set_status(Status(StatusCode.ERROR, "KeyError (project not found)"))
+            logger.error(f"Invalid ARK ID (project not found): {ark_id_decoded}", exc_info=ex)
             return response.text(body="Invalid ARK ID", status=400)
 
         span.add_event("Convert result", {"convert_result": converted_ark_id})

@@ -200,9 +200,9 @@ async def catch_all(_: Request, path: str = "") -> HTTPResponse:
             return response.text(body=ex.message, status=400)
 
         except KeyError as ex:
-            span.set_status(Status(StatusCode.ERROR, "KeyError"))
-            logger.error(f"Invalid ARK ID: {ark_id_decoded}", exc_info=ex)
-            return response.text(body="Invalid ARK ID", status=400)
+            span.set_status(Status(StatusCode.ERROR, "KeyError (project not found)"))
+            logger.error(f"Invalid ARK ID (project not found): {ark_id_decoded}", exc_info=ex)
+            return response.text(body="Invalid ARK ID (project not found)", status=400)
 
         span.add_event("Redirecting", {"redirect_url": redirect_url})
         logger.info(f"Redirecting {ark_id_decoded} to {redirect_url}")
