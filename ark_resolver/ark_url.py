@@ -141,6 +141,17 @@ class ArkUrlInfo:
             "timestamp": self.timestamp,
         }
 
+    def get_timestamp(self) -> str | None:
+        """
+        Returns the timestamp of the ARK URL.
+        """
+
+        if self.url_version == 0 and self.timestamp is not None:
+            # If the ARK ID is in V0 format, append time
+            return f"{self.timestamp}T000000Z"
+        else:
+            return self.timestamp
+
     def to_redirect_url(self) -> str:
         """
         Checks if the object that it is called on is the top level object which is redirected to TopLevelObjectURL.
@@ -257,6 +268,29 @@ class ArkUrlFormatter:
 
     def __init__(self, settings: ArkUrlSettings) -> None:
         self.settings = settings
+
+    def resource_iri_to_ark_id(self, resource_iri: str, timestamp: str | None = None) -> str:
+        """
+        Converts a DSP resource IRI (not values) to an ARK ID.
+        """
+        # checks if given resource IRI is valid and matches (i.e. tokenizes) it into project_id and resource_id
+        match = self.settings.resource_iri_regex.match(resource_iri)
+
+        if match is None:
+            raise ArkUrlException("Invalid resource IRI: {}".format(resource_iri))
+
+        project_id = match.group(1)
+        resource_id = match.group(2)
+
+        esc_res_id = add_check_digit_and_escape(resource_id)
+
+        res = f"ark:/{self.settings.top_config['ArkNaan']}/{self.settings.dsp_ark_version}/{project_id}/{esc_res_id}"
+
+        if timestamp is not None:
+            res = res + f".{timestamp}"
+
+        # formats and returns the ARK ID
+        return res
 
     def resource_iri_to_ark_url(self, resource_iri: str, value_id: str | None = None, timestamp: str | None = None) -> str:
         """
