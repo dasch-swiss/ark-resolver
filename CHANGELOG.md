@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.12.0](https://github.com/dasch-swiss/ark-resolver/compare/ark_resolver-v1.11.0...ark_resolver-v1.12.0) (2025-04-03)
+
+
+### Enhancements
+
+* Add convert route ([#88](https://github.com/dasch-swiss/ark-resolver/issues/88)) ([9b379e8](https://github.com/dasch-swiss/ark-resolver/commit/9b379e87a7226f7a32affd928b49990f22c0f994))
+
 ## [1.11.0](https://github.com/dasch-swiss/ark-resolver/compare/ark_resolver-v1.10.0...ark_resolver-v1.11.0) (2025-03-31)
 
 
