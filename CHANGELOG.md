@@ -1,5 +1,24 @@
 # Changelog
 
+## [1.11.0](https://github.com/dasch-swiss/ark-resolver/compare/ark_resolver-v1.10.0...ark_resolver-v1.11.0) (2025-03-31)
+
+
+### Maintenances
+
+* Add ruff formatting and linting ([#82](https://github.com/dasch-swiss/ark-resolver/issues/82)) ([2f7ef20](https://github.com/dasch-swiss/ark-resolver/commit/2f7ef20193a74b7c63b57528f702e0598993ab3c))
+* Add type checking ([#83](https://github.com/dasch-swiss/ark-resolver/issues/83)) ([94613ca](https://github.com/dasch-swiss/ark-resolver/commit/94613cad086244b240b332bd0ce839de5e290f6e))
+* Improve repo setup ([#80](https://github.com/dasch-swiss/ark-resolver/issues/80)) ([7b4d095](https://github.com/dasch-swiss/ark-resolver/commit/7b4d095fb638224bc766bfb08ae60b6fb8359b12))
+
+
+### Enhancements
+
+* Decode urlencoded ARK-IDs ([#85](https://github.com/dasch-swiss/ark-resolver/issues/85)) ([9162dd4](https://github.com/dasch-swiss/ark-resolver/commit/9162dd4927a8ebcaf281aca16e969eb1b023f93e))
+
+
+### Bug Fixes
+
+* Ignore case for project shortcode ([#87](https://github.com/dasch-swiss/ark-resolver/issues/87)) ([af36c51](https://github.com/dasch-swiss/ark-resolver/commit/af36c5107e88db2a7f2239875e389532e0216a19))
+
 ## [1.10.0](https://github.com/dasch-swiss/ark-resolver/compare/ark_resolver-v1.9.0...ark_resolver-v1.10.0) (2025-03-19)
 
 
