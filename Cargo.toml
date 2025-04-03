@@ -8,20 +8,20 @@ crate-type = ["cdylib"]
 
 [dependencies]
 base64 = "0.22.1"
-config = "0.15.8"
+config = "0.15.11"
 pyo3 = { version = "0.22.6", features = ["extension-module"] }
 pyo3-python-tracing-subscriber = "0.1.0"
 regex = "1.9"
-reqwest = { version = "0.12.12", features = ["blocking"] }
+reqwest = { version = "0.12.15", features = ["blocking"] }
 serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0.139"
+serde_json = "1.0.140"
 tracing-subscriber = "0.3.19"
 
 [dev-dependencies]
 assert_cmd = "2.0"
 
 [build-dependencies]
-pyo3-build-config = "0.23.5"
+pyo3-build-config = "0.24.1"
 
 [features]
 extension-module = ["pyo3/extension-module"]
