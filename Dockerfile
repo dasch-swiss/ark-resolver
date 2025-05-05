@@ -64,7 +64,9 @@ FROM python:3.12-alpine3.21 AS runtime
 RUN apk add --no-cache \
     shadow \
     libgcc \
-    libstdc++
+    libstdc++ \
+    jq \
+    curl
 
 
 # Don't run your app as root.
@@ -94,6 +96,13 @@ RUN \
     && python3 -c "import sys; print(sys.path)" \
     && python3 -c 'import ark_resolver; print(ark_resolver)' \
     && python3 -c 'from ark_resolver import _rust; print(_rust)'
+
+# Enable periodic container health check
+HEALTHCHECK --start-period=60s --interval=60s --timeout=10s --retries=3 \
+  CMD curl -sS --fail "http://127.0.0.1:${ARK_INTERNAL_PORT:-3336}/health" \
+      | jq -r .status \
+      | grep '^ok$' \
+      || exit 1
 
 COPY --chmod=0755 entrypoint.sh /entrypoint.sh
 ENTRYPOINT ["/entrypoint.sh"]
