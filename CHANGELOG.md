@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.12.1](https://github.com/dasch-swiss/ark-resolver/compare/ark_resolver-v1.12.0...ark_resolver-v1.12.1) (2025-05-05)
+
+
+### Maintenances
+
+* Add docker healthcheck (INFRA-787) ([#94](https://github.com/dasch-swiss/ark-resolver/issues/94)) ([aa51e99](https://github.com/dasch-swiss/ark-resolver/commit/aa51e9975f7e9cce295ac0d6e64da4c039bd879f))
+
 ## [1.12.0](https://github.com/dasch-swiss/ark-resolver/compare/ark_resolver-v1.11.0...ark_resolver-v1.12.0) (2025-04-03)
 
 
