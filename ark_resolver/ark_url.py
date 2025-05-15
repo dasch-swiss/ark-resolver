@@ -4,14 +4,14 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import base64
-import re
 import uuid
-from configparser import ConfigParser
 from configparser import SectionProxy
+from dataclasses import dataclass
 from string import Template
 from urllib import parse
 
 import ark_resolver.check_digit as check_digit_py
+from ark_resolver.ark_settings import ArkUrlSettings
 
 #################################################################################################
 # Tools for generating and parsing DSP ARK URLs.
@@ -19,51 +19,13 @@ import ark_resolver.check_digit as check_digit_py
 TIMESTAMP_LENGTH = 8
 
 
-class ArkUrlSettings:
-    """
-    Settings used for the validation of values used in the context of ARK URLs
-    """
-
-    def __init__(self, config: ConfigParser) -> None:
-        self.config = config
-        self.top_config = config["DEFAULT"]
-        self.dsp_ark_version = 1
-        self.project_id_pattern = "([0-9A-Fa-f]{4})"
-        self.uuid_pattern = "([A-Za-z0-9_=]+)"
-        self.project_id_regex = re.compile("^" + self.project_id_pattern + "$")
-        self.resource_iri_regex = re.compile("^http://rdfh.ch/" + self.project_id_pattern + "/([A-Za-z0-9_-]+)$")
-        self.resource_int_id_factor = 982451653
-
-        # Patterns for matching DSP ARK version 1 URLs.
-        self.ark_path_pattern = (
-            "ark:/"
-            + self.top_config["ArkNaan"]
-            + "/([0-9]+)(?:/"
-            + self.project_id_pattern
-            + "(?:/"
-            + self.uuid_pattern
-            + "(?:/"
-            + self.uuid_pattern
-            + r")?(?:\.([0-9]{8}T[0-9]{6,15}Z))?)?)?"
-        )
-        self.ark_path_regex = re.compile("^" + self.ark_path_pattern + "$")
-        self.ark_url_regex = re.compile("^https?://" + self.top_config["ArkExternalHost"] + "/" + self.ark_path_pattern + "$")
-
-        # Patterns for matching PHP-SALSAH ARK version 0 URLs.
-        self.v0_ark_path_pattern = (
-            "ark:/" + self.top_config["ArkNaan"] + r"/([0-9A-Fa-f]{4})-([A-Za-z0-9]+)-[A-Za-z0-9]+(?:\.([0-9]{6,8}))?"
-        )
-        self.v0_ark_path_regex = re.compile("^" + self.v0_ark_path_pattern + "$")
-        self.v0_ark_url_regex = re.compile("^https?://" + self.top_config["ArkExternalHost"] + "/" + self.v0_ark_path_pattern + "$")
-
-
+@dataclass
 class ArkUrlException(Exception):
     """
     Exception used in the context of ARK URLs
     """
 
-    def __init__(self, message: str) -> None:
-        self.message = message
+    message: str
 
 
 class ArkUrlInfo:
@@ -100,12 +62,12 @@ class ArkUrlInfo:
             escaped_resource_id_with_check_digit = match.group(3)
 
             if escaped_resource_id_with_check_digit is not None:
-                self.resource_id = unescape_and_validate_uuid(ark_url=ark_id, escaped_uuid=escaped_resource_id_with_check_digit)
+                self.resource_id = _unescape_and_validate_uuid(ark_url=ark_id, escaped_uuid=escaped_resource_id_with_check_digit)
 
                 escaped_value_id_with_check_digit = match.group(4)
 
                 if escaped_value_id_with_check_digit is not None:
-                    self.value_id = unescape_and_validate_uuid(ark_url=ark_id, escaped_uuid=escaped_value_id_with_check_digit)
+                    self.value_id = _unescape_and_validate_uuid(ark_url=ark_id, escaped_uuid=escaped_value_id_with_check_digit)
                 else:
                     self.value_id = None  # type: ignore[assignment]
 
@@ -159,10 +121,12 @@ class ArkUrlInfo:
         """
         if self.project_id is None:
             # return the redirect URL of the top level object
+            # TODO: is this still needed to be supported?
+            # It redirects https://ark.dasch.swiss/ark:/72163/1 to https://dasch.swiss
             return self.settings.top_config["TopLevelObjectUrl"]
         else:
             project_config = self.settings.config[self.project_id]
-            return self.to_dsp_redirect_url(project_config)
+            return self._to_dsp_redirect_url(project_config)
 
     def to_resource_iri(self) -> str:
         """
@@ -189,8 +153,8 @@ class ArkUrlInfo:
 
         return resource_iri_template.substitute(template_dict)
 
-    # TODO: these types from ConfigParser are really messed-up and should be changed to something type-safe
-    def to_dsp_redirect_url(self, project_config: SectionProxy) -> str:
+    # TODO: these types from ConfigParser are really messy and should be changed to something type-safe
+    def _to_dsp_redirect_url(self, project_config: SectionProxy) -> str:
         """
         In case it's called on a DSP object (either version 0 or version 1), converts an ARK URL to the URL that the
         client should be redirected to according to its type (project, resource, or value)
@@ -237,7 +201,7 @@ class ArkUrlInfo:
         return request_template.substitute(template_dict)
 
 
-def add_check_digit_and_escape(uuid: str) -> str:
+def _add_check_digit_and_escape(uuid: str) -> str:
     """
     Adds a check digit to a Base64-encoded UUID, and escapes the result.
     """
@@ -248,7 +212,7 @@ def add_check_digit_and_escape(uuid: str) -> str:
     return uuid_with_check_digit.replace("-", "=")
 
 
-def unescape_and_validate_uuid(ark_url: str, escaped_uuid: str) -> str:
+def _unescape_and_validate_uuid(ark_url: str, escaped_uuid: str) -> str:
     """
     Unescapes a Base64-encoded UUID, validates its check digit, and returns the unescaped UUID without the check digit.
     """
@@ -261,13 +225,13 @@ def unescape_and_validate_uuid(ark_url: str, escaped_uuid: str) -> str:
     return unescaped_uuid[0:-1]
 
 
+@dataclass
 class ArkUrlFormatter:
     """
     Handles formatting of DSP resource IRIs into ARK URLs
     """
 
-    def __init__(self, settings: ArkUrlSettings) -> None:
-        self.settings = settings
+    settings: ArkUrlSettings
 
     def resource_iri_to_ark_id(self, resource_iri: str, timestamp: str | None = None) -> str:
         """
@@ -282,7 +246,7 @@ class ArkUrlFormatter:
         project_id = match.group(1)
         resource_id = match.group(2)
 
-        esc_res_id = add_check_digit_and_escape(resource_id)
+        esc_res_id = _add_check_digit_and_escape(resource_id)
 
         res = f"ark:/{self.settings.top_config['ArkNaan']}/{self.settings.dsp_ark_version}/{project_id}/{esc_res_id}"
 
@@ -304,23 +268,23 @@ class ArkUrlFormatter:
 
         project_id = match.group(1)
         resource_id = match.group(2)
-        escaped_resource_id_with_check_digit = add_check_digit_and_escape(resource_id)
+        escaped_resource_id_with_check_digit = _add_check_digit_and_escape(resource_id)
 
         # checks if there is a value_id
         if value_id is not None:
-            escaped_value_id_with_check_digit = add_check_digit_and_escape(value_id)
+            escaped_value_id_with_check_digit = _add_check_digit_and_escape(value_id)
         else:
             escaped_value_id_with_check_digit = None
 
         # formats and returns the ARK URL
-        return self.format_ark_url(
+        return self._format_ark_url(
             project_id=project_id,
             resource_id_with_check_digit=escaped_resource_id_with_check_digit,
             value_id_with_check_digit=escaped_value_id_with_check_digit,
             timestamp=timestamp,
         )
 
-    def format_ark_url(
+    def _format_ark_url(
         self, project_id: str, resource_id_with_check_digit: str, value_id_with_check_digit: str | None, timestamp: str | None
     ) -> str:
         """

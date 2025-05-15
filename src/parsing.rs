@@ -45,6 +45,7 @@ mod tests {
 
     #[test]
     fn test_project_id_regex() {
+        // TODO: can be removed? In python, this pattern was obsolete
         let re = Regex::new(&format!(r"^{}$", PROJECT_ID_PATTERN)).unwrap();
 
         // Valid project IDs
