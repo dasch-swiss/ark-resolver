@@ -109,3 +109,6 @@ venv.bak/
 
 # VS Code
 .vscode/
+
+# Zed
+.zed/
