@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.12.2](https://github.com/dasch-swiss/ark-resolver/compare/ark_resolver-v1.12.1...ark_resolver-v1.12.2) (2025-06-06)
+
+
+### Maintenances
+
+* Project setup ([19e0dfa](https://github.com/dasch-swiss/ark-resolver/commit/19e0dfa59c586122bd36d231a84534c7e94b64eb))
+
+
+### Documentation
+
+* Structured logging design ([#99](https://github.com/dasch-swiss/ark-resolver/issues/99)) ([8627ad3](https://github.com/dasch-swiss/ark-resolver/commit/8627ad38ebadd95dd4ac08f9b90ace9dcf02f4e4))
+
 ## [1.12.1](https://github.com/dasch-swiss/ark-resolver/compare/ark_resolver-v1.12.0...ark_resolver-v1.12.1) (2025-05-05)
 
 

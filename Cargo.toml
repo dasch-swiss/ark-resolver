@@ -1,6 +1,6 @@
 [package]
 name = "ark_resolver"
-version = "1.12.1"
+version = "1.12.2"
 edition = "2021"
 
 [lib]
