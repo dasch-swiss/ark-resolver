@@ -9,7 +9,7 @@ from configparser import SectionProxy
 from string import Template
 from urllib import parse
 
-import ark_resolver.check_digit as check_digit_py
+import ark_resolver.check_digit_rust as check_digit_py
 
 # TODO: the rust module does not seem to be typed in python land.
 from ark_resolver._rust import ArkUrlSettings  # type: ignore[import-untyped]
@@ -51,7 +51,6 @@ class ArkUrlInfo:
             escaped_resource_id_with_check_digit = match[2]
 
             if escaped_resource_id_with_check_digit is not None:
-                # TODO: move to rust
                 self.resource_id = unescape_and_validate_uuid(ark_url=ark_id, escaped_uuid=escaped_resource_id_with_check_digit)
 
                 escaped_value_id_with_check_digit = match[3]
@@ -126,7 +125,10 @@ class ArkUrlInfo:
         objects that have been migrated from salsah.org to DSP.
         """
         project_config = self.settings.get_project_config(self.project_id)
-        resource_iri_template = Template(project_config.get("DSPResourceIri"))
+        resource_iri_str = project_config.get("DSPResourceIri")
+        if resource_iri_str is None:
+            raise ArkUrlException("DSPResourceIri not found in project config")
+        resource_iri_template = Template(resource_iri_str)
 
         template_dict = self.template_dict.copy()
         template_dict["host"] = project_config.get("Host")
@@ -137,6 +139,8 @@ class ArkUrlInfo:
             generic_namespace_url = uuid.NAMESPACE_URL
             dasch_uuid_ns = uuid.uuid5(generic_namespace_url, "https://dasch.swiss")  # cace8b00-717e-50d5-bcb9-486f39d733a2
             resource_id = template_dict["resource_id"]
+            if not isinstance(resource_id, str):
+                raise ArkUrlException(f"Resource ID must be string for UUID generation, got {type(resource_id)}")
             dsp_iri = base64.urlsafe_b64encode(uuid.uuid5(dasch_uuid_ns, resource_id).bytes).decode("utf-8")
             # remove the padding ('==') from the end of the string
             dsp_iri = dsp_iri[:-2]
@@ -151,29 +155,52 @@ class ArkUrlInfo:
         client should be redirected to according to its type (project, resource, or value)
         """
 
-        resource_iri_template = Template(project_config.get("DSPResourceIri"))  # type: ignore[arg-type]
-        project_iri_template = Template(project_config.get("DSPProjectIri"))  # type: ignore[arg-type]
+        resource_iri_str = project_config.get("DSPResourceIri")
+        if resource_iri_str is None:
+            raise ArkUrlException("DSPResourceIri not found in project config")
+        resource_iri_template = Template(resource_iri_str)
+        project_iri_str = project_config.get("DSPProjectIri")
+        if project_iri_str is None:
+            raise ArkUrlException("DSPProjectIri not found in project config")
+        project_iri_template = Template(project_iri_str)
 
         template_dict = self.template_dict.copy()
         template_dict["host"] = project_config.get("Host")
 
         # it's a project
         if self.resource_id is None:
-            request_template = Template(project_config.get("DSPProjectRedirectUrl"))
+            redirect_url = project_config.get("DSPProjectRedirectUrl")
+            if redirect_url is None:
+                raise ArkUrlException("DSPProjectRedirectUrl not found in project config")
+            request_template = Template(redirect_url)
             template_dict["project_host"] = project_config.get("ProjectHost")
         # it's a resource
         elif self.value_id is None:
             if self.timestamp is None:
-                request_template = Template(project_config.get("DSPResourceRedirectUrl"))
+                redirect_url = project_config.get("DSPResourceRedirectUrl")
+                if redirect_url is None:
+                    raise ArkUrlException("DSPResourceRedirectUrl not found in project config")
+                request_template = Template(redirect_url)
             else:
-                request_template = Template(project_config.get("DSPResourceVersionRedirectUrl"))
+                redirect_url = project_config.get("DSPResourceVersionRedirectUrl")
+                if redirect_url is None:
+                    raise ArkUrlException("DSPResourceVersionRedirectUrl not found in project config")
+                request_template = Template(redirect_url)
         # it's a value
         elif self.value_id:
             template_dict["value_id"] = self.value_id
             if self.timestamp is None:
-                request_template = Template(project_config.get("DSPValueRedirectUrl"))  # type: ignore[arg-type]
+                redirect_url = project_config.get("DSPValueRedirectUrl")
+                if redirect_url is None:
+                    raise ArkUrlException("DSPValueRedirectUrl not found in project config")
+                request_template = Template(redirect_url)
             else:
-                request_template = Template(project_config.get("DSPValueVersionRedirectUrl"))  # type: ignore[arg-type]
+                redirect_url = project_config.get("DSPValueVersionRedirectUrl")
+                if redirect_url is None:
+                    raise ArkUrlException("DSPValueVersionRedirectUrl not found in project config")
+                request_template = Template(redirect_url)
+        else:
+            raise ArkUrlException("Unable to determine redirect template for ARK URL")
 
         # in case of a version 0 ARK URL, convert the resource ID to a UUID (base64 encoded)
         if self.url_version == 0:
