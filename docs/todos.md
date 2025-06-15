@@ -17,7 +17,7 @@ Phase 1 focuses on migrating core functions to Rust while maintaining Python com
 - [x] **UUID Processing Functions** - Complete migration with Python parity testing
 
 ### 🚧 In Progress
-- [ ] **Pure Rust Core Architecture Refactoring** - Major refactoring to enable pure Rust unit testing
+- [ ] **Hexagonal Architecture Migration** - Major refactoring to hexagonal architecture (see [ADR-0001](adr/0001-adopt-hexagonal-architecture.md))
 
 ### 📋 Planned (Phase 1)
 
@@ -86,99 +86,92 @@ Phase 1 focuses on migrating core functions to Rust while maintaining Python com
 - Performance should be measured before and after migration
 - Code should follow existing Rust and Python conventions in the codebase
 
-## Phase 2: Pure Rust Core Architecture Refactoring
+## Phase 2: Hexagonal Architecture Migration
 
 ### 🎯 Strategic Goal
-Refactor the current PyO3-coupled Rust code into a pure Rust core with PyO3 only at the boundary layer. This enables:
+Migrate to hexagonal architecture (Ports & Adapters pattern) as documented in [ADR-0001](adr/0001-adopt-hexagonal-architecture.md). This enables:
 - Pure Rust unit testing (no Python runtime dependencies)
-- Better performance (no PyO3 overhead in core logic)
-- Cleaner architecture for long-term migration to pure Rust service
+- Framework-independent business logic
+- Easy addition of new interfaces (HTTP, CLI)
+- Clear separation of concerns
 
 ### 🏗️ Target Architecture
 ```
-Python -> [PyO3 Bridge] -> [Pure Rust Core] -> [Future: Rust Service]
+Adapters (PyO3, HTTP, CLI) → Ports (Traits) → Use Cases → Domain (Pure Rust)
 ```
 
-### 📋 Detailed Plan
+### 📋 Detailed Migration Plan
 
-#### Phase 2.1: Pure Rust Foundation
-- [ ] **Create Pure Rust Error Types** (`src/core/errors.rs`)
-  - [ ] `UuidProcessingError` with specific variants
-  - [ ] `CheckDigitError` with detailed error information
-  - [ ] `ArkUrlError` for future ARK URL parsing errors
-  - [ ] Remove PyO3 dependencies from error types
+#### Phase 2.1: Check Digit Module (Start Here)
+- [ ] **Domain Layer** (`src/core/domain/check_digit.rs`)
+  - [ ] Pure mathematical check digit functions
+  - [ ] Zero external dependencies
+  - [ ] Comprehensive unit tests
 
-- [ ] **Pure Rust Core Modules** (`src/core/`)
-  - [ ] `uuid_processing.rs` - Core UUID logic without PyO3
-  - [ ] `check_digit.rs` - Core check digit logic without PyO3
-  - [ ] `ark_url_parsing.rs` - Future: ARK URL parsing logic
-  - [ ] `settings.rs` - Future: Configuration logic
+- [ ] **Error Layer** (`src/core/errors/check_digit.rs`)
+  - [ ] Simplified domain-specific errors
+  - [ ] Clear indication of failure without implementation details
 
-#### Phase 2.2: PyO3 Bridge Layer
-- [ ] **Create PyO3 Bridge** (`src/pyo3_bridge/`)
-  - [ ] `uuid_processing.rs` - PyO3 wrappers for UUID functions
-  - [ ] `check_digit.rs` - PyO3 wrappers for check digit functions  
-  - [ ] Error conversion from Rust types to PyO3 types
-  - [ ] Maintain exact API compatibility
+- [ ] **Use Case Layer** (`src/core/use_cases/check_digit_validator.rs`)
+  - [ ] `CheckDigitValidator` struct with business logic orchestration
+  - [ ] Grouped functionality approach
 
-#### Phase 2.3: Testing Infrastructure
-- [ ] **Pure Rust Unit Tests**
-  - [ ] Test core logic without PyO3 dependencies
-  - [ ] Comprehensive test coverage for all core functions
-  - [ ] Performance benchmarks for core functions
-  - [ ] Enable `cargo test --lib` to work properly
+- [ ] **Port Layer** (`src/core/ports/check_digit.rs`)
+  - [ ] `CheckDigitPort` trait defining abstract interface
 
-- [ ] **Integration Testing Strategy**
-  - [ ] PyO3 bridge tests via Python (existing pytest approach)
-  - [ ] End-to-end tests for full application behavior
-  - [ ] Cross-implementation validation tests
+- [ ] **Adapter Layer** (`src/adapters/pyo3/check_digit.rs`)
+  - [ ] PyO3 wrappers maintaining exact API compatibility
+  - [ ] Error conversion from domain to PyO3 errors
 
-#### Phase 2.4: Migration Benefits
-- [ ] **Development Experience**
-  - [ ] Fast Rust unit test feedback loop
-  - [ ] Better IDE support and debugging
-  - [ ] Cleaner error messages and stack traces
+- [ ] **Integration** (`src/lib.rs`)
+  - [ ] Update to use new architecture
+  - [ ] Enable `cargo test --lib` for check digit module
 
-- [ ] **Performance Improvements**
-  - [ ] Remove PyO3 overhead from hot paths
-  - [ ] Better compiler optimizations
-  - [ ] Direct Rust-to-Rust function calls
+#### Phase 2.2: UUID Processing Module
+- [ ] **Domain Layer** (`src/core/domain/uuid_processing.rs`)
+  - [ ] Pure UUID transformation logic
+  - [ ] Dependencies on check digit domain functions
 
-#### Phase 2.5: Long-term Service Migration Path
-- [ ] **Gradual Component Migration**
-  - [ ] ARK URL parsing → Pure Rust core + PyO3 bridge
-  - [ ] Settings/configuration → Pure Rust core + PyO3 bridge
-  - [ ] HTTP routing logic → Pure Rust core + PyO3 bridge
+- [ ] **Use Case Layer** (`src/core/use_cases/ark_uuid_processor.rs`)
+  - [ ] `ArkUuidProcessor` with orchestration logic
+  - [ ] Integration with check digit use cases
 
-- [ ] **Pure Rust Service Development**
-  - [ ] Axum-based HTTP server
-  - [ ] Pure Rust ARK resolution logic
-  - [ ] Configuration management
-  - [ ] Logging and observability
+- [ ] **Port and Adapter Layers**
+  - [ ] Following same pattern as check digit module
 
-- [ ] **Deployment Strategy**
-  - [ ] Parallel deployment (Rust service + Python service)
-  - [ ] Traffic splitting and validation
-  - [ ] Full migration to Rust service
-  - [ ] Remove Python code and PyO3 bridge
+#### Phase 2.3: Settings and Configuration
+- [ ] **Domain Layer** - Configuration parsing and validation
+- [ ] **Use Case Layer** - Settings management use cases
+- [ ] **Port Layer** - Settings provider interfaces
+- [ ] **Adapter Layer** - File system and environment variable adapters
 
-### 🚨 Current Limitation
+#### Phase 2.4: ARK URL Processing
+- [ ] **Domain Layer** - ARK URL parsing and formatting logic
+- [ ] **Use Case Layer** - ARK resolution and conversion use cases
+- [ ] **Integration** - Complete core business logic migration
+
+#### Phase 2.5: Future Adapters
+- [ ] **HTTP Adapter** - Axum-based REST API (future Phase 3)
+- [ ] **CLI Adapter** - Command-line interface (future)
+- [ ] **Service Migration** - Replace Python server with pure Rust
+
+### 🚨 Current Limitation Resolution
 **Issue**: `just test` fails due to PyO3 runtime dependencies in Rust unit tests  
-**Temporary Fix**: Disabled Rust unit tests, comprehensive Python integration tests validate functionality  
-**Permanent Solution**: Phase 2 refactoring will enable pure Rust unit testing
+**Solution**: Hexagonal architecture with pure domain layer enables `cargo test --lib`  
+**Timeline**: Phase 2.1 (Check Digit Module) will immediately resolve this issue
 
 ### 📝 Implementation Context
-- **Current State**: UUID processing and check digit functions migrated to Rust with PyO3 wrappers
-- **Test Coverage**: 27/27 tests passing via Python integration tests
-- **Performance**: Using Rust implementations with PyO3 bridge overhead
-- **Architecture**: Rust code tightly coupled to PyO3 throughout
+- **Architecture Decision**: [ADR-0001](adr/0001-adopt-hexagonal-architecture.md)
+- **Migration Strategy**: Incremental, one module at a time
+- **API Compatibility**: Maintained during entire migration
+- **Testing**: Pure Rust unit tests + existing Python integration tests
 
 ### 🎯 Success Criteria for Phase 2
 - [ ] `cargo test --lib` runs successfully with comprehensive test coverage
-- [ ] Pure Rust core modules with no PyO3 dependencies
-- [ ] PyO3 bridge layer maintains exact API compatibility
-- [ ] Performance improvements measurable in benchmarks
-- [ ] Clean architecture supporting future pure Rust service
+- [ ] Clear separation: Domain → Use Cases → Ports → Adapters
+- [ ] PyO3 adapter maintains exact API compatibility
+- [ ] Framework-independent core business logic
+- [ ] Foundation for future HTTP and CLI adapters
 
 ---
 
