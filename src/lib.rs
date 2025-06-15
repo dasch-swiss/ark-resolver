@@ -1,8 +1,8 @@
-use crate::ark_url_settings::load_settings;
-use crate::ark_url_settings::ArkUrlSettings;
-use crate::base64url_ckeck_digit::{
+use crate::adapters::pyo3::check_digit::{
     calculate_check_digit, calculate_modulus, is_valid, to_check_digit, to_int, weighted_value,
 };
+use crate::ark_url_settings::load_settings;
+use crate::ark_url_settings::ArkUrlSettings;
 use crate::uuid_processing::{
     add_check_digit_and_escape_internal, unescape_and_validate_uuid_internal,
 };
@@ -11,8 +11,10 @@ use pyo3::types::PyModule;
 use pyo3::wrap_pyfunction_bound;
 use tracing_subscriber::prelude::*;
 
+mod adapters;
 mod ark_url_settings;
 mod base64url_ckeck_digit;
+pub mod core;
 mod parsing;
 mod uuid_processing;
 
