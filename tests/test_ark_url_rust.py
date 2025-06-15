@@ -2,8 +2,8 @@ import os
 
 import pytest
 
-from ark_resolver import _rust
 from ark_resolver import ark_url_rust
+from ark_resolver._rust import load_settings  # type: ignore[import-untyped]
 
 
 @pytest.fixture(scope="module")
@@ -11,7 +11,7 @@ def settings():
     """Loads settings."""
     config_path = "ark_resolver/ark-config.ini"
     os.environ["ARK_REGISTRY"] = "ark_resolver/ark-registry.ini"
-    return _rust.load_settings(config_path)
+    return load_settings(config_path)
 
 
 def test_ark_url_formatter_to_url(settings):

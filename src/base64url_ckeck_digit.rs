@@ -8,6 +8,7 @@ const BASE64URL_ALPHABET_LENGTH: usize = 64;
 /// Custom error type for check digit operations
 #[derive(Error, Debug)]
 pub enum CheckDigitError {
+    #[allow(dead_code)]
     #[error("No code provided")]
     NoCode,
     #[error("Invalid code: {0}")]

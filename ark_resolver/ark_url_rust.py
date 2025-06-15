@@ -9,10 +9,10 @@ from configparser import SectionProxy
 from string import Template
 from urllib import parse
 
-import ark_resolver.check_digit_rust as check_digit_py
-
 # TODO: the rust module does not seem to be typed in python land.
 from ark_resolver._rust import ArkUrlSettings  # type: ignore[import-untyped]
+from ark_resolver._rust import add_check_digit_and_escape as rust_add_check_digit_and_escape  # type: ignore[import-untyped]
+from ark_resolver._rust import unescape_and_validate_uuid as rust_unescape_and_validate_uuid  # type: ignore[import-untyped]
 from ark_resolver.ark_url import ArkUrlException
 
 #################################################################################################
@@ -223,25 +223,21 @@ class ArkUrlInfo:
 def add_check_digit_and_escape(uuid: str) -> str:
     """
     Adds a check digit to a Base64-encoded UUID, and escapes the result.
+    Uses the Rust implementation for performance.
     """
-    check_digit = check_digit_py.calculate_check_digit(uuid)
-    uuid_with_check_digit = uuid + check_digit
-
-    # Escape '-' as '=' in the resource ID and check digit, because '-' can be ignored in ARK URLs.
-    return uuid_with_check_digit.replace("-", "=")
+    return rust_add_check_digit_and_escape(uuid)
 
 
 def unescape_and_validate_uuid(ark_url: str, escaped_uuid: str) -> str:
     """
     Unescapes a Base64-encoded UUID, validates its check digit, and returns the unescaped UUID without the check digit.
+    Uses the Rust implementation for performance.
     """
-    # '-' is escaped as '=' in the UUID and check digit, because '-' can be ignored in ARK URLs.
-    unescaped_uuid = escaped_uuid.replace("=", "-")
-
-    if not check_digit_py.is_valid(unescaped_uuid):
-        raise ArkUrlException(f"Invalid ARK ID: {ark_url}")
-
-    return unescaped_uuid[0:-1]
+    try:
+        return rust_unescape_and_validate_uuid(ark_url, escaped_uuid)
+    except ValueError as e:
+        # Convert Rust ValueError to ArkUrlException for API compatibility
+        raise ArkUrlException(str(e))
 
 
 class ArkUrlFormatter:
