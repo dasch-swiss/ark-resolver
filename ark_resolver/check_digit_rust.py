@@ -9,14 +9,12 @@ This module provides the same interface as check_digit.py but uses Rust implemen
 for improved performance.
 """
 
-from ark_resolver._rust import (
-    calculate_check_digit as _calculate_check_digit,
-    calculate_modulus as _calculate_modulus,
-    is_valid as _is_valid,
-    to_check_digit as _to_check_digit,
-    to_int as _to_int,
-    weighted_value as _weighted_value,
-)
+from ark_resolver._rust import calculate_check_digit as _calculate_check_digit
+from ark_resolver._rust import calculate_modulus as _calculate_modulus
+from ark_resolver._rust import is_valid as _is_valid
+from ark_resolver._rust import to_check_digit as _to_check_digit
+from ark_resolver._rust import to_int as _to_int
+from ark_resolver._rust import weighted_value as _weighted_value
 
 
 class CheckDigitException(Exception):

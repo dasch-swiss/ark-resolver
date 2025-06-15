@@ -17,7 +17,8 @@ The project is in the process of migrating the codebase from Python to Rust. Thi
 
 1. Add functionality to Rust and run in parallel with the Python implementation to verify correct behavior in production,
    while the Python behavior is user facing. The convention is, that the same Python code that now uses the Rust library
-   should be duplicated into files that end with `_rust.py`.
+   should be duplicated into files that end with `_rust.py`. Important: Always add comparative unit tests between the
+   Python and Rust implementations.
 2. Change user facing behavior to Rust implementation, and start removing Python.
 3. Refactor Rust code into a service using Axum, and removing Python(PyO3/Maturin.
 
