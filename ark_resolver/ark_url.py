@@ -170,6 +170,8 @@ class ArkUrlInfo:
         version 5 and created from the DaSCH specific namespace and the resource_id coming from the ARK URL. This is for
         objects that have been migrated from salsah.org to DSP.
         """
+        if self.project_id is None:
+            raise ArkUrlException("Project ID is required for resource IRI generation")
         project_config = self.settings.config[self.project_id]
         resource_iri_template = Template(project_config["DSPResourceIri"])
 
