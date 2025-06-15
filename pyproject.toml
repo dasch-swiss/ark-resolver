@@ -93,6 +93,7 @@ select = [
 ignore = [
   "S104",    # flake8-bugbear: hardcoded-bind-all-interfaces
   "PLR0912", # pylint: too-many-branches  # TODO: enable once fixed
+  "PLR0915", # pylint: too-many-statements  # TODO: enable once refactored
 ]
 
 [tool.ruff.lint.per-file-ignores]
@@ -109,3 +110,14 @@ force-single-line = true
 [tool.pyright]
 venvPath = "."
 venv = ".venv"
+include = ["ark_resolver", "tests"]
+exclude = ["**/__pycache__", "target/**", ".venv/**"]
+strictListInference = true
+strictDictionaryInference = true
+strictSetInference = true
+reportMissingTypeStubs = "warning"
+reportImportCycles = "warning"
+reportUnusedImport = "warning"
+reportUnusedVariable = "warning"
+reportDuplicateImport = "warning"
+typeCheckingMode = "basic"

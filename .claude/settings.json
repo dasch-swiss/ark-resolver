@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls:*)",
+      "Bash(find:*)",
+      "Bash(rg:*)",
+      "Bash(uv run:*)",
+      "Bash(just build)",
+      "Bash(just check)",
+      "Bash(just test:*)",
+      "Bash(cargo test:*)",
+      "Bash(just pytest tests/test_check_digit_rust.py -v)"
+    ],
+    "deny": []
+  }
+}

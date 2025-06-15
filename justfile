@@ -25,9 +25,10 @@ rustcheck:
     cargo clippy -- -D warnings
 
 # Run all python checks
-pycheck:
+pycheck: build
     uv run ruff format --check .
     uv run ruff check .
+    uv run pyright
 
 # Run all checks
 check: rustcheck pycheck
