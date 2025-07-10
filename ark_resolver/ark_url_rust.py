@@ -11,6 +11,7 @@ from urllib import parse
 
 # TODO: the rust module does not seem to be typed in python land.
 from ark_resolver._rust import ArkUrlSettings  # type: ignore[import-untyped]
+from ark_resolver._rust import ArkUrlFormatter  # type: ignore[import-untyped]
 from ark_resolver._rust import add_check_digit_and_escape as rust_add_check_digit_and_escape  # type: ignore[import-untyped]
 from ark_resolver._rust import unescape_and_validate_uuid as rust_unescape_and_validate_uuid  # type: ignore[import-untyped]
 from ark_resolver.ark_url import ArkUrlException
@@ -240,91 +241,5 @@ def unescape_and_validate_uuid(ark_url: str, escaped_uuid: str) -> str:
         raise ArkUrlException(str(e))
 
 
-class ArkUrlFormatter:
-    """
-    Handles formatting of DSP resource IRIs into ARK URLs
-    """
-
-    def __init__(self, settings: ArkUrlSettings) -> None:
-        self.settings = settings
-
-    def resource_iri_to_ark_id(self, resource_iri: str, timestamp: str | None = None) -> str:
-        """
-        Converts a DSP resource IRI (not values) to an ARK ID.
-        """
-        # checks if given resource IRI is valid and matches (i.e. tokenizes) it into project_id and resource_id
-        match = self.settings.match_resource_iri(resource_iri)
-
-        if match is None:
-            raise ArkUrlException("Invalid resource IRI: {}".format(resource_iri))
-
-        project_id = match[0]
-        resource_id = match[1]
-
-        esc_res_id = add_check_digit_and_escape(resource_id)
-
-        res = f"ark:/{self.settings.ark_config.get('ArkNaan')}/{self.settings.dsp_ark_version}/{project_id}/{esc_res_id}"
-
-        if timestamp is not None:
-            res = res + f".{timestamp}"
-
-        # formats and returns the ARK ID
-        return res
-
-    def resource_iri_to_ark_url(self, resource_iri: str, value_id: str | None = None, timestamp: str | None = None) -> str:
-        """
-        Converts a DSP resource IRI to an ARK URL.
-        """
-        # checks if given resource IRI is valid and matches (i.e. tokenizes) it into project_id and resource_id
-        match = self.settings.match_resource_iri(resource_iri)
-
-        if match is None:
-            raise ArkUrlException("Invalid resource IRI: {}".format(resource_iri))
-
-        project_id = match[0]
-        resource_id = match[1]
-        escaped_resource_id_with_check_digit = add_check_digit_and_escape(resource_id)
-
-        # checks if there is a value_id
-        if value_id is not None:
-            escaped_value_id_with_check_digit = add_check_digit_and_escape(value_id)
-        else:
-            escaped_value_id_with_check_digit = None
-
-        # formats and returns the ARK URL
-        return self.format_ark_url(
-            project_id=project_id,
-            resource_id_with_check_digit=escaped_resource_id_with_check_digit,
-            value_id_with_check_digit=escaped_value_id_with_check_digit,
-            timestamp=timestamp,
-        )
-
-    def format_ark_url(
-        self, project_id: str, resource_id_with_check_digit: str, value_id_with_check_digit: str | None, timestamp: str | None
-    ) -> str:
-        """
-        Formats and returns a DSP ARK URL from the given parameters and configuration.
-        """
-        if self.settings.ark_config.get_boolean("ArkHttpsProxy"):
-            protocol = "https"
-        else:
-            protocol = "http"
-
-        url = "{}://{}/ark:/{}/{}/{}/{}".format(
-            protocol,
-            self.settings.ark_config.get("ArkExternalHost"),
-            self.settings.ark_config.get("ArkNaan"),
-            self.settings.dsp_ark_version,
-            project_id,
-            resource_id_with_check_digit,
-        )
-
-        # If there's a value UUID, add it.
-        if value_id_with_check_digit is not None:
-            url += "/" + value_id_with_check_digit
-
-        # If there's a timestamp, add it as an object variant.
-        if timestamp is not None:
-            url += "." + timestamp
-
-        return url
+# ArkUrlFormatter is now implemented in Rust and imported above
+# The Rust implementation provides exact API compatibility with the original Python version
