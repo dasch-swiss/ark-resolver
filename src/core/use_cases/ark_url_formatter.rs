@@ -2,7 +2,7 @@
 /// This layer orchestrates domain functions and provides business logic coordination.
 use crate::core::domain::ark_url_formatter;
 use crate::core::errors::ark_url_formatter::{ArkUrlFormatterError, ArkUrlFormatterResult};
-use crate::uuid_processing::add_check_digit_and_escape_internal;
+use crate::core::use_cases::ark_uuid_processor::ArkUuidProcessor;
 
 /// Configuration interface for ARK URL formatting operations.
 /// This allows the use case to work with different configuration sources.
@@ -62,7 +62,9 @@ impl<C: ArkUrlFormatterConfig> ArkUrlFormatterService<C> {
         }
 
         // Add check digit and escape the resource ID
-        let escaped_resource_id = add_check_digit_and_escape_internal(&resource_id)
+        let uuid_processor = ArkUuidProcessor::new();
+        let escaped_resource_id = uuid_processor
+            .add_check_digit_and_escape(&resource_id)
             .map_err(|e| ArkUrlFormatterError::UuidProcessingError(e.to_string()))?;
 
         // Get configuration values
@@ -105,13 +107,17 @@ impl<C: ArkUrlFormatterConfig> ArkUrlFormatterService<C> {
         }
 
         // Add check digit and escape the resource ID
-        let escaped_resource_id = add_check_digit_and_escape_internal(&resource_id)
+        let uuid_processor = ArkUuidProcessor::new();
+        let escaped_resource_id = uuid_processor
+            .add_check_digit_and_escape(&resource_id)
             .map_err(|e| ArkUrlFormatterError::UuidProcessingError(e.to_string()))?;
 
         // Process value ID if provided
         let escaped_value_id = if let Some(vid) = value_id {
+            let uuid_processor = ArkUuidProcessor::new();
             Some(
-                add_check_digit_and_escape_internal(vid)
+                uuid_processor
+                    .add_check_digit_and_escape(vid)
                     .map_err(|e| ArkUrlFormatterError::UuidProcessingError(e.to_string()))?,
             )
         } else {
