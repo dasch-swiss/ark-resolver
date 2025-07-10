@@ -70,20 +70,20 @@ impl ConfigWrapper {
 }
 
 #[pyclass]
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ArkUrlSettings {
     #[pyo3(get)]
-    ark_config: ConfigWrapper,
+    pub ark_config: ConfigWrapper,
     #[pyo3(get)]
-    default_config: HashMap<String, String>,
-    registry: HashMap<String, ConfigWrapper>,
+    pub default_config: HashMap<String, String>,
+    pub registry: HashMap<String, ConfigWrapper>,
     #[pyo3(get)]
-    dsp_ark_version: u8,
+    pub dsp_ark_version: u8,
     #[pyo3(get)]
-    resource_int_id_factor: u32,
-    resource_iri_regex: Regex,
-    ark_path_regex: Regex,
-    v0_ark_path_regex: Regex,
+    pub resource_int_id_factor: u32,
+    pub resource_iri_regex: Regex,
+    pub ark_path_regex: Regex,
+    pub v0_ark_path_regex: Regex,
 }
 
 #[pymethods]
