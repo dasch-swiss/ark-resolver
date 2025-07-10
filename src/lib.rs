@@ -1,4 +1,5 @@
 use crate::adapters::pyo3::ark_url_formatter::ArkUrlFormatter;
+use crate::adapters::pyo3::ark_url_info::PyArkUrlInfo;
 use crate::adapters::pyo3::check_digit::{
     calculate_check_digit, calculate_modulus, is_valid, to_check_digit, to_int, weighted_value,
 };
@@ -66,6 +67,9 @@ fn _rust(py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
 
     // ARK URL formatter
     m.add_class::<ArkUrlFormatter>()?;
+
+    // ARK URL info
+    m.add_class::<PyArkUrlInfo>()?;
 
     Ok(())
 }

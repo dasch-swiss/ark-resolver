@@ -54,13 +54,23 @@ Phase 1 focuses on migrating core functions to Rust while maintaining Python com
   - [x] Implement hexagonal architecture pattern
   - [x] Full test parity validation (27/27 tests passing)
 
-- [ ] **ARK URL Info Processing Migration**
-  - [ ] Migrate `ArkUrlInfo.__init__()` parsing logic to Rust
-  - [ ] Migrate `to_redirect_url()` method to Rust
-  - [ ] Migrate `to_resource_iri()` method to Rust
-  - [ ] Migrate `to_dsp_redirect_url()` method to Rust
+- [x] **ARK URL Info Processing Migration** - ✅ COMPLETED!
+  - [x] Migrate `ArkUrlInfo.__init__()` parsing logic to Rust
+  - [x] Migrate `to_redirect_url()` method to Rust
+  - [x] Migrate `to_resource_iri()` method to Rust
+  - [x] Migrate `to_dsp_redirect_url()` method to Rust
+  - [x] Implement hexagonal architecture pattern
+  - [x] PyO3 bindings with exact API compatibility
+  - [x] Full domain/use case/port/adapter separation
 
 #### Testing & Validation
+- [ ] **Complete ARK URL Info Testing** - ⚠️ INCOMPLETE
+  - [ ] Add comprehensive Rust unit tests for ArkUrlInfo (domain layer has basic tests but needs expansion)
+  - [ ] Create `ark_url_info_rust.py` with Rust implementation for parallel execution
+  - [ ] Add comparative tests between Python and Rust ArkUrlInfo implementations
+  - [ ] Validate full test parity and compatibility for ArkUrlInfo
+  - [ ] Add performance benchmarks for ArkUrlInfo operations
+
 - [ ] **Expand Test Coverage**
   - [ ] Add comprehensive Rust unit tests for all migrated functions
   - [ ] Ensure test parity between Python and Rust implementations
@@ -165,12 +175,42 @@ Adapters (PyO3, HTTP, CLI) → Ports (Traits) → Use Cases → Domain (Pure Rus
 - [ ] **Port Layer** - Settings provider interfaces
 - [ ] **Adapter Layer** - File system and environment variable adapters
 
-#### Phase 2.4: ARK URL Processing
-- [ ] **Domain Layer** - ARK URL parsing and formatting logic
-- [ ] **Use Case Layer** - ARK resolution and conversion use cases
+#### Phase 2.4: ARK URL Info Processing - ✅ COMPLETED!
+- [x] **Domain Layer** (`src/core/domain/ark_url_info.rs`)
+  - [x] Pure ARK URL information processing logic
+  - [x] Template dictionary generation
+  - [x] Version detection and level classification
+  - [x] Comprehensive unit tests (basic coverage, needs expansion)
+
+- [x] **Error Layer** (`src/core/errors/ark_url_info.rs`)
+  - [x] Domain-specific errors for ARK URL processing
+  - [x] Clean error handling with detailed error types
+
+- [x] **Use Case Layer** (`src/core/use_cases/ark_url_info_processor.rs`)
+  - [x] `ArkUrlInfoProcessor` with business logic orchestration
+  - [x] ARK ID parsing for versions 0 and 1
+  - [x] URL generation and template substitution
+  - [x] Comprehensive mock-based unit tests
+
+- [x] **Port Layer** (`src/core/ports/ark_url_info.rs`)
+  - [x] Abstract interfaces for parsing, configuration, templates, and UUID generation
+  - [x] Clean separation of concerns
+
+- [x] **Adapter Layer** (`src/adapters/pyo3/ark_url_info.rs`)
+  - [x] PyO3 wrappers maintaining exact API compatibility
+  - [x] Error conversion from domain to PyO3 errors
+  - [x] Full Python API compatibility
+
+- [x] **Integration** (`src/lib.rs`)
+  - [x] Updated to expose ArkUrlInfo class to Python
+  - [x] Pure Rust unit tests working with `just test`
+
+#### Phase 2.5: Additional ARK URL Processing
+- [ ] **Domain Layer** - Remaining ARK URL parsing and formatting logic
+- [ ] **Use Case Layer** - Additional ARK resolution and conversion use cases
 - [ ] **Integration** - Complete core business logic migration
 
-#### Phase 2.5: Future Adapters
+#### Phase 2.6: Future Adapters
 - [ ] **HTTP Adapter** - Axum-based REST API (future Phase 3)
 - [ ] **CLI Adapter** - Command-line interface (future)
 - [ ] **Service Migration** - Replace Python server with pure Rust
