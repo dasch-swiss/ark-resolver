@@ -29,14 +29,27 @@ pub trait ArkUrlInfoPort {
 pub trait ArkUrlParsingPort {
     /// Parses an ARK ID as version 1 format.
     /// Returns tuple of (version, project_id, resource_id, value_id, timestamp).
-    fn parse_ark_v1(&self, ark_id: &str) -> Option<(u32, Option<String>, Option<String>, Option<String>, Option<String>)>;
+    fn parse_ark_v1(
+        &self,
+        ark_id: &str,
+    ) -> Option<(
+        u32,
+        Option<String>,
+        Option<String>,
+        Option<String>,
+        Option<String>,
+    )>;
 
     /// Parses an ARK ID as version 0 format.
     /// Returns tuple of (project_id, resource_id, timestamp).
     fn parse_ark_v0(&self, ark_id: &str) -> Option<(String, String, Option<String>)>;
 
     /// Unescapes and validates a UUID from an ARK URL.
-    fn unescape_and_validate_uuid(&self, ark_url: &str, escaped_uuid: &str) -> ArkUrlInfoResult<String>;
+    fn unescape_and_validate_uuid(
+        &self,
+        ark_url: &str,
+        escaped_uuid: &str,
+    ) -> ArkUrlInfoResult<String>;
 }
 
 /// Port for configuration access operations.
@@ -52,7 +65,11 @@ pub trait ConfigurationPort {
     fn get_top_level_redirect_url(&self) -> String;
 
     /// Gets a project-specific template by name.
-    fn get_project_template(&self, project_id: &str, template_name: &str) -> ArkUrlInfoResult<String>;
+    fn get_project_template(
+        &self,
+        project_id: &str,
+        template_name: &str,
+    ) -> ArkUrlInfoResult<String>;
 
     /// Gets the host for a project.
     fn get_project_host(&self, project_id: &str) -> ArkUrlInfoResult<String>;
@@ -62,7 +79,11 @@ pub trait ConfigurationPort {
 /// Abstracts template substitution and URL encoding.
 pub trait TemplatePort {
     /// Substitutes values into a template string.
-    fn substitute(&self, template: &str, values: &HashMap<String, String>) -> ArkUrlInfoResult<String>;
+    fn substitute(
+        &self,
+        template: &str,
+        values: &HashMap<String, String>,
+    ) -> ArkUrlInfoResult<String>;
 
     /// URL-encodes a string.
     fn url_encode(&self, input: &str) -> ArkUrlInfoResult<String>;
