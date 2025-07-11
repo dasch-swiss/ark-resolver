@@ -16,6 +16,9 @@ use pyo3::prelude::*;
 use std::collections::HashMap;
 use uuid::Uuid;
 
+// Import the Python ArkUrlException
+pyo3::import_exception!(ark_resolver.ark_url, ArkUrlException);
+
 /// PyO3 wrapper for ArkUrlInfo providing Python compatibility.
 #[pyclass(name = "ArkUrlInfo")]
 #[derive(Debug, Clone)]
@@ -37,7 +40,7 @@ impl PyArkUrlInfo {
         let processor = ArkUrlInfoProcessor::new(parser, config, template, uuid_generator);
         
         let ark_info = processor.parse_ark_id(&ark_id)
-            .map_err(|e| PyErr::new::<pyo3::exceptions::PyValueError, _>(e.to_string()))?;
+            .map_err(|e| PyErr::new::<ArkUrlException, _>(e.to_string()))?;
 
         Ok(Self {
             inner: ark_info,
@@ -46,7 +49,7 @@ impl PyArkUrlInfo {
     }
 
     /// Returns the formatted timestamp of the ARK URL.
-    fn get_formatted_timestamp(&self) -> Option<String> {
+    fn get_timestamp(&self) -> Option<String> {
         self.inner.get_timestamp()
     }
 
@@ -60,7 +63,7 @@ impl PyArkUrlInfo {
         let processor = ArkUrlInfoProcessor::new(parser, config, template, uuid_generator);
         
         processor.generate_redirect_url(&self.inner)
-            .map_err(|e| PyErr::new::<pyo3::exceptions::PyValueError, _>(e.to_string()))
+            .map_err(|e| PyErr::new::<ArkUrlException, _>(e.to_string()))
     }
 
     /// Returns the resource IRI for this ARK URL.
@@ -73,7 +76,7 @@ impl PyArkUrlInfo {
         let processor = ArkUrlInfoProcessor::new(parser, config, template, uuid_generator);
         
         processor.generate_resource_iri(&self.inner)
-            .map_err(|e| PyErr::new::<pyo3::exceptions::PyValueError, _>(e.to_string()))
+            .map_err(|e| PyErr::new::<ArkUrlException, _>(e.to_string()))
     }
 
     /// Returns the DSP redirect URL for this ARK URL.
@@ -86,7 +89,7 @@ impl PyArkUrlInfo {
         let processor = ArkUrlInfoProcessor::new(parser, config, template, uuid_generator);
         
         processor.generate_dsp_redirect_url(&self.inner)
-            .map_err(|e| PyErr::new::<pyo3::exceptions::PyValueError, _>(e.to_string()))
+            .map_err(|e| PyErr::new::<ArkUrlException, _>(e.to_string()))
     }
 
     /// Returns the template dictionary for this ARK URL.
@@ -115,10 +118,7 @@ impl PyArkUrlInfo {
         self.inner.value_id.clone()
     }
 
-    #[getter]
-    fn timestamp(&self) -> Option<String> {
-        self.inner.timestamp.clone()
-    }
+    // Note: timestamp is accessed via get_timestamp() method, not as a property
 }
 
 /// Adapter for ARK URL parsing operations.
@@ -200,7 +200,8 @@ impl<'a> ConfigurationPort for ConfigurationAdapter<'a> {
 
     fn get_project_host(&self, project_id: &str) -> Result<String, ArkUrlInfoError> {
         self.settings.get_project_config(project_id)
-            .and_then(|config| config.get("Host").cloned())
+            .and_then(|config| config.get("ProjectHost").cloned())
+            .or_else(|| self.settings.default_config.get("ProjectHost").cloned())
             .ok_or_else(|| ArkUrlInfoError::configuration_error("Project host not found"))
     }
 }
@@ -214,6 +215,12 @@ impl TemplatePort for TemplateAdapter {
         
         for (key, value) in values {
             let placeholder = format!("${{{}}}", key);
+            result = result.replace(&placeholder, value);
+        }
+        
+        // Also handle simple $key format (without braces)
+        for (key, value) in values {
+            let placeholder = format!("${}", key);
             result = result.replace(&placeholder, value);
         }
         

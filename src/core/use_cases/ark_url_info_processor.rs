@@ -136,7 +136,9 @@ where
 
         // Build template dictionary
         let mut template_dict = ark_info.to_template_dict();
-        template_dict.insert("host".to_string(), self.config.get_project_host(project_id)?);
+        
+        // Use regular Host for $host template variable
+        template_dict.insert("host".to_string(), self.config.get_project_template(project_id, "Host")?);
 
         // Handle version 0 resource ID conversion
         if ark_info.is_version_0() {
@@ -145,7 +147,7 @@ where
             template_dict.insert("resource_id".to_string(), converted_resource_id.to_string());
         }
 
-        // Add project host for project-level redirects
+        // Add project host for project-level redirects (uses ProjectHost)
         if ark_info.is_project_level() {
             template_dict.insert("project_host".to_string(), self.config.get_project_host(project_id)?);
         }
@@ -167,7 +169,7 @@ where
         let template = self.config.get_project_template(project_id, "DSPResourceIri")?;
 
         let mut template_dict = ark_info.to_template_dict();
-        template_dict.insert("host".to_string(), self.config.get_project_host(project_id)?);
+        template_dict.insert("host".to_string(), self.config.get_project_template(project_id, "Host")?);
 
         // Handle version 0 UUID generation
         if ark_info.is_version_0() {
