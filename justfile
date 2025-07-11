@@ -72,7 +72,7 @@ test:
 
 # Run smoke tests that will spinn up a Docker container and call the health endpoint
 smoke-test: build
-    cargo test --tests smoke_test
+    cargo test --test smoke_test
 
 # Clean up build artifacts
 clean:
