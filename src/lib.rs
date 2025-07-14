@@ -14,8 +14,6 @@ use pyo3::wrap_pyfunction_bound;
 use tracing_subscriber::prelude::*;
 
 mod adapters;
-// mod ark_url_settings; // Replaced by hexagonal architecture
-mod base64url_ckeck_digit;
 pub mod core;
 mod parsing;
 
