@@ -15,7 +15,6 @@ use tracing_subscriber::prelude::*;
 
 mod adapters;
 pub mod core;
-mod parsing;
 
 #[pyfunction]
 pub fn initialize_tracing(py_impl: Bound<'_, PyAny>) {
