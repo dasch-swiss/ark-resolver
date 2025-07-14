@@ -3,9 +3,7 @@ use std::{thread, time::Duration};
 
 fn cleanup_docker() {
     println!("Cleaning up Docker containers...");
-    let _ = Command::new("docker-compose")
-        .args(["down"])
-        .output();
+    let _ = Command::new("docker-compose").args(["down"]).output();
 }
 
 #[test]
@@ -16,14 +14,14 @@ fn smoke_test() {
         .args(["--version"])
         .output()
         .expect("Failed to execute docker command");
-    
+
     if !docker_check.status.success() {
         panic!("Docker is not available. Please start Docker and try again.");
     }
 
     // Ensure cleanup happens even if test panics
     std::panic::set_hook(Box::new(|_| cleanup_docker()));
-    
+
     // Step 1: Start the service using Docker
     println!("Starting service with docker-compose...");
     let mut cmd = Command::new("docker-compose");
@@ -75,12 +73,15 @@ fn smoke_test() {
         .redirect(reqwest::redirect::Policy::none())
         .build()
         .expect("Failed to create HTTP client");
-    
+
     match client.get(redirect_url).send() {
         Ok(response) => {
             if !response.status().is_redirection() {
                 cleanup_docker();
-                panic!("Redirect route should return 3xx status, got: {}", response.status());
+                panic!(
+                    "Redirect route should return 3xx status, got: {}",
+                    response.status()
+                );
             }
             println!("Redirect route test passed");
         }

@@ -107,10 +107,7 @@ mod tests {
     #[test]
     fn test_invalid_ark_id_error() {
         let error = ArkUrlInfoError::invalid_ark_id("invalid-ark");
-        assert_eq!(
-            error.to_string(),
-            "Invalid ARK ID: invalid-ark"
-        );
+        assert_eq!(error.to_string(), "Invalid ARK ID: invalid-ark");
     }
 
     #[test]

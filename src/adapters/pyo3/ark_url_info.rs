@@ -4,11 +4,11 @@
 //! PyO3 adapter for ARK URL information processing.
 //! Provides Python bindings for the Rust ARK URL info functionality.
 
-use crate::ark_url_settings::ArkUrlSettings;
+use crate::adapters::pyo3::settings::ArkUrlSettings;
 use crate::core::domain::ark_url_info::ArkUrlInfo as RustArkUrlInfo;
 use crate::core::errors::ark_url_info::ArkUrlInfoError;
 use crate::core::ports::ark_url_info::{
-    ArkUrlParsingPort, ConfigurationPort, TemplatePort, UuidGenerationPort,
+    ArkUrlParsingPort, ArkV1ParseResult, ConfigurationPort, TemplatePort, UuidGenerationPort,
 };
 use crate::core::use_cases::ark_url_info_processor::ArkUrlInfoProcessor;
 use base64::prelude::*;
@@ -38,8 +38,9 @@ impl PyArkUrlInfo {
         let uuid_generator = UuidGenerationAdapter;
 
         let processor = ArkUrlInfoProcessor::new(parser, config, template, uuid_generator);
-        
-        let ark_info = processor.parse_ark_id(&ark_id)
+
+        let ark_info = processor
+            .parse_ark_id(&ark_id)
             .map_err(|e| PyErr::new::<ArkUrlException, _>(e.to_string()))?;
 
         Ok(Self {
@@ -61,8 +62,9 @@ impl PyArkUrlInfo {
         let uuid_generator = UuidGenerationAdapter;
 
         let processor = ArkUrlInfoProcessor::new(parser, config, template, uuid_generator);
-        
-        processor.generate_redirect_url(&self.inner)
+
+        processor
+            .generate_redirect_url(&self.inner)
             .map_err(|e| PyErr::new::<ArkUrlException, _>(e.to_string()))
     }
 
@@ -74,8 +76,9 @@ impl PyArkUrlInfo {
         let uuid_generator = UuidGenerationAdapter;
 
         let processor = ArkUrlInfoProcessor::new(parser, config, template, uuid_generator);
-        
-        processor.generate_resource_iri(&self.inner)
+
+        processor
+            .generate_resource_iri(&self.inner)
             .map_err(|e| PyErr::new::<ArkUrlException, _>(e.to_string()))
     }
 
@@ -87,8 +90,9 @@ impl PyArkUrlInfo {
         let uuid_generator = UuidGenerationAdapter;
 
         let processor = ArkUrlInfoProcessor::new(parser, config, template, uuid_generator);
-        
-        processor.generate_dsp_redirect_url(&self.inner)
+
+        processor
+            .generate_dsp_redirect_url(&self.inner)
             .map_err(|e| PyErr::new::<ArkUrlException, _>(e.to_string()))
     }
 
@@ -132,34 +136,39 @@ impl<'a> ArkUrlParsingAdapter<'a> {
     }
 }
 
-impl<'a> ArkUrlParsingPort for ArkUrlParsingAdapter<'a> {
-    fn parse_ark_v1(&self, ark_id: &str) -> Option<(u32, Option<String>, Option<String>, Option<String>, Option<String>)> {
-        self.settings.match_ark_path(ark_id)
-            .map(|matches| {
-                let url_version = matches.0.and_then(|v| v.parse::<u32>().ok()).unwrap_or(1);
-                let project_id = matches.1;
-                let resource_id = matches.2;
-                let value_id = matches.3;
-                let timestamp = matches.4;
-                
-                (url_version, project_id, resource_id, value_id, timestamp)
-            })
+impl ArkUrlParsingPort for ArkUrlParsingAdapter<'_> {
+    fn parse_ark_v1(&self, ark_id: &str) -> Option<ArkV1ParseResult> {
+        self.settings.match_ark_path(ark_id).map(|matches| {
+            let url_version = matches.0.and_then(|v| v.parse::<u32>().ok()).unwrap_or(1);
+            let project_id = matches.1;
+            let resource_id = matches.2;
+            let value_id = matches.3;
+            let timestamp = matches.4;
+
+            (url_version, project_id, resource_id, value_id, timestamp)
+        })
     }
 
     fn parse_ark_v0(&self, ark_id: &str) -> Option<(String, String, Option<String>)> {
-        self.settings.match_v0_ark_path(ark_id)
-            .map(|matches| {
-                let project_id = matches.0.unwrap_or_default();
-                let resource_id = matches.1.unwrap_or_default();
-                let timestamp = matches.2;
-                
-                (project_id, resource_id, timestamp)
-            })
+        self.settings.match_v0_ark_path(ark_id).map(|matches| {
+            let project_id = matches.0.unwrap_or_default();
+            let resource_id = matches.1.unwrap_or_default();
+            let timestamp = matches.2;
+
+            (project_id, resource_id, timestamp)
+        })
     }
 
-    fn unescape_and_validate_uuid(&self, ark_url: &str, escaped_uuid: &str) -> Result<String, ArkUrlInfoError> {
-        crate::adapters::pyo3::uuid_processing::unescape_and_validate_uuid(ark_url.to_string(), escaped_uuid.to_string())
-            .map_err(|e| ArkUrlInfoError::uuid_processing_failed(e.to_string()))
+    fn unescape_and_validate_uuid(
+        &self,
+        ark_url: &str,
+        escaped_uuid: &str,
+    ) -> Result<String, ArkUrlInfoError> {
+        crate::adapters::pyo3::uuid_processing::unescape_and_validate_uuid(
+            ark_url.to_string(),
+            escaped_uuid.to_string(),
+        )
+        .map_err(|e| ArkUrlInfoError::uuid_processing_failed(e.to_string()))
     }
 }
 
@@ -174,32 +183,44 @@ impl<'a> ConfigurationAdapter<'a> {
     }
 }
 
-impl<'a> ConfigurationPort for ConfigurationAdapter<'a> {
+impl ConfigurationPort for ConfigurationAdapter<'_> {
     fn get_dsp_ark_version(&self) -> u32 {
         self.settings.dsp_ark_version.into()
     }
 
     fn is_version_0_allowed(&self, project_id: &str) -> Result<bool, ArkUrlInfoError> {
-        self.settings.get_project_config(project_id)
+        self.settings
+            .get_project_config(project_id)
             .ok_or_else(|| ArkUrlInfoError::configuration_error("Project configuration not found"))
             .and_then(|config| {
-                config.get_boolean("AllowVersion0")
+                config
+                    .get_boolean("AllowVersion0")
                     .map_err(|e| ArkUrlInfoError::configuration_error(e.to_string()))
             })
     }
 
     fn get_top_level_redirect_url(&self) -> String {
-        self.settings.default_config.get("TopLevelObjectUrl").cloned().unwrap_or_default()
+        self.settings
+            .default_config
+            .get("TopLevelObjectUrl")
+            .cloned()
+            .unwrap_or_default()
     }
 
-    fn get_project_template(&self, project_id: &str, template_name: &str) -> Result<String, ArkUrlInfoError> {
-        self.settings.get_project_config(project_id)
+    fn get_project_template(
+        &self,
+        project_id: &str,
+        template_name: &str,
+    ) -> Result<String, ArkUrlInfoError> {
+        self.settings
+            .get_project_config(project_id)
             .and_then(|config| config.get(template_name).cloned())
             .ok_or_else(|| ArkUrlInfoError::template_not_found(template_name))
     }
 
     fn get_project_host(&self, project_id: &str) -> Result<String, ArkUrlInfoError> {
-        self.settings.get_project_config(project_id)
+        self.settings
+            .get_project_config(project_id)
             .and_then(|config| config.get("ProjectHost").cloned())
             .or_else(|| self.settings.default_config.get("ProjectHost").cloned())
             .ok_or_else(|| ArkUrlInfoError::configuration_error("Project host not found"))
@@ -210,20 +231,24 @@ impl<'a> ConfigurationPort for ConfigurationAdapter<'a> {
 struct TemplateAdapter;
 
 impl TemplatePort for TemplateAdapter {
-    fn substitute(&self, template: &str, values: &HashMap<String, String>) -> Result<String, ArkUrlInfoError> {
+    fn substitute(
+        &self,
+        template: &str,
+        values: &HashMap<String, String>,
+    ) -> Result<String, ArkUrlInfoError> {
         let mut result = template.to_string();
-        
+
         for (key, value) in values {
             let placeholder = format!("${{{}}}", key);
             result = result.replace(&placeholder, value);
         }
-        
+
         // Also handle simple $key format (without braces)
         for (key, value) in values {
             let placeholder = format!("${}", key);
             result = result.replace(&placeholder, value);
         }
-        
+
         Ok(result)
     }
 
@@ -240,21 +265,15 @@ impl UuidGenerationPort for UuidGenerationAdapter {
         // Generate UUID v5 using the DaSCH namespace
         let namespace = Uuid::parse_str("cace8b00-717e-50d5-bcb9-486f39d733a2")
             .map_err(|e| ArkUrlInfoError::uuid_processing_failed(e.to_string()))?;
-        
+
         let uuid = Uuid::new_v5(&namespace, input.as_bytes());
         let uuid_bytes = uuid.as_bytes();
-        
+
         // Convert to base64 URL-safe encoding without padding
         let base64_encoded = base64::prelude::BASE64_URL_SAFE_NO_PAD.encode(uuid_bytes);
-        
+
         Ok(base64_encoded)
     }
-}
-
-/// Function to register the ARK URL info module with Python.
-pub fn register_ark_url_info_module(_py: Python, parent_module: &Bound<'_, PyModule>) -> PyResult<()> {
-    parent_module.add_class::<PyArkUrlInfo>()?;
-    Ok(())
 }
 
 #[cfg(test)]
@@ -274,7 +293,7 @@ mod tests {
         let mut values = HashMap::new();
         values.insert("host".to_string(), "example.com".to_string());
         values.insert("project_id".to_string(), "0001".to_string());
-        
+
         let result = adapter.substitute("https://${host}/project/${project_id}", &values);
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), "https://example.com/project/0001");
@@ -293,10 +312,10 @@ mod tests {
         let adapter = UuidGenerationAdapter;
         let result = adapter.generate_v5_uuid("test-input");
         assert!(result.is_ok());
-        
+
         // The result should be a valid base64 string
         let uuid_str = result.unwrap();
         assert!(!uuid_str.is_empty());
-        assert!(!uuid_str.contains("="));  // Should not have padding
+        assert!(!uuid_str.contains("=")); // Should not have padding
     }
 }

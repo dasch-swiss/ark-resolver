@@ -19,7 +19,6 @@ import sys
 from asyncio import sleep
 from io import StringIO
 from typing import Any
-from urllib.parse import unquote
 
 import requests
 import sentry_sdk
@@ -169,8 +168,6 @@ async def reload(req: Request) -> HTTPResponse:
         else:
             span.set_status(Status(StatusCode.ERROR))
             return response.text("Unauthorized", status=401)
-
-
 
 
 def server(settings: ArkUrlSettings) -> None:

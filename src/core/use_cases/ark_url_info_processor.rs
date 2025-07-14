@@ -60,14 +60,20 @@ where
 
             // Process resource ID if present
             let resource_id = if let Some(escaped_res_id) = escaped_resource_id {
-                Some(self.parser.unescape_and_validate_uuid(ark_id, &escaped_res_id)?)
+                Some(
+                    self.parser
+                        .unescape_and_validate_uuid(ark_id, &escaped_res_id)?,
+                )
             } else {
                 None
             };
 
             // Process value ID if present
             let value_id = if let Some(escaped_val_id) = escaped_value_id {
-                Some(self.parser.unescape_and_validate_uuid(ark_id, &escaped_val_id)?)
+                Some(
+                    self.parser
+                        .unescape_and_validate_uuid(ark_id, &escaped_val_id)?,
+                )
             } else {
                 None
             };
@@ -93,15 +99,7 @@ where
             }
 
             // Process timestamp for version 0
-            let timestamp = if let Some(ts) = submitted_timestamp {
-                if ts.len() >= 8 {
-                    Some(ts)
-                } else {
-                    None
-                }
-            } else {
-                None
-            };
+            let timestamp = submitted_timestamp.filter(|ts| ts.len() >= 8);
 
             return Ok(ArkUrlInfo::new(
                 0,
@@ -128,17 +126,25 @@ where
 
     /// Generates a DSP-specific redirect URL.
     pub fn generate_dsp_redirect_url(&self, ark_info: &ArkUrlInfo) -> ArkUrlInfoResult<String> {
-        let project_id = ark_info.project_id.as_ref().ok_or(ArkUrlInfoError::ProjectIdRequired)?;
-        
+        let project_id = ark_info
+            .project_id
+            .as_ref()
+            .ok_or(ArkUrlInfoError::ProjectIdRequired)?;
+
         // Get the appropriate redirect template based on the ARK URL type
         let template_name = self.determine_redirect_template(ark_info)?;
-        let template = self.config.get_project_template(project_id, &template_name)?;
+        let template = self
+            .config
+            .get_project_template(project_id, &template_name)?;
 
         // Build template dictionary
         let mut template_dict = ark_info.to_template_dict();
-        
+
         // Use regular Host for $host template variable
-        template_dict.insert("host".to_string(), self.config.get_project_template(project_id, "Host")?);
+        template_dict.insert(
+            "host".to_string(),
+            self.config.get_project_template(project_id, "Host")?,
+        );
 
         // Handle version 0 resource ID conversion
         if ark_info.is_version_0() {
@@ -149,15 +155,24 @@ where
 
         // Add project host for project-level redirects (uses ProjectHost)
         if ark_info.is_project_level() {
-            template_dict.insert("project_host".to_string(), self.config.get_project_host(project_id)?);
+            template_dict.insert(
+                "project_host".to_string(),
+                self.config.get_project_host(project_id)?,
+            );
         }
 
         // Generate resource and project IRIs for the template
         let resource_iri = self.generate_resource_iri_for_template(ark_info, &template_dict)?;
         let project_iri = self.generate_project_iri_for_template(ark_info, &template_dict)?;
 
-        template_dict.insert("resource_iri".to_string(), self.template.url_encode(&resource_iri)?);
-        template_dict.insert("project_iri".to_string(), self.template.url_encode(&project_iri)?);
+        template_dict.insert(
+            "resource_iri".to_string(),
+            self.template.url_encode(&resource_iri)?,
+        );
+        template_dict.insert(
+            "project_iri".to_string(),
+            self.template.url_encode(&project_iri)?,
+        );
 
         // Apply template substitution
         self.template.substitute(&template, &template_dict)
@@ -165,17 +180,29 @@ where
 
     /// Generates a resource IRI for the given ARK URL info.
     pub fn generate_resource_iri(&self, ark_info: &ArkUrlInfo) -> ArkUrlInfoResult<String> {
-        let project_id = ark_info.project_id.as_ref().ok_or(ArkUrlInfoError::ProjectIdRequired)?;
-        let template = self.config.get_project_template(project_id, "DSPResourceIri")?;
+        let project_id = ark_info
+            .project_id
+            .as_ref()
+            .ok_or(ArkUrlInfoError::ProjectIdRequired)?;
+        let template = self
+            .config
+            .get_project_template(project_id, "DSPResourceIri")?;
 
         let mut template_dict = ark_info.to_template_dict();
-        template_dict.insert("host".to_string(), self.config.get_project_template(project_id, "Host")?);
+        template_dict.insert(
+            "host".to_string(),
+            self.config.get_project_template(project_id, "Host")?,
+        );
 
         // Handle version 0 UUID generation
         if ark_info.is_version_0() {
-            let resource_id = ark_info.resource_id.as_ref().ok_or(
-                ArkUrlInfoError::configuration_error("Resource ID required for version 0 ARK URLs")
-            )?;
+            let resource_id =
+                ark_info
+                    .resource_id
+                    .as_ref()
+                    .ok_or(ArkUrlInfoError::configuration_error(
+                        "Resource ID required for version 0 ARK URLs",
+                    ))?;
             let uuid_v5 = self.uuid_generator.generate_v5_uuid(resource_id)?;
             template_dict.insert("resource_id".to_string(), uuid_v5);
         }
@@ -185,7 +212,12 @@ where
 
     /// Determines the appropriate redirect template based on ARK URL characteristics.
     fn determine_redirect_template(&self, ark_info: &ArkUrlInfo) -> ArkUrlInfoResult<String> {
-        match (ark_info.is_project_level(), ark_info.is_resource_level(), ark_info.is_value_level(), ark_info.has_timestamp()) {
+        match (
+            ark_info.is_project_level(),
+            ark_info.is_resource_level(),
+            ark_info.is_value_level(),
+            ark_info.has_timestamp(),
+        ) {
             (true, false, false, _) => Ok("DSPProjectRedirectUrl".to_string()),
             (false, true, false, false) => Ok("DSPResourceRedirectUrl".to_string()),
             (false, true, false, true) => Ok("DSPResourceVersionRedirectUrl".to_string()),
@@ -196,16 +228,34 @@ where
     }
 
     /// Generates a resource IRI for template substitution.
-    fn generate_resource_iri_for_template(&self, ark_info: &ArkUrlInfo, template_dict: &HashMap<String, String>) -> ArkUrlInfoResult<String> {
-        let project_id = ark_info.project_id.as_ref().ok_or(ArkUrlInfoError::ProjectIdRequired)?;
-        let template = self.config.get_project_template(project_id, "DSPResourceIri")?;
+    fn generate_resource_iri_for_template(
+        &self,
+        ark_info: &ArkUrlInfo,
+        template_dict: &HashMap<String, String>,
+    ) -> ArkUrlInfoResult<String> {
+        let project_id = ark_info
+            .project_id
+            .as_ref()
+            .ok_or(ArkUrlInfoError::ProjectIdRequired)?;
+        let template = self
+            .config
+            .get_project_template(project_id, "DSPResourceIri")?;
         self.template.substitute(&template, template_dict)
     }
 
     /// Generates a project IRI for template substitution.
-    fn generate_project_iri_for_template(&self, ark_info: &ArkUrlInfo, template_dict: &HashMap<String, String>) -> ArkUrlInfoResult<String> {
-        let project_id = ark_info.project_id.as_ref().ok_or(ArkUrlInfoError::ProjectIdRequired)?;
-        let template = self.config.get_project_template(project_id, "DSPProjectIri")?;
+    fn generate_project_iri_for_template(
+        &self,
+        ark_info: &ArkUrlInfo,
+        template_dict: &HashMap<String, String>,
+    ) -> ArkUrlInfoResult<String> {
+        let project_id = ark_info
+            .project_id
+            .as_ref()
+            .ok_or(ArkUrlInfoError::ProjectIdRequired)?;
+        let template = self
+            .config
+            .get_project_template(project_id, "DSPProjectIri")?;
         self.template.substitute(&template, template_dict)
     }
 }
@@ -246,15 +296,34 @@ mod tests {
     struct MockUuidGenerator;
 
     impl ArkUrlParsingPort for MockParser {
-        fn parse_ark_v1(&self, _ark_id: &str) -> Option<(u32, Option<String>, Option<String>, Option<String>, Option<String>)> {
-            Some((1, Some("0001".to_string()), Some("resource123".to_string()), None, None))
+        fn parse_ark_v1(
+            &self,
+            _ark_id: &str,
+        ) -> Option<(
+            u32,
+            Option<String>,
+            Option<String>,
+            Option<String>,
+            Option<String>,
+        )> {
+            Some((
+                1,
+                Some("0001".to_string()),
+                Some("resource123".to_string()),
+                None,
+                None,
+            ))
         }
 
         fn parse_ark_v0(&self, _ark_id: &str) -> Option<(String, String, Option<String>)> {
             Some(("0001".to_string(), "resource123".to_string(), None))
         }
 
-        fn unescape_and_validate_uuid(&self, _ark_url: &str, escaped_uuid: &str) -> ArkUrlInfoResult<String> {
+        fn unescape_and_validate_uuid(
+            &self,
+            _ark_url: &str,
+            escaped_uuid: &str,
+        ) -> ArkUrlInfoResult<String> {
             Ok(escaped_uuid.to_string())
         }
     }
@@ -272,7 +341,11 @@ mod tests {
             "https://example.com/top".to_string()
         }
 
-        fn get_project_template(&self, _project_id: &str, _template_name: &str) -> ArkUrlInfoResult<String> {
+        fn get_project_template(
+            &self,
+            _project_id: &str,
+            _template_name: &str,
+        ) -> ArkUrlInfoResult<String> {
             Ok("https://example.com/template".to_string())
         }
 
@@ -282,7 +355,11 @@ mod tests {
     }
 
     impl TemplatePort for MockTemplate {
-        fn substitute(&self, _template: &str, _values: &HashMap<String, String>) -> ArkUrlInfoResult<String> {
+        fn substitute(
+            &self,
+            _template: &str,
+            _values: &HashMap<String, String>,
+        ) -> ArkUrlInfoResult<String> {
             Ok("https://example.com/substituted".to_string())
         }
 
@@ -299,16 +376,12 @@ mod tests {
 
     #[test]
     fn test_parse_ark_v1_success() {
-        let processor = ArkUrlInfoProcessor::new(
-            MockParser,
-            MockConfig,
-            MockTemplate,
-            MockUuidGenerator,
-        );
+        let processor =
+            ArkUrlInfoProcessor::new(MockParser, MockConfig, MockTemplate, MockUuidGenerator);
 
         let result = processor.parse_ark_id("ark:/12345/1/0001/resource123");
         assert!(result.is_ok());
-        
+
         let ark_info = result.unwrap();
         assert_eq!(ark_info.url_version, 1);
         assert_eq!(ark_info.project_id, Some("0001".to_string()));
@@ -317,44 +390,32 @@ mod tests {
 
     #[test]
     fn test_generate_redirect_url_top_level() {
-        let processor = ArkUrlInfoProcessor::new(
-            MockParser,
-            MockConfig,
-            MockTemplate,
-            MockUuidGenerator,
-        );
+        let processor =
+            ArkUrlInfoProcessor::new(MockParser, MockConfig, MockTemplate, MockUuidGenerator);
 
         let ark_info = ArkUrlInfo::new(1, None, None, None, None);
         let result = processor.generate_redirect_url(&ark_info);
-        
+
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), "https://example.com/top");
     }
 
     #[test]
     fn test_generate_redirect_url_project_level() {
-        let processor = ArkUrlInfoProcessor::new(
-            MockParser,
-            MockConfig,
-            MockTemplate,
-            MockUuidGenerator,
-        );
+        let processor =
+            ArkUrlInfoProcessor::new(MockParser, MockConfig, MockTemplate, MockUuidGenerator);
 
         let ark_info = ArkUrlInfo::new(1, Some("0001".to_string()), None, None, None);
         let result = processor.generate_redirect_url(&ark_info);
-        
+
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), "https://example.com/substituted");
     }
 
     #[test]
     fn test_generate_resource_iri() {
-        let processor = ArkUrlInfoProcessor::new(
-            MockParser,
-            MockConfig,
-            MockTemplate,
-            MockUuidGenerator,
-        );
+        let processor =
+            ArkUrlInfoProcessor::new(MockParser, MockConfig, MockTemplate, MockUuidGenerator);
 
         let ark_info = ArkUrlInfo::new(
             1,
@@ -364,35 +425,27 @@ mod tests {
             None,
         );
         let result = processor.generate_resource_iri(&ark_info);
-        
+
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), "https://example.com/substituted");
     }
 
     #[test]
     fn test_generate_resource_iri_no_project_id() {
-        let processor = ArkUrlInfoProcessor::new(
-            MockParser,
-            MockConfig,
-            MockTemplate,
-            MockUuidGenerator,
-        );
+        let processor =
+            ArkUrlInfoProcessor::new(MockParser, MockConfig, MockTemplate, MockUuidGenerator);
 
         let ark_info = ArkUrlInfo::new(1, None, None, None, None);
         let result = processor.generate_resource_iri(&ark_info);
-        
+
         assert!(result.is_err());
         assert_eq!(result.unwrap_err(), ArkUrlInfoError::ProjectIdRequired);
     }
 
     #[test]
     fn test_determine_redirect_template() {
-        let processor = ArkUrlInfoProcessor::new(
-            MockParser,
-            MockConfig,
-            MockTemplate,
-            MockUuidGenerator,
-        );
+        let processor =
+            ArkUrlInfoProcessor::new(MockParser, MockConfig, MockTemplate, MockUuidGenerator);
 
         // Project level
         let project_info = ArkUrlInfo::new(1, Some("0001".to_string()), None, None, None);

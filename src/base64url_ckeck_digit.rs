@@ -1,15 +1,17 @@
+#![allow(dead_code)]
+#![allow(clippy::enum_variant_names)]
+
 use pyo3::{exceptions::PyValueError, pyfunction, PyResult};
 use thiserror::Error;
 
 /// The base64url alphabet (without padding) from RFC 4648, Table 2.
 const BASE64URL_ALPHABET: &str = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+/// The base64url alphabet length
 const BASE64URL_ALPHABET_LENGTH: usize = 64;
 
 /// Custom error type for check digit operations
 #[derive(Error, Debug)]
 pub enum CheckDigitError {
-    #[error("No code provided")]
-    NoCode,
     #[error("Invalid code: {0}")]
     InvalidCode(String),
     #[error("Invalid base64url character: '{0}'")]

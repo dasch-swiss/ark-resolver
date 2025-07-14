@@ -3,19 +3,18 @@ use crate::adapters::pyo3::ark_url_info::PyArkUrlInfo;
 use crate::adapters::pyo3::check_digit::{
     calculate_check_digit, calculate_modulus, is_valid, to_check_digit, to_int, weighted_value,
 };
+use crate::adapters::pyo3::settings::{load_settings, ArkUrlSettings};
 use crate::adapters::pyo3::uuid_processing::{
     add_check_digit_and_escape as uuid_add_check_digit_and_escape,
     unescape_and_validate_uuid as uuid_unescape_and_validate_uuid,
 };
-use crate::ark_url_settings::load_settings;
-use crate::ark_url_settings::ArkUrlSettings;
 use pyo3::prelude::*;
 use pyo3::types::PyModule;
 use pyo3::wrap_pyfunction_bound;
 use tracing_subscriber::prelude::*;
 
 mod adapters;
-mod ark_url_settings;
+// mod ark_url_settings; // Replaced by hexagonal architecture
 mod base64url_ckeck_digit;
 pub mod core;
 mod parsing;
