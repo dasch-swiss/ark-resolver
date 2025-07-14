@@ -1,6 +1,6 @@
 /// PyO3 adapter for ARK URL formatting operations.
 /// This adapter provides a Python-compatible interface that maintains exact API compatibility.
-use crate::ark_url_settings::ArkUrlSettings;
+use crate::adapters::pyo3::settings::ArkUrlSettings;
 use crate::core::errors::ark_url_formatter::ArkUrlFormatterError;
 use crate::core::ports::ark_url_formatter::ArkUrlFormatterPort;
 use crate::core::use_cases::ark_url_formatter::{ArkUrlFormatterConfig, ArkUrlFormatterService};
@@ -201,7 +201,7 @@ impl ArkUrlFormatterPort for ArkUrlFormatter {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::ark_url_settings::ArkUrlSettings;
+    use crate::adapters::pyo3::settings::ArkUrlSettings;
 
     fn get_test_settings() -> ArkUrlSettings {
         ArkUrlSettings::new("ark_resolver/ark-config.ini".to_string()).unwrap()

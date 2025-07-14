@@ -8,7 +8,6 @@
 from ark_resolver._rust import ArkUrlFormatter  # type: ignore[import-untyped]
 
 # TODO: the rust module does not seem to be typed in python land.
-from ark_resolver._rust import ArkUrlFormatter  # type: ignore[import-untyped]
 from ark_resolver._rust import ArkUrlInfo  # type: ignore[import-untyped]
 from ark_resolver._rust import ArkUrlSettings  # type: ignore[import-untyped]
 from ark_resolver._rust import add_check_digit_and_escape as rust_add_check_digit_and_escape  # type: ignore[import-untyped]

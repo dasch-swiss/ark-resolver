@@ -7,6 +7,7 @@
       "Bash(uv run:*)",
       "Bash(just build)",
       "Bash(just check)",
+      "Bash(just rustcheck:*)",
       "Bash(just test:*)",
       "Bash(cargo test:*)",
       "Bash(cargo check:*)",

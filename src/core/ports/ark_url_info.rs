@@ -5,7 +5,7 @@
 //! These traits define the abstract interfaces for the hexagonal architecture.
 
 use crate::core::domain::ark_url_info::ArkUrlInfo;
-use crate::core::errors::ark_url_info::{ArkUrlInfoError, ArkUrlInfoResult};
+use crate::core::errors::ark_url_info::ArkUrlInfoResult;
 use std::collections::HashMap;
 
 /// Port for ARK URL information processing operations.
@@ -24,21 +24,21 @@ pub trait ArkUrlInfoPort {
     fn generate_dsp_redirect_url(&self, ark_info: &ArkUrlInfo) -> ArkUrlInfoResult<String>;
 }
 
+/// Type alias for ARK v1 parsing result tuple.
+pub type ArkV1ParseResult = (
+    u32,
+    Option<String>,
+    Option<String>,
+    Option<String>,
+    Option<String>,
+);
+
 /// Port for ARK URL parsing operations.
 /// Abstracts the actual parsing logic from the use case layer.
 pub trait ArkUrlParsingPort {
     /// Parses an ARK ID as version 1 format.
     /// Returns tuple of (version, project_id, resource_id, value_id, timestamp).
-    fn parse_ark_v1(
-        &self,
-        ark_id: &str,
-    ) -> Option<(
-        u32,
-        Option<String>,
-        Option<String>,
-        Option<String>,
-        Option<String>,
-    )>;
+    fn parse_ark_v1(&self, ark_id: &str) -> Option<ArkV1ParseResult>;
 
     /// Parses an ARK ID as version 0 format.
     /// Returns tuple of (project_id, resource_id, timestamp).
@@ -113,6 +113,7 @@ mod tests {
     // Test that the error types work correctly
     #[test]
     fn test_error_types() {
+        use crate::core::errors::ark_url_info::ArkUrlInfoError;
         let error = ArkUrlInfoError::invalid_ark_id("test");
         assert!(error.to_string().contains("test"));
     }

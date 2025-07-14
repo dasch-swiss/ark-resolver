@@ -99,15 +99,7 @@ where
             }
 
             // Process timestamp for version 0
-            let timestamp = if let Some(ts) = submitted_timestamp {
-                if ts.len() >= 8 {
-                    Some(ts)
-                } else {
-                    None
-                }
-            } else {
-                None
-            };
+            let timestamp = submitted_timestamp.filter(|ts| ts.len() >= 8);
 
             return Ok(ArkUrlInfo::new(
                 0,
