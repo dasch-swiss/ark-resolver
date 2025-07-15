@@ -64,7 +64,7 @@ run: build
 # Run Rust unit tests
 test:
     @echo "🧪 Running Rust unit tests..."
-    cargo test --lib --no-default-features
+    cargo nextest run --lib --no-default-features
     @echo "✅ Rust unit tests completed successfully!"
     @echo "💡 Use 'just pytest' to run comprehensive Python integration tests"
 
