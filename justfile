@@ -62,8 +62,11 @@ run: build
     export ARK_REGISTRY="ark_resolver/ark-registry.ini" && uv run ark_resolver/ark.py -s -c ark_resolver/ark-config.ini
 
 # Run Rust unit tests
-test: build
+test:
+    @echo "🧪 Running Rust unit tests..."
     cargo test --lib --no-default-features
+    @echo "✅ Rust unit tests completed successfully!"
+    @echo "💡 Use 'just pytest' to run comprehensive Python integration tests"
 
 # Run smoke tests that will spinn up a Docker container and call the health endpoint
 smoke-test:

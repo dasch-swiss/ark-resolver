@@ -107,7 +107,6 @@ pub trait SettingsTransformer: Send + Sync {
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use std::sync::Arc;
 
     /// Mock implementation for testing
     pub struct MockConfigurationProvider {
@@ -119,7 +118,7 @@ pub mod tests {
     impl ConfigurationProvider for MockConfigurationProvider {
         async fn load_registry(&self, _registry_path: &str) -> SettingsResult<SettingsRegistry> {
             // Mock implementation for testing
-            let mut projects = HashMap::new();
+            let projects = HashMap::new();
             let mut defaults = HashMap::new();
             defaults.insert("DefaultKey".to_string(), "DefaultValue".to_string());
 
