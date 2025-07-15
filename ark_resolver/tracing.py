@@ -1,6 +1,8 @@
+import os
 from opentelemetry import trace
 from opentelemetry.propagate import set_global_textmap
 from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import ConsoleSpanExporter, SimpleSpanProcessor
 from sentry_sdk.integrations.opentelemetry import SentryPropagator
 from sentry_sdk.integrations.opentelemetry import SentrySpanProcessor
 
@@ -11,6 +13,11 @@ provider = TracerProvider()
 
 # Add both Sentry and Console span processors to the provider
 provider.add_span_processor(SentrySpanProcessor())  # Sentry integration
+
+# Add console exporter for local debugging only if explicitly enabled
+if os.environ.get("ARK_TRACING_CONSOLE").lower() == "true":
+    console_exporter = ConsoleSpanExporter()
+    provider.add_span_processor(SimpleSpanProcessor(console_exporter))
 
 set_global_textmap(SentryPropagator())
 
