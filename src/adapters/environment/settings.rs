@@ -170,13 +170,16 @@ mod tests {
     async fn test_environment_variable_provider_build_ark_config_with_defaults() {
         let provider = EnvironmentVariableProvider::new();
 
-        // Clear any existing environment variables
+        // Clear any existing environment variables first
         env::remove_var("ARK_EXTERNAL_HOST");
         env::remove_var("ARK_INTERNAL_HOST");
         env::remove_var("ARK_INTERNAL_PORT");
         env::remove_var("ARK_NAAN");
         env::remove_var("ARK_HTTPS_PROXY");
         env::remove_var("ARK_GITHUB_SECRET");
+
+        // Wait a bit to ensure environment variables are cleared
+        tokio::time::sleep(tokio::time::Duration::from_millis(10)).await;
 
         let config = provider
             .build_ark_config("default_registry.ini".to_string())
@@ -217,8 +220,9 @@ mod tests {
         let provider = DefaultRegexProvider::new();
         let regex = provider.compile_v0_ark_path_regex("00000").unwrap();
 
-        // Test with the actual v0 regex pattern
-        assert!(regex.is_match("ark:/00000/project/resource"));
+        // Test with the actual v0 regex pattern: ark:/{naan}/([0-9A-Fa-f]+)-([A-Za-z0-9]+)-[A-Za-z0-9]+(?:\.([0-9]{6,8}))?
+        assert!(regex.is_match("ark:/00000/080E-751e0b8a-6RBYnUVTKAi"));
+        assert!(regex.is_match("ark:/00000/080E-751e0b8a-6RBYnUVTKAi.20190101"));
         assert!(!regex.is_match("invalid_v0_ark_path"));
     }
 }

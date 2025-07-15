@@ -10,7 +10,7 @@ crate-type = ["cdylib", "lib"]
 async-trait = "0.1"
 base64 = "0.22.1"
 config = "0.15.8"
-pyo3 = { version = "0.22.6", features = ["extension-module"] }
+pyo3 = { version = "0.22.6", features = [] }
 pyo3-python-tracing-subscriber = "0.1.0"
 regex = "1.9"
 reqwest = { version = "0.12.12", features = ["blocking"] }

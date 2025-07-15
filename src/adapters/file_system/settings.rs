@@ -185,7 +185,6 @@ impl FileSystemProviderTrait for FileSystemProvider {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::fs;
     use std::io::Write;
     use tempfile::NamedTempFile;
 
@@ -282,7 +281,7 @@ key3 = value3
     #[tokio::test]
     async fn test_file_system_provider_file_exists() {
         let temp_file = NamedTempFile::new().unwrap();
-        let provider = FileSystemProvider::new();
+        let provider = FileSystemProvider;
 
         let exists = provider
             .file_exists(temp_file.path().to_str().unwrap())
@@ -299,7 +298,7 @@ key3 = value3
         let mut temp_file = NamedTempFile::new().unwrap();
         writeln!(temp_file, "test content").unwrap();
 
-        let provider = FileSystemProvider::new();
+        let provider = FileSystemProvider;
         let content = provider
             .read_file(temp_file.path().to_str().unwrap())
             .await
@@ -311,7 +310,7 @@ key3 = value3
     #[tokio::test]
     async fn test_file_system_provider_get_file_metadata() {
         let temp_file = NamedTempFile::new().unwrap();
-        let provider = FileSystemProvider::new();
+        let provider = FileSystemProvider;
 
         let metadata = provider
             .get_file_metadata(temp_file.path().to_str().unwrap())

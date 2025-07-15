@@ -41,6 +41,11 @@ pub fn unescape_and_validate_uuid(
     ark_url: &str,
     escaped_uuid: &str,
 ) -> Result<String, UuidProcessingError> {
+    // Check for empty input first
+    if escaped_uuid.is_empty() {
+        return Err(UuidProcessingError::EmptyUuid(ark_url.to_string()));
+    }
+
     // Unescape: replace '=' with '-'
     let unescaped_uuid = escaped_uuid.replace('=', "-");
 
