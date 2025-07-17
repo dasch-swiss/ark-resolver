@@ -65,7 +65,7 @@ test: build
     cargo test --lib
 
 # Run smoke tests that will spinn up a Docker container and call the health endpoint
-smoke-test: build
+smoke-test:
     cargo test --tests smoke_test
 
 # Clean up build artifacts
