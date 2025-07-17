@@ -4,8 +4,8 @@ use std::{thread, time::Duration};
 #[test]
 fn smoke_test() {
     // Step 1: Start the service using Docker
-    let mut cmd = Command::new("docker-compose");
-    cmd.args(["up", "-d"]).assert().success();
+    let mut cmd = Command::new("docker");
+    cmd.args(["compose", "up", "-d"]).assert().success();
 
     // Step 2: Wait for service to be available
     let health_url = "http://localhost:3336/health";
@@ -27,8 +27,8 @@ fn smoke_test() {
     assert!(success, "Service did not become healthy in time!");
 
     // Step 3: Stop the service
-    Command::new("docker-compose")
-        .args(["down"])
+    Command::new("docker")
+        .args(["compose", "down"])
         .assert()
         .success();
 }
