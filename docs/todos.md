@@ -250,3 +250,78 @@ Adapters (PyO3, HTTP, CLI) → Ports (Traits) → Use Cases → Domain (Pure Rus
 **ARK URL Info Processing Migration Completed** - The final missing piece of the Phase 1 migration has been successfully completed. The `ArkUrlInfo` class in `ark_url_rust.py` now uses the complete Rust implementation with hexagonal architecture, maintaining full API compatibility while providing the performance benefits of Rust.
 
 **Key Achievement**: All core ARK URL processing functionality (Settings, Check Digit, UUID Processing, URL Formatter, and URL Info Processing) has been successfully migrated to Rust with complete test coverage and API compatibility.
+
+---
+
+## Phase 1.5: Production Parallel Execution (Current)
+
+### 🎯 Strategic Goal
+Implement 100% shadow execution in production to validate Rust implementations run in parallel with Python as primary, collecting performance metrics and mismatch data.
+
+### 🏗️ Implementation Strategy
+- **Python Primary**: All user-facing responses use Python implementations
+- **Rust Shadow**: Execute Rust implementations in parallel for validation
+- **Performance Monitoring**: Leverage existing OpenTelemetry and Sentry setup
+- **Zero Risk**: Rust errors don't affect user experience
+
+### 📋 Current Implementation Plan
+
+#### 🚧 In Progress
+- [x] **Parallel Execution Framework** (`ark_resolver/parallel_execution.py`)
+  - [ ] Create `ParallelExecutor` class for Python/Rust execution
+  - [ ] Implement performance timing and comparison logic
+  - [ ] Integrate with existing OpenTelemetry spans
+  - [ ] Add structured logging for analysis
+
+#### 📋 Planned
+- [ ] **Shadow Execution - Main ARK Resolution** (`ark.py:172-210`)
+  - [ ] Execute both Python and Rust `ArkUrlInfo.to_redirect_url()`
+  - [ ] Always return Python result, shadow execute Rust
+  - [ ] Log performance metrics and result mismatches
+  - [ ] Track execution times and error rates
+
+- [ ] **Shadow Execution - Convert Endpoint** (`routes/convert.py:21-67`)
+  - [ ] Execute both Python and Rust for `ArkUrlInfo` operations
+  - [ ] Track performance for `to_resource_iri()` and `resource_iri_to_ark_id()`
+  - [ ] Maintain Python as primary response
+  - [ ] Log performance improvements and discrepancies
+
+- [ ] **Comprehensive Error Handling**
+  - [ ] Catch and log Rust execution errors without affecting Python flow
+  - [ ] Track error rates and types for both implementations
+  - [ ] Ensure Rust failures don't impact user experience
+
+- [ ] **Testing & Validation**
+  - [ ] Test shadow execution with existing test suite
+  - [ ] Validate performance monitoring works correctly
+  - [ ] Ensure no regression in Python functionality
+
+### 🔍 Performance Monitoring Strategy
+
+#### OpenTelemetry Integration
+- Enhance existing spans with performance attributes
+- Track `performance.python_ms`, `performance.rust_ms`, `performance.improvement_percent`
+- Monitor `comparison.results_match` for validation
+
+#### Structured Logging
+- Log parallel execution results with performance metrics
+- Track operation types, execution times, and result matching
+- Enable production analysis of Rust vs Python performance
+
+#### Sentry Integration
+- Leverage existing Sentry setup for performance measurements
+- Track performance improvements and mismatch rates
+- Set up alerting for significant discrepancies
+
+### 🎯 Success Criteria for Phase 1.5
+- [ ] 100% shadow execution running in production
+- [ ] Performance metrics collected via OpenTelemetry and Sentry
+- [ ] Zero impact on user experience (Python remains primary)
+- [ ] Comprehensive logging of performance improvements and mismatches
+- [ ] Production validation of Rust implementation reliability
+
+### 📊 Expected Outcomes
+- **Performance Data**: Quantify Rust performance improvements in production
+- **Reliability Validation**: Confirm Rust implementations work correctly at scale
+- **Migration Readiness**: Prepare for Phase 2 migration to Rust primary
+- **Risk Mitigation**: Identify and resolve any edge cases before full migration
