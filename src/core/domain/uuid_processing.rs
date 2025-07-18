@@ -1,6 +1,7 @@
-use crate::base64url_ckeck_digit::{calculate_check_digit, is_valid};
-use pyo3::exceptions::PyValueError;
-use pyo3::prelude::*;
+/// Pure domain logic for UUID processing operations.
+/// This module contains UUID transformation functions without any external dependencies.
+use crate::core::domain::check_digit;
+use crate::core::errors::uuid_processing::UuidProcessingError;
 
 /// Add a check digit to a UUID and escape hyphens for ARK URL compatibility.
 ///
@@ -13,9 +14,11 @@ use pyo3::prelude::*;
 /// * `uuid` - The Base64-encoded UUID string to process
 ///
 /// # Returns
-/// * `Result<String, PyErr>` - The UUID with check digit and escaped hyphens, or an error
-pub fn add_check_digit_and_escape_internal(uuid: &str) -> PyResult<String> {
-    let check_digit = calculate_check_digit(uuid)?;
+/// * `Result<String, UuidProcessingError>` - The UUID with check digit and escaped hyphens, or an error
+pub fn add_check_digit_and_escape(uuid: &str) -> Result<String, UuidProcessingError> {
+    let check_digit =
+        check_digit::calculate_check_digit(uuid).map_err(UuidProcessingError::CheckDigitError)?;
+
     let uuid_with_check_digit = format!("{}{}", uuid, check_digit);
     Ok(uuid_with_check_digit.replace('-', "="))
 }
@@ -26,30 +29,30 @@ pub fn add_check_digit_and_escape_internal(uuid: &str) -> PyResult<String> {
 /// 1. Unescapes equals signs (=) back to hyphens (-)
 /// 2. Validates the UUID using check digit validation
 /// 3. Returns the UUID without the check digit
-/// 4. Raises an exception if validation fails
+/// 4. Returns an error if validation fails
 ///
 /// # Arguments
 /// * `ark_url` - The original ARK URL (for error messages)
 /// * `escaped_uuid` - The escaped UUID with check digit to process
 ///
 /// # Returns
-/// * `Result<String, PyErr>` - The validated UUID without check digit, or an error
-pub fn unescape_and_validate_uuid_internal(ark_url: &str, escaped_uuid: &str) -> PyResult<String> {
+/// * `Result<String, UuidProcessingError>` - The validated UUID without check digit, or an error
+pub fn unescape_and_validate_uuid(
+    ark_url: &str,
+    escaped_uuid: &str,
+) -> Result<String, UuidProcessingError> {
     // Unescape: replace '=' with '-'
     let unescaped_uuid = escaped_uuid.replace('=', "-");
     // Check for empty input first
     if unescaped_uuid.is_empty() {
-        return Err(PyValueError::new_err(format!(
-            "Empty UUID in ARK ID: {}",
-            ark_url
-        )));
+        return Err(UuidProcessingError::EmptyUuid(ark_url.to_string()));
     }
     // Validate using check digit
-    if !is_valid(&unescaped_uuid)? {
-        return Err(PyValueError::new_err(format!(
-            "Invalid ARK ID: {}",
-            ark_url
-        )));
+    let is_valid =
+        check_digit::is_valid(&unescaped_uuid).map_err(UuidProcessingError::CheckDigitError)?;
+
+    if !is_valid {
+        return Err(UuidProcessingError::InvalidArkId(ark_url.to_string()));
     }
 
     // Return UUID without the check digit (remove last character)
@@ -64,7 +67,7 @@ mod tests {
     fn test_add_check_digit_and_escape_basic() {
         // Test with a simple UUID
         let uuid = "0001-12345678-abcd-ef12-3456-789012345678";
-        let result = add_check_digit_and_escape_internal(uuid).unwrap();
+        let result = add_check_digit_and_escape(uuid).unwrap();
 
         // Should contain the original UUID, a check digit, and have hyphens escaped
         assert!(result.contains("0001=12345678=abcd=ef12=3456=789012345678"));
@@ -76,7 +79,7 @@ mod tests {
     fn test_add_check_digit_and_escape_no_hyphens() {
         // Test with UUID that has no hyphens
         let uuid = "000112345678abcdef123456789012345678";
-        let result = add_check_digit_and_escape_internal(uuid).unwrap();
+        let result = add_check_digit_and_escape(uuid).unwrap();
 
         // Should be the UUID + check digit with no changes needed
         assert_eq!(result.len(), uuid.len() + 1); // Original + 1 check digit
@@ -88,10 +91,10 @@ mod tests {
     fn test_unescape_and_validate_uuid_valid() {
         // Create a valid UUID with check digit and escape it
         let original_uuid = "0001-12345678-abcd-ef12-3456-789012345678";
-        let escaped_with_check = add_check_digit_and_escape_internal(original_uuid).unwrap();
+        let escaped_with_check = add_check_digit_and_escape(original_uuid).unwrap();
 
         // Now test unescaping and validation
-        let result = unescape_and_validate_uuid_internal("ark:/test", &escaped_with_check).unwrap();
+        let result = unescape_and_validate_uuid("ark:/test", &escaped_with_check).unwrap();
 
         // Should get back the original UUID
         assert_eq!(result, original_uuid);
@@ -104,24 +107,28 @@ mod tests {
         // Create an invalid UUID (modify the check digit)
         let escaped_uuid = "0001=12345678=abcd=ef12=3456=789012345678X"; // Invalid check digit
 
-        let result = unescape_and_validate_uuid_internal("ark:/test", escaped_uuid);
+        let result = unescape_and_validate_uuid("ark:/test", escaped_uuid);
 
         // Should return an error
         assert!(result.is_err());
-        let error_msg = result.unwrap_err().to_string();
-        assert!(error_msg.contains("Invalid ARK ID"));
+        assert!(matches!(
+            result.unwrap_err(),
+            UuidProcessingError::InvalidArkId(_)
+        ));
     }
 
     #[test]
     fn test_unescape_and_validate_uuid_empty_input() {
         pyo3::prepare_freethreaded_python();
 
-        let result = unescape_and_validate_uuid_internal("ark:/test", "");
+        let result = unescape_and_validate_uuid("ark:/test", "");
 
         // Should return an error for empty input
         assert!(result.is_err());
-        let error_msg = result.unwrap_err().to_string();
-        assert!(error_msg.contains("Empty UUID"));
+        assert!(matches!(
+            result.unwrap_err(),
+            UuidProcessingError::EmptyUuid(_)
+        ));
     }
 
     #[test]
@@ -130,10 +137,10 @@ mod tests {
         let original_uuid = "0002-70aWaB2kWsuiN6ujYgM0ZQ";
 
         // Process forward
-        let escaped = add_check_digit_and_escape_internal(original_uuid).unwrap();
+        let escaped = add_check_digit_and_escape(original_uuid).unwrap();
 
         // Process backward
-        let recovered = unescape_and_validate_uuid_internal("ark:/test", &escaped).unwrap();
+        let recovered = unescape_and_validate_uuid("ark:/test", &escaped).unwrap();
 
         // Should get back the original
         assert_eq!(recovered, original_uuid);
@@ -143,7 +150,7 @@ mod tests {
     fn test_escaping_behavior() {
         // Test that hyphens are properly escaped and unescaped
         let uuid_with_hyphens = "a-b-c-d-e";
-        let escaped = add_check_digit_and_escape_internal(uuid_with_hyphens).unwrap();
+        let escaped = add_check_digit_and_escape(uuid_with_hyphens).unwrap();
 
         // Should have no hyphens
         assert!(!escaped.contains('-'));
@@ -187,7 +194,7 @@ mod tests {
         ];
 
         for (input, expected) in test_cases {
-            let result = add_check_digit_and_escape_internal(input).unwrap();
+            let result = add_check_digit_and_escape(input).unwrap();
             assert_eq!(
                 result, expected,
                 "Python parity failed for input: {}",
@@ -213,7 +220,7 @@ mod tests {
 
         for (original_uuid, python_escaped) in python_generated_cases {
             // Our Rust implementation should produce the same escaped output
-            let rust_escaped = add_check_digit_and_escape_internal(original_uuid).unwrap();
+            let rust_escaped = add_check_digit_and_escape(original_uuid).unwrap();
             assert_eq!(
                 rust_escaped, python_escaped,
                 "Rust should match Python output for: {}",
@@ -221,8 +228,7 @@ mod tests {
             );
 
             // Our Rust implementation should be able to process Python-generated escaped UUIDs
-            let recovered =
-                unescape_and_validate_uuid_internal("ark:/test", &python_escaped).unwrap();
+            let recovered = unescape_and_validate_uuid("ark:/test", &python_escaped).unwrap();
             assert_eq!(
                 recovered, original_uuid,
                 "Rust should recover Python-escaped UUID: {}",

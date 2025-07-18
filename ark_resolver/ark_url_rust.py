@@ -9,9 +9,10 @@ from configparser import SectionProxy
 from string import Template
 from urllib import parse
 
+from ark_resolver._rust import ArkUrlFormatter  # type: ignore[import-untyped]
+
 # TODO: the rust module does not seem to be typed in python land.
 from ark_resolver._rust import ArkUrlSettings  # type: ignore[import-untyped]
-from ark_resolver._rust import ArkUrlFormatter  # type: ignore[import-untyped]
 from ark_resolver._rust import add_check_digit_and_escape as rust_add_check_digit_and_escape  # type: ignore[import-untyped]
 from ark_resolver._rust import unescape_and_validate_uuid as rust_unescape_and_validate_uuid  # type: ignore[import-untyped]
 from ark_resolver.ark_url import ArkUrlException
@@ -243,3 +244,6 @@ def unescape_and_validate_uuid(ark_url: str, escaped_uuid: str) -> str:
 
 # ArkUrlFormatter is now implemented in Rust and imported above
 # The Rust implementation provides exact API compatibility with the original Python version
+
+# Export ArkUrlException for API compatibility
+__all__ = ["ArkUrlException", "ArkUrlFormatter", "ArkUrlInfo", "add_check_digit_and_escape", "unescape_and_validate_uuid"]
