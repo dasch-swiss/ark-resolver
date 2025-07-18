@@ -81,7 +81,8 @@ def test_rust_vs_python_parity():
         py_modulus_with_check = check_digit_py.calculate_modulus(code_with_check, True)
         rust_modulus_with_check = check_digit_rust_py.calculate_modulus(code_with_check, True)
         assert py_modulus_with_check == rust_modulus_with_check, (
-            f"calculate_modulus mismatch for '{code_with_check}' (with check): Python={py_modulus_with_check}, Rust={rust_modulus_with_check}"
+            f"calculate_modulus mismatch for '{code_with_check}' (with check): " +
+            f"Python={py_modulus_with_check}, Rust={rust_modulus_with_check}"
         )
 
 
