@@ -37,7 +37,6 @@ pub fn add_check_digit_and_escape_internal(uuid: &str) -> PyResult<String> {
 pub fn unescape_and_validate_uuid_internal(ark_url: &str, escaped_uuid: &str) -> PyResult<String> {
     // Unescape: replace '=' with '-'
     let unescaped_uuid = escaped_uuid.replace('=', "-");
-
     // Check for empty input first
     if unescaped_uuid.is_empty() {
         return Err(PyValueError::new_err(format!(
@@ -45,7 +44,6 @@ pub fn unescape_and_validate_uuid_internal(ark_url: &str, escaped_uuid: &str) ->
             ark_url
         )));
     }
-
     // Validate using check digit
     if !is_valid(&unescaped_uuid)? {
         return Err(PyValueError::new_err(format!(

@@ -9,6 +9,7 @@
       "Bash(just check)",
       "Bash(just test:*)",
       "Bash(cargo test:*)",
+      "Bash(cargo check:*)",
       "Bash(just pytest tests/test_check_digit_rust.py -v)",
       "Bash(just pytest)",
       "Bash(just pycheck:*)"
