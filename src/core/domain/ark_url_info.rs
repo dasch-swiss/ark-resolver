@@ -49,25 +49,25 @@ impl ArkUrlInfo {
     /// Creates a template dictionary for string substitution.
     pub fn to_template_dict(&self) -> HashMap<String, String> {
         let mut dict = HashMap::new();
-        
+
         dict.insert("url_version".to_string(), self.url_version.to_string());
-        
+
         if let Some(ref project_id) = self.project_id {
             dict.insert("project_id".to_string(), project_id.clone());
         }
-        
+
         if let Some(ref resource_id) = self.resource_id {
             dict.insert("resource_id".to_string(), resource_id.clone());
         }
-        
+
         if let Some(ref value_id) = self.value_id {
             dict.insert("value_id".to_string(), value_id.clone());
         }
-        
+
         if let Some(ref timestamp) = self.timestamp {
             dict.insert("timestamp".to_string(), timestamp.clone());
         }
-        
+
         dict
     }
 
