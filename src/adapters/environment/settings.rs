@@ -2,10 +2,10 @@ use async_trait::async_trait;
 use regex::Regex;
 use std::env;
 
+use crate::core::domain::parsing::{ark_path_regex, resource_iri_regex, v0_ark_path_regex};
 use crate::core::domain::settings::ArkConfig;
 use crate::core::errors::settings::{SettingsError, SettingsResult};
 use crate::core::ports::settings::{EnvironmentProvider, RegexProvider};
-use crate::parsing::{ark_path_regex, resource_iri_regex, v0_ark_path_regex};
 
 /// Environment variable adapter for reading configuration from environment
 pub struct EnvironmentVariableProvider;

@@ -32,7 +32,7 @@ pub fn v0_ark_path_regex(ark_naan: &str) -> Regex {
 
 #[cfg(test)]
 mod tests {
-    use crate::parsing::{resource_iri_regex, PROJECT_ID_PATTERN, TIMESTAMP_PATTERN};
+    use crate::core::domain::parsing::{resource_iri_regex, PROJECT_ID_PATTERN, TIMESTAMP_PATTERN};
     use regex::Regex;
 
     #[test]
