@@ -4,7 +4,7 @@
 //! PyO3 adapter for ARK URL information processing.
 //! Provides Python bindings for the Rust ARK URL info functionality.
 
-use crate::ark_url_settings::ArkUrlSettings;
+use crate::adapters::pyo3::settings::ArkUrlSettings;
 use crate::core::domain::ark_url_info::ArkUrlInfo as RustArkUrlInfo;
 use crate::core::errors::ark_url_info::ArkUrlInfoError;
 use crate::core::ports::ark_url_info::{
@@ -136,7 +136,7 @@ impl<'a> ArkUrlParsingAdapter<'a> {
     }
 }
 
-impl<'a> ArkUrlParsingPort for ArkUrlParsingAdapter<'a> {
+impl ArkUrlParsingPort for ArkUrlParsingAdapter<'_> {
     fn parse_ark_v1(
         &self,
         ark_id: &str,
@@ -192,7 +192,7 @@ impl<'a> ConfigurationAdapter<'a> {
     }
 }
 
-impl<'a> ConfigurationPort for ConfigurationAdapter<'a> {
+impl ConfigurationPort for ConfigurationAdapter<'_> {
     fn get_dsp_ark_version(&self) -> u32 {
         self.settings.dsp_ark_version.into()
     }
@@ -283,15 +283,6 @@ impl UuidGenerationPort for UuidGenerationAdapter {
 
         Ok(base64_encoded)
     }
-}
-
-/// Function to register the ARK URL info module with Python.
-pub fn register_ark_url_info_module(
-    _py: Python,
-    parent_module: &Bound<'_, PyModule>,
-) -> PyResult<()> {
-    parent_module.add_class::<PyArkUrlInfo>()?;
-    Ok(())
 }
 
 #[cfg(test)]

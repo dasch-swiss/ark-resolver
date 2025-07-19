@@ -3,9 +3,7 @@ use std::{thread, time::Duration};
 
 fn cleanup_docker() {
     println!("Cleaning up Docker containers...");
-    let _ = Command::new("docker")
-        .args(["compose", "down"])
-        .output();
+    let _ = Command::new("docker").args(["compose", "down"]).output();
 }
 
 #[test]
@@ -80,7 +78,10 @@ fn smoke_test() {
         Ok(response) => {
             if !response.status().is_redirection() {
                 cleanup_docker();
-                panic!("Redirect route should return 3xx status, got: {}", response.status());
+                panic!(
+                    "Redirect route should return 3xx status, got: {}",
+                    response.status()
+                );
             }
             println!("Redirect route test passed");
         }
