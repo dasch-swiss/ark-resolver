@@ -27,14 +27,14 @@ impl fmt::Display for SettingsError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             SettingsError::ValidationError(msg) => {
-                write!(f, "Configuration validation failed: {}", msg)
+                write!(f, "Configuration validation failed: {msg}")
             }
-            SettingsError::ParseError(msg) => write!(f, "Configuration parsing failed: {}", msg),
+            SettingsError::ParseError(msg) => write!(f, "Configuration parsing failed: {msg}"),
             SettingsError::EnvironmentError(msg) => {
-                write!(f, "Environment variable access failed: {}", msg)
+                write!(f, "Environment variable access failed: {msg}")
             }
             SettingsError::MissingKey(key) => {
-                write!(f, "Required configuration key missing: {}", key)
+                write!(f, "Required configuration key missing: {key}")
             }
             SettingsError::InvalidValue {
                 key,
@@ -43,12 +43,11 @@ impl fmt::Display for SettingsError {
             } => {
                 write!(
                     f,
-                    "Invalid value '{}' for key '{}', expected: {}",
-                    value, key, expected
+                    "Invalid value '{value}' for key '{key}', expected: {expected}"
                 )
             }
-            SettingsError::RegexError(msg) => write!(f, "Regex compilation failed: {}", msg),
-            SettingsError::FileSystemError(msg) => write!(f, "File system access failed: {}", msg),
+            SettingsError::RegexError(msg) => write!(f, "Regex compilation failed: {msg}"),
+            SettingsError::FileSystemError(msg) => write!(f, "File system access failed: {msg}"),
         }
     }
 }

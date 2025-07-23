@@ -27,17 +27,13 @@ impl FileSystemConfigurationProvider {
             .add_source(File::with_name(file_path).format(FileFormat::Ini))
             .build()
             .map_err(|e| {
-                SettingsError::ParseError(format!(
-                    "Failed to parse INI file '{}': {}",
-                    file_path, e
-                ))
+                SettingsError::ParseError(format!("Failed to parse INI file '{file_path}': {e}"))
             })?;
 
         let raw_data: HashMap<String, serde_json::Value> =
             config.try_deserialize().map_err(|e| {
                 SettingsError::ParseError(format!(
-                    "Failed to deserialize INI file '{}': {}",
-                    file_path, e
+                    "Failed to deserialize INI file '{file_path}': {e}"
                 ))
             })?;
 
@@ -94,8 +90,7 @@ impl ConfigurationProvider for FileSystemConfigurationProvider {
         // Check if file exists
         if !Path::new(registry_path).exists() {
             return Err(SettingsError::FileSystemError(format!(
-                "Registry file not found: {}",
-                registry_path
+                "Registry file not found: {registry_path}"
             )));
         }
 
@@ -115,8 +110,7 @@ impl ConfigurationProvider for FileSystemConfigurationProvider {
         // Check if file exists
         if !Path::new(config_path).exists() {
             return Err(SettingsError::FileSystemError(format!(
-                "Config file not found: {}",
-                config_path
+                "Config file not found: {config_path}"
             )));
         }
 
@@ -131,7 +125,7 @@ impl ConfigurationProvider for FileSystemConfigurationProvider {
                     let full_key = if section == "DEFAULT" {
                         key.clone()
                     } else {
-                        format!("{}.{}", section, key)
+                        format!("{section}.{key}")
                     };
                     config_map.insert(full_key, inner_value.as_str().unwrap_or("").to_string());
                 }
@@ -155,13 +149,13 @@ impl FileSystemProviderTrait for FileSystemProvider {
 
     async fn read_file(&self, path: &str) -> SettingsResult<String> {
         fs::read_to_string(path).await.map_err(|e| {
-            SettingsError::FileSystemError(format!("Failed to read file '{}': {}", path, e))
+            SettingsError::FileSystemError(format!("Failed to read file '{path}': {e}"))
         })
     }
 
     async fn get_file_metadata(&self, path: &str) -> SettingsResult<HashMap<String, String>> {
         let metadata = fs::metadata(path).await.map_err(|e| {
-            SettingsError::FileSystemError(format!("Failed to get metadata for '{}': {}", path, e))
+            SettingsError::FileSystemError(format!("Failed to get metadata for '{path}': {e}"))
         })?;
 
         let mut meta_map = HashMap::new();

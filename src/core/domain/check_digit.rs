@@ -103,7 +103,7 @@ mod tests {
         assert_eq!(result, 'n');
 
         // Verify the calculated check digit makes the code valid
-        let code_with_check_digit = format!("{}{}", code, result);
+        let code_with_check_digit = format!("{code}{result}");
         assert!(is_valid(&code_with_check_digit).unwrap());
     }
 

@@ -8,26 +8,22 @@ const TIMESTAMP_PATTERN: &str = r"([0-9]{8}T[0-9]{6,15}Z)";
 
 pub fn resource_iri_regex() -> Regex {
     Regex::new(&format!(
-        r"^http://rdfh.ch/{}/([A-Za-z0-9_-]+)$",
-        PROJECT_ID_PATTERN
+        r"^http://rdfh.ch/{PROJECT_ID_PATTERN}/([A-Za-z0-9_-]+)$"
     ))
     .unwrap()
 }
 // FIXME: This regex excludes timestamps
 pub fn ark_path_regex(ark_naan: &str) -> Regex {
     let ark_path_pattern = format!(
-        r"^ark:/{}/([0-9]+)(?:/{}(?:/{}(?:/{})?)?)?$",
-        ark_naan, PROJECT_ID_PATTERN, ENCODED_UUID_PATTERN, ENCODED_UUID_PATTERN
+        r"^ark:/{ark_naan}/([0-9]+)(?:/{PROJECT_ID_PATTERN}(?:/{ENCODED_UUID_PATTERN}(?:/{ENCODED_UUID_PATTERN})?)?)?$"
     );
     Regex::new(&ark_path_pattern).unwrap()
 }
 
 pub fn v0_ark_path_regex(ark_naan: &str) -> Regex {
-    let v0_ark_path_pattern = format!(
-        r"ark:/{}/([0-9A-Fa-f]+)-([A-Za-z0-9]+)-[A-Za-z0-9]+(?:\.([0-9]{{6,8}}))?",
-        ark_naan
-    );
-    Regex::new(&format!(r"^{}$", v0_ark_path_pattern)).unwrap()
+    let v0_ark_path_pattern =
+        format!(r"ark:/{ark_naan}/([0-9A-Fa-f]+)-([A-Za-z0-9]+)-[A-Za-z0-9]+(?:\.([0-9]{{6,8}}))?");
+    Regex::new(&format!(r"^{v0_ark_path_pattern}$")).unwrap()
 }
 
 #[cfg(test)]

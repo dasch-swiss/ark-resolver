@@ -34,8 +34,7 @@ impl ConfigWrapper {
                 "true" | "1" => Ok(true),
                 "false" | "0" => Ok(false),
                 _ => Err(pyo3::exceptions::PyValueError::new_err(format!(
-                    "Invalid boolean value for key '{}': {}",
-                    key, value
+                    "Invalid boolean value for key '{key}': {value}"
                 ))),
             },
             None => Ok(false),

@@ -1,5 +1,6 @@
-/// PyO3 adapter for ARK URL formatting operations.
-/// This adapter provides a Python-compatible interface that maintains exact API compatibility.
+//! PyO3 adapter for ARK URL formatting operations.
+//! This adapter provides a Python-compatible interface that maintains exact API compatibility.
+#![allow(clippy::useless_conversion)]
 use crate::adapters::pyo3::settings::ArkUrlSettings;
 use crate::core::errors::ark_url_formatter::ArkUrlFormatterError;
 use crate::core::ports::ark_url_formatter::ArkUrlFormatterPort;
@@ -12,25 +13,25 @@ fn convert_error(error: ArkUrlFormatterError) -> pyo3::PyErr {
     match error {
         ArkUrlFormatterError::InvalidResourceIri(msg) => {
             // In Python, this becomes ArkUrlException
-            PyValueError::new_err(format!("Invalid resource IRI: {}", msg))
+            PyValueError::new_err(format!("Invalid resource IRI: {msg}"))
         }
         ArkUrlFormatterError::InvalidProjectId(msg) => {
-            PyValueError::new_err(format!("Invalid project ID: {}", msg))
+            PyValueError::new_err(format!("Invalid project ID: {msg}"))
         }
         ArkUrlFormatterError::InvalidResourceId(msg) => {
-            PyValueError::new_err(format!("Invalid resource ID: {}", msg))
+            PyValueError::new_err(format!("Invalid resource ID: {msg}"))
         }
         ArkUrlFormatterError::InvalidTimestamp(msg) => {
-            PyValueError::new_err(format!("Invalid timestamp: {}", msg))
+            PyValueError::new_err(format!("Invalid timestamp: {msg}"))
         }
         ArkUrlFormatterError::InvalidRegexPattern(msg) => {
-            PyValueError::new_err(format!("Invalid regex pattern: {}", msg))
+            PyValueError::new_err(format!("Invalid regex pattern: {msg}"))
         }
         ArkUrlFormatterError::MissingConfiguration(msg) => {
-            PyValueError::new_err(format!("Missing configuration: {}", msg))
+            PyValueError::new_err(format!("Missing configuration: {msg}"))
         }
         ArkUrlFormatterError::UuidProcessingError(msg) => {
-            PyValueError::new_err(format!("UUID processing error: {}", msg))
+            PyValueError::new_err(format!("UUID processing error: {msg}"))
         }
     }
 }

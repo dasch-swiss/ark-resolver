@@ -19,7 +19,7 @@ pub fn add_check_digit_and_escape(uuid: &str) -> Result<String, UuidProcessingEr
     let check_digit =
         check_digit::calculate_check_digit(uuid).map_err(UuidProcessingError::CheckDigitError)?;
 
-    let uuid_with_check_digit = format!("{}{}", uuid, check_digit);
+    let uuid_with_check_digit = format!("{uuid}{check_digit}");
     Ok(uuid_with_check_digit.replace('-', "="))
 }
 

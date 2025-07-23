@@ -95,10 +95,7 @@ impl ProjectConfig {
             Some(value) => match value.as_str() {
                 "true" | "1" => Ok(true),
                 "false" | "0" => Ok(false),
-                _ => Err(format!(
-                    "Invalid boolean value for key '{}': {}",
-                    key, value
-                )),
+                _ => Err(format!("Invalid boolean value for key '{key}': {value}")),
             },
             None => Ok(false),
         }

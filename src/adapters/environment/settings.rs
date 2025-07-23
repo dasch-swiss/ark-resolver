@@ -23,8 +23,7 @@ impl EnvironmentProvider for EnvironmentVariableProvider {
             Ok(value) => Ok(Some(value)),
             Err(env::VarError::NotPresent) => Ok(None),
             Err(e) => Err(SettingsError::EnvironmentError(format!(
-                "Failed to read environment variable '{}': {}",
-                key, e
+                "Failed to read environment variable '{key}': {e}"
             ))),
         }
     }
