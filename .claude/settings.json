@@ -9,11 +9,13 @@
       "Bash(just check)",
       "Bash(just rustcheck:*)",
       "Bash(just test:*)",
+      "Bash(just pytest)",
+      "Bash(just pycheck:*)",
       "Bash(cargo test:*)",
       "Bash(cargo check:*)",
-      "Bash(just pytest tests/test_check_digit_rust.py -v)",
-      "Bash(just pytest)",
-      "Bash(just pycheck:*)"
+      "Bash(cargo clippy:*)",
+      "mcp__linear__get_project",
+      "mcp__linear__list_issues",
     ],
     "deny": []
   }

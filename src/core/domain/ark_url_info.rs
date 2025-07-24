@@ -40,7 +40,7 @@ impl ArkUrlInfo {
         match (self.url_version, &self.timestamp) {
             (0, Some(ts)) => {
                 // Version 0 ARK URLs need time appended
-                Some(format!("{}T000000Z", ts))
+                Some(format!("{ts}T000000Z"))
             }
             (_, ts) => ts.clone(),
         }

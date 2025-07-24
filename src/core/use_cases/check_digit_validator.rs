@@ -65,7 +65,7 @@ impl CheckDigitValidator {
     /// Business rule: Combines the input code with calculated check digit
     pub fn add_check_digit(&self, code: &str) -> Result<String, CheckDigitError> {
         let check_digit_char = self.calculate_check_digit(code)?;
-        Ok(format!("{}{}", code, check_digit_char))
+        Ok(format!("{code}{check_digit_char}"))
     }
 
     /// Validate and strip check digit from a complete code
@@ -128,7 +128,7 @@ mod tests {
         assert_eq!(result, 'n');
 
         // Verify the calculated check digit makes the code valid
-        let code_with_check_digit = format!("{}{}", code, result);
+        let code_with_check_digit = format!("{code}{result}");
         assert!(validator.is_valid(&code_with_check_digit).unwrap());
     }
 

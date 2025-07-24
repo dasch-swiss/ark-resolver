@@ -4,6 +4,9 @@
 //! PyO3 adapter for ARK URL information processing.
 //! Provides Python bindings for the Rust ARK URL info functionality.
 
+#![allow(unexpected_cfgs)]
+#![allow(clippy::useless_conversion)]
+
 use crate::adapters::pyo3::settings::ArkUrlSettings;
 use crate::core::domain::ark_url_info::ArkUrlInfo as RustArkUrlInfo;
 use crate::core::errors::ark_url_info::ArkUrlInfoError;
@@ -248,13 +251,13 @@ impl TemplatePort for TemplateAdapter {
         let mut result = template.to_string();
 
         for (key, value) in values {
-            let placeholder = format!("${{{}}}", key);
+            let placeholder = format!("${{{key}}}");
             result = result.replace(&placeholder, value);
         }
 
         // Also handle simple $key format (without braces)
         for (key, value) in values {
-            let placeholder = format!("${}", key);
+            let placeholder = format!("${key}");
             result = result.replace(&placeholder, value);
         }
 

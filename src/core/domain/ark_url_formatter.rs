@@ -44,8 +44,7 @@ pub fn format_ark_id(
     timestamp: Option<&str>,
 ) -> String {
     let mut ark_id = format!(
-        "ark:/{}/{}/{}/{}",
-        ark_naan, dsp_ark_version, project_id, escaped_resource_id_with_check_digit
+        "ark:/{ark_naan}/{dsp_ark_version}/{project_id}/{escaped_resource_id_with_check_digit}"
     );
 
     if let Some(ts) = timestamp {

@@ -25,25 +25,25 @@ impl fmt::Display for ArkUrlFormatterError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             ArkUrlFormatterError::InvalidResourceIri(iri) => {
-                write!(f, "Invalid resource IRI: {}", iri)
+                write!(f, "Invalid resource IRI: {iri}")
             }
             ArkUrlFormatterError::InvalidProjectId(id) => {
-                write!(f, "Invalid project ID: {}", id)
+                write!(f, "Invalid project ID: {id}")
             }
             ArkUrlFormatterError::InvalidResourceId(id) => {
-                write!(f, "Invalid resource ID: {}", id)
+                write!(f, "Invalid resource ID: {id}")
             }
             ArkUrlFormatterError::InvalidTimestamp(ts) => {
-                write!(f, "Invalid timestamp: {}", ts)
+                write!(f, "Invalid timestamp: {ts}")
             }
             ArkUrlFormatterError::InvalidRegexPattern(pattern) => {
-                write!(f, "Invalid regex pattern: {}", pattern)
+                write!(f, "Invalid regex pattern: {pattern}")
             }
             ArkUrlFormatterError::MissingConfiguration(config) => {
-                write!(f, "Missing configuration: {}", config)
+                write!(f, "Missing configuration: {config}")
             }
             ArkUrlFormatterError::UuidProcessingError(msg) => {
-                write!(f, "UUID processing error: {}", msg)
+                write!(f, "UUID processing error: {msg}")
             }
         }
     }
@@ -77,7 +77,7 @@ mod tests {
     #[test]
     fn test_error_debug() {
         let error = ArkUrlFormatterError::InvalidTimestamp("bad_timestamp".to_string());
-        let debug_str = format!("{:?}", error);
+        let debug_str = format!("{error:?}");
         assert!(debug_str.contains("InvalidTimestamp"));
         assert!(debug_str.contains("bad_timestamp"));
     }

@@ -268,8 +268,7 @@ impl SettingsValidator for DefaultSettingsValidator {
         for (project_id, project_config) in &registry.projects {
             self.validate_project_config(project_config).map_err(|e| {
                 SettingsError::ValidationError(format!(
-                    "Invalid project configuration for '{}': {}",
-                    project_id, e
+                    "Invalid project configuration for '{project_id}': {e}"
                 ))
             })?;
         }

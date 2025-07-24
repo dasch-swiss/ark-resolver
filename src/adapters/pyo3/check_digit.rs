@@ -1,5 +1,6 @@
-/// PyO3 adapter for check digit operations.
-/// This adapter provides PyO3-compatible functions that maintain exact API compatibility.
+//! PyO3 adapter for check digit operations.
+//! This adapter provides PyO3-compatible functions that maintain exact API compatibility.
+#![allow(clippy::useless_conversion)]
 use crate::core::errors::check_digit::CheckDigitError;
 use crate::core::use_cases::check_digit_validator::CheckDigitValidator;
 use pyo3::{exceptions::PyValueError, pyfunction, PyResult};

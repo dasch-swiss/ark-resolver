@@ -149,7 +149,7 @@ where
         // Handle version 0 resource ID conversion
         if ark_info.is_version_0() {
             let resource_iri = self.generate_resource_iri(ark_info)?;
-            let converted_resource_id = resource_iri.split('/').last().unwrap_or("");
+            let converted_resource_id = resource_iri.split('/').next_back().unwrap_or("");
             template_dict.insert("resource_id".to_string(), converted_resource_id.to_string());
         }
 

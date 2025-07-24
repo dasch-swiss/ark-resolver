@@ -1,3 +1,5 @@
+#![allow(clippy::useless_conversion)]
+
 use crate::adapters::pyo3::ark_url_formatter::ArkUrlFormatter;
 use crate::adapters::pyo3::ark_url_info::PyArkUrlInfo;
 use crate::adapters::pyo3::check_digit::{
