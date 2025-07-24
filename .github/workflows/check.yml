@@ -43,7 +43,7 @@ jobs:
         with:
           components: rustfmt
       - run: cargo fmt --check
-  clippy:
+  rust-checks:
     runs-on: ubuntu-latest
     name: rust clippy
     steps:
@@ -61,7 +61,7 @@ jobs:
         with:
           components: clippy
       - run: cargo clippy -- -D warnings
-  ruff:
+  python-checks:
     runs-on: ubuntu-latest
     name: python checks
     steps:
@@ -77,9 +77,5 @@ jobs:
       - name: Install Python dependencies
         run: uv sync --all-extras --dev
         shell: bash
-      - name: Run ruff format
-        run: uv run ruff format --check .
-      - name: Run ruff lint
-        run: uv run ruff check --output-format=github .
-      - name: Mypy type check
-        run: uv run mypy .
+      - name: pycheck
+        run: just pycheck
