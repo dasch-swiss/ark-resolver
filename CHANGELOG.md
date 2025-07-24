@@ -1,5 +1,48 @@
 # Changelog
 
+## [1.12.2](https://github.com/dasch-swiss/ark-resolver/compare/ark_resolver-v1.12.1...ark_resolver-v1.12.2) (2025-07-24)
+
+
+### Maintenances
+
+* Add caching and smoke-test execution to CI ([#118](https://github.com/dasch-swiss/ark-resolver/issues/118)) ([cace974](https://github.com/dasch-swiss/ark-resolver/commit/cace974fa009b45f1b784dcde03e1b41307188be))
+* Add cargo-nextest and update Rust toolchain ([#116](https://github.com/dasch-swiss/ark-resolver/issues/116)) ([fe709a5](https://github.com/dasch-swiss/ark-resolver/commit/fe709a5839cd56b772664ba95db2738287f477a0))
+* Add claude and typechecking ([#100](https://github.com/dasch-swiss/ark-resolver/issues/100)) ([5162b2b](https://github.com/dasch-swiss/ark-resolver/commit/5162b2bf14778497686026d267cb049a56339d6a))
+* Add parallel execution framework for Python/Rust shadow validation ([#109](https://github.com/dasch-swiss/ark-resolver/issues/109)) ([bdef6ef](https://github.com/dasch-swiss/ark-resolver/commit/bdef6ef7355794209f5b252382857095e4c27e91))
+* ARK URL Formatter migrated to hexagonal architecture ([#105](https://github.com/dasch-swiss/ark-resolver/issues/105)) ([f3fd637](https://github.com/dasch-swiss/ark-resolver/commit/f3fd6371dfb2afbce6c2d190c5d4580bbdf123b8))
+* ARK URL Info Processing migrated to hexagonal architecture ([#107](https://github.com/dasch-swiss/ark-resolver/issues/107)) ([ebb83ce](https://github.com/dasch-swiss/ark-resolver/commit/ebb83cea57ee3389c72786876e2245cf396b71df))
+* Check digit module migrated to hexagonal architecture ([#104](https://github.com/dasch-swiss/ark-resolver/issues/104)) ([3735f96](https://github.com/dasch-swiss/ark-resolver/commit/3735f964db19d83fb1583c6b5b793c77ecd58905))
+* Complete ARK URL Info Processing migration to Rust ([#108](https://github.com/dasch-swiss/ark-resolver/issues/108)) ([561e0e0](https://github.com/dasch-swiss/ark-resolver/commit/561e0e0aa3eb251fcd91c1c8eb5071c5d4b74ae5))
+* Complete migration of `check_digit.py` to Rust with full test parity ([#101](https://github.com/dasch-swiss/ark-resolver/issues/101)) ([8b419aa](https://github.com/dasch-swiss/ark-resolver/commit/8b419aa2723859b8323823b2824a465b6accc462))
+* Extract catch_all route to dedicated redirect module ([#110](https://github.com/dasch-swiss/ark-resolver/issues/110)) ([8c07fc1](https://github.com/dasch-swiss/ark-resolver/commit/8c07fc167812f5989bf98845330d5a90a4f13c33))
+* Fix cargo check and formatting errors ([#121](https://github.com/dasch-swiss/ark-resolver/issues/121)) ([c93e7f4](https://github.com/dasch-swiss/ark-resolver/commit/c93e7f472d22c39dcf7ed7b2d24b9ad66f20b22d))
+* Ignore temporary Graphite branches in CI ([#119](https://github.com/dasch-swiss/ark-resolver/issues/119)) ([9cd01b9](https://github.com/dasch-swiss/ark-resolver/commit/9cd01b95acd94fe03689c5f5cc76f895b466c051))
+* Implement shadow execution and logging for convert route ([#117](https://github.com/dasch-swiss/ark-resolver/issues/117)) ([fc2b081](https://github.com/dasch-swiss/ark-resolver/commit/fc2b0819309aec4831d4d7881a202a21107aeccc))
+* Improve CI caching to prevent Docker build timeouts ([#120](https://github.com/dasch-swiss/ark-resolver/issues/120)) ([22fccdb](https://github.com/dasch-swiss/ark-resolver/commit/22fccdb9f595b69c7a7e7afd5c257a0611714f5c))
+* Improve github CI check workflow ([#122](https://github.com/dasch-swiss/ark-resolver/issues/122)) ([db35e88](https://github.com/dasch-swiss/ark-resolver/commit/db35e885936e71959ba23b48f9f11f03d38e9201))
+* Migrate ark_url_settings to hexagonal architecture ([#112](https://github.com/dasch-swiss/ark-resolver/issues/112)) ([100b246](https://github.com/dasch-swiss/ark-resolver/commit/100b24609e9f9a8d991f1c146a438f3b996772df))
+* Move parsing module to domain layer ([#114](https://github.com/dasch-swiss/ark-resolver/issues/114)) ([6f747b0](https://github.com/dasch-swiss/ark-resolver/commit/6f747b044c62fa4edf495bd07f5e82060792574e))
+* Project setup ([19e0dfa](https://github.com/dasch-swiss/ark-resolver/commit/19e0dfa59c586122bd36d231a84534c7e94b64eb))
+* Remove old implementation ([#113](https://github.com/dasch-swiss/ark-resolver/issues/113)) ([bd52d03](https://github.com/dasch-swiss/ark-resolver/commit/bd52d031175c6bdc80c8d5ecb75566002e8d7c38))
+* UUID processing migrated to hexagonal architecture and legacy code removed ([#106](https://github.com/dasch-swiss/ark-resolver/issues/106)) ([90475e2](https://github.com/dasch-swiss/ark-resolver/commit/90475e26679f3ac6c43a4d9d6f492d23b5fd2487))
+* UUID Processing Migration ([#102](https://github.com/dasch-swiss/ark-resolver/issues/102)) ([7d7d72e](https://github.com/dasch-swiss/ark-resolver/commit/7d7d72e6d0b3800c4093f17753186d435eb6ef62))
+
+
+### Documentation
+
+* Add ADR and update todos ([#103](https://github.com/dasch-swiss/ark-resolver/issues/103)) ([386c2bc](https://github.com/dasch-swiss/ark-resolver/commit/386c2bcb4baf7b5a1561b17d1724864303ba620d))
+* Structured logging design ([#99](https://github.com/dasch-swiss/ark-resolver/issues/99)) ([8627ad3](https://github.com/dasch-swiss/ark-resolver/commit/8627ad38ebadd95dd4ac08f9b90ace9dcf02f4e4))
+
+
+### Bug Fixes
+
+* Update justfile test target to run all Rust unit tests without PyO3 issues ([#115](https://github.com/dasch-swiss/ark-resolver/issues/115)) ([8fd6547](https://github.com/dasch-swiss/ark-resolver/commit/8fd654783cdf026934da8de0d78d5c1e0fc78e1f))
+
+
+### Tests
+
+* Extend smoke test to cover convert and redirect routes ([#111](https://github.com/dasch-swiss/ark-resolver/issues/111)) ([862eeb7](https://github.com/dasch-swiss/ark-resolver/commit/862eeb72733e83133c8b7ed5d3f629ed300c8d29))
+
 ## [1.12.1](https://github.com/dasch-swiss/ark-resolver/compare/ark_resolver-v1.12.0...ark_resolver-v1.12.1) (2025-05-05)
 
 
