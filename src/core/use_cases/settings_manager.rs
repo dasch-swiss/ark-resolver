@@ -52,7 +52,7 @@ impl SettingsManager {
         // Load environment-based ARK configuration
         let registry_path = self
             .environment_provider
-            .get_env_var_or_default("ARK_REGISTRY", "ark_resolver/ark-registry.ini")
+            .get_env_var_or_default("ARK_REGISTRY_FILE", "ark_resolver/ark-registry.ini")
             .await?;
 
         let ark_config = self
@@ -102,7 +102,7 @@ impl SettingsManager {
     pub async fn load_minimal_settings(&self) -> SettingsResult<SettingsWithRegexes> {
         let registry_path = self
             .environment_provider
-            .get_env_var_or_default("ARK_REGISTRY", "ark_resolver/ark-registry.ini")
+            .get_env_var_or_default("ARK_REGISTRY_FILE", "ark_resolver/ark-registry.ini")
             .await?;
 
         let ark_config = self

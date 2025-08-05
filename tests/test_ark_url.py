@@ -12,7 +12,7 @@ from ark_resolver.ark_url import ArkUrlInfo
 def settings():
     """Loads settings."""
     config_path = "ark_resolver/ark-config.ini"
-    os.environ["ARK_REGISTRY"] = "ark_resolver/ark-registry.ini"
+    os.environ["ARK_REGISTRY_FILE"] = "ark_resolver/ark-registry.ini"
     return ark.load_settings(config_path)
 
 

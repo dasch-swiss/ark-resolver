@@ -3,6 +3,19 @@
 Resolves [ARK](https://tools.ietf.org/html/draft-kunze-ark-18) URLs referring to
 resources in [DSP](https://dsp.dasch.swiss/) (formerly called Knora) repositories.
 
+## Project Status
+
+The DSP ARK Resolver is a **hybrid Python/Rust application** currently undergoing migration from Python to Rust in three phases:
+
+1. **Phase 1 (Current)**: Add functionality to Rust and run in parallel with Python implementation to verify correct behavior in production, while Python behavior remains user-facing. Rust functions are exposed as Python extensions via PyO3/Maturin.
+2. **Phase 2**: Change user-facing behavior to Rust implementation and start removing Python components.
+3. **Phase 3**: Refactor Rust code into a standalone service using Axum, completely removing Python dependencies.
+
+### Architecture
+- **Python (Sanic)**: Main HTTP server, routing, and business logic
+- **Rust (PyO3)**: Performance-critical functions exposed as Python extensions
+- **Configuration-driven**: Uses INI files for ARK registry and server configuration
+
 ## Modes of operation
 
 The program `ark.py` has two modes of operation:
@@ -23,6 +36,20 @@ The program `ark.py` has two modes of operation:
 
 For usage information, run `./ark.py --help`, and see the sample configuration
 file `ark-config.ini` and the sample project registry file `ark-registry.ini`.
+
+### Environment Variables
+
+The application can be configured using the following environment variables:
+
+- `ARK_EXTERNAL_HOST`: External hostname used in ARK URLs (default: `ark.example.org`)
+- `ARK_INTERNAL_HOST`: Internal hostname for the server (default: `0.0.0.0`)
+- `ARK_INTERNAL_PORT`: Port for the server to bind to (default: `3336`)
+- `ARK_NAAN`: Name Assigning Authority Number (default: `00000`)
+- `ARK_HTTPS_PROXY`: Whether behind HTTPS proxy (default: `true`)
+- `ARK_REGISTRY_FILE`: Path or URL to the project registry file (default: `ark-registry.ini`)
+- `ARK_GITHUB_SECRET`: Secret for GitHub webhook authentication
+
+For production deployments, `ARK_REGISTRY_FILE` should point to the appropriate registry file from the [ark-resolver-data](https://github.com/dasch-swiss/ark-resolver-data) repository.
 
 In the sample registry file, the redirect URLs are DSP-API URLs,
 but it is recommended that in production, redirect URLs should refer to
@@ -119,9 +146,57 @@ All other GET requests are interpreted as ARK URLs.
 Images are published to the [daschswiss/ark-resolver](https://hub.docker.com/r/daschswiss/ark-resolver)
 Docker Hub repository.
 
-To use, run:
+### Basic Usage
 
 ```bash
-$ docker run daschswiss/ark-resolver
+docker run -p 3336:3336 daschswiss/ark-resolver
+```
+
+### Environment Configuration
+
+The Docker container can be configured using environment variables:
+
+```bash
+docker run -p 3336:3336 \
+  -e ARK_EXTERNAL_HOST="ark.example.org" \
+  -e ARK_INTERNAL_HOST="0.0.0.0" \
+  -e ARK_INTERNAL_PORT="3336" \
+  -e ARK_NAAN="72163" \
+  -e ARK_HTTPS_PROXY="true" \
+  -e ARK_REGISTRY_FILE="/app/ark_resolver/ark-registry.ini" \
+  -e ARK_GITHUB_SECRET="your-webhook-secret" \
+  daschswiss/ark-resolver
+```
+
+### Production Deployment
+
+For staging and production deployments, set the registry file to load from the external repository:
+
+```bash
+# Staging
+docker run -p 3336:3336 \
+  -e ARK_REGISTRY_FILE="https://raw.githubusercontent.com/dasch-swiss/ark-resolver-data/master/data/dasch_ark_registry_staging.ini" \
+  daschswiss/ark-resolver
+
+# Production
+docker run -p 3336:3336 \
+  -e ARK_REGISTRY_FILE="https://raw.githubusercontent.com/dasch-swiss/ark-resolver-data/master/data/dasch_ark_registry_prod.ini" \
+  daschswiss/ark-resolver
+```
+
+### Docker Compose
+
+See `docker-compose.yml` for a complete example configuration.
+
+### Building Images
+
+Multi-architecture images can be built using the provided just commands:
+
+```bash
+# For linux/amd64
+just docker-build-intel
+
+# For linux/arm64  
+just docker-build-arm
 ```
 
