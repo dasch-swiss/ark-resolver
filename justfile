@@ -59,7 +59,7 @@ pytest: build
 
 # Run ark-resolver locally
 run: build
-    export ARK_REGISTRY="ark_resolver/ark-registry.ini" && uv run ark_resolver/ark.py -s -c ark_resolver/ark-config.ini
+    export ARK_REGISTRY_FILE="ark_resolver/ark-registry.ini" && uv run ark_resolver/ark.py -s -c ark_resolver/ark-config.ini
 
 # Run Rust unit tests
 test:

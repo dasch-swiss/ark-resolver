@@ -10,7 +10,7 @@ from ark_resolver._rust import load_settings  # type: ignore[import-untyped]
 def settings():
     """Loads settings."""
     config_path = "ark_resolver/ark-config.ini"
-    os.environ["ARK_REGISTRY"] = "ark_resolver/ark-registry.ini"
+    os.environ["ARK_REGISTRY_FILE"] = "ark_resolver/ark-registry.ini"
     return load_settings(config_path)
 
 

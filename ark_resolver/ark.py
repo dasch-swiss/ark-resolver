@@ -215,7 +215,7 @@ def load_settings(config_path: str) -> ArkUrlSettings:
         "ArkInternalPort": os.environ.get("ARK_INTERNAL_PORT", "3336"),
         "ArkNaan": os.environ.get("ARK_NAAN", "00000"),
         "ArkHttpsProxy": os.environ.get("ARK_HTTPS_PROXY", "true"),
-        "ArkRegistry": os.environ.get("ARK_REGISTRY", "ark-registry.ini"),
+        "ArkRegistry": os.environ.get("ARK_REGISTRY_FILE", "ark-registry.ini"),
         "ArkGitHubSecret": os.environ.get("ARK_GITHUB_SECRET", ""),
     }
 

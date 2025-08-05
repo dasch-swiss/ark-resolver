@@ -54,7 +54,7 @@ uv run maturin develop
 
 # Run the resolver locally
 just run
-# This sets ARK_REGISTRY and runs: uv run ark_resolver/ark.py -s -c ark_resolver/ark-config.ini
+# This sets ARK_REGISTRY_FILE and runs: uv run ark_resolver/ark.py -s -c ark_resolver/ark-config.ini
 
 # Run as command-line tool (examples)
 ./ark_resolver/ark.py -i http://rdfh.ch/0002/70aWaB2kWsuiN6ujYgM0ZQ  # IRI to ARK
