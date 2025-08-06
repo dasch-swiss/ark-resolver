@@ -54,7 +54,7 @@ uv run maturin develop
 
 # Run the resolver locally
 just run
-# This sets ARK_REGISTRY_FILE and runs: uv run ark_resolver/ark.py -s -c ark_resolver/ark-config.ini
+# This sets ARK_REGISTRY_FILE and runs: uv run ark_resolver/ark.py -s
 
 # Run as command-line tool (examples)
 ./ark_resolver/ark.py -i http://rdfh.ch/0002/70aWaB2kWsuiN6ujYgM0ZQ  # IRI to ARK
@@ -102,8 +102,8 @@ just fmt  # Runs both rustfmt and pyfmt
 - Settings loading and parsing performance optimized in Rust (`src/ark_url_settings.rs`)
 
 ### Configuration System  
-- `ark-config.ini`: Server configuration (host, port, GitHub webhook secret)
-- `ark-registry.ini`: Project-specific ARK URL templates and redirect targets
+- All configuration is done via environment variables (host, port, GitHub webhook secret, registry file)
+- `tests/ark-registry.ini`: Project-specific ARK URL templates and redirect targets (for local testing only)
 - Settings are loaded via Rust for performance (`ArkUrlSettings` class)
 
 ### Key Python Modules

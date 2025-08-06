@@ -14,7 +14,7 @@ The DSP ARK Resolver is a **hybrid Python/Rust application** currently undergoin
 ### Architecture
 - **Python (Sanic)**: Main HTTP server, routing, and business logic
 - **Rust (PyO3)**: Performance-critical functions exposed as Python extensions
-- **Configuration-driven**: Uses INI files for ARK registry and server configuration
+- **Environment-driven configuration**: Uses environment variables with defaults, registry loaded from `ARK_REGISTRY_FILE`
 
 ## Modes of operation
 
@@ -34,8 +34,7 @@ The program `ark.py` has two modes of operation:
 - The ark-resolver can also be used as a command-line tool for converting between
   resource IRIs and ARK URLs, using the same configuration file.
 
-For usage information, run `./ark.py --help`, and see the sample configuration
-file `ark-config.ini` and the sample project registry file `ark-registry.ini`.
+For usage information, run `./ark.py --help`. The application is configured entirely through environment variables, with a sample registry file available at `tests/ark-registry.ini` for local testing.
 
 ### Environment Variables
 
@@ -46,7 +45,7 @@ The application can be configured using the following environment variables:
 - `ARK_INTERNAL_PORT`: Port for the server to bind to (default: `3336`)
 - `ARK_NAAN`: Name Assigning Authority Number (default: `00000`)
 - `ARK_HTTPS_PROXY`: Whether behind HTTPS proxy (default: `true`)
-- `ARK_REGISTRY_FILE`: Path or URL to the project registry file (default: `ark-registry.ini`)
+- `ARK_REGISTRY_FILE`: Path or URL to the project registry file (**required**)
 - `ARK_GITHUB_SECRET`: Secret for GitHub webhook authentication
 
 For production deployments, `ARK_REGISTRY_FILE` should point to the appropriate registry file from the [ark-resolver-data](https://github.com/dasch-swiss/ark-resolver-data) repository.
@@ -69,6 +68,26 @@ Then, create the virtual environment and install the dependencies with:
 
 ```bash
 uv sync
+```
+
+### Local Development
+
+For local development and testing, set the registry file environment variable:
+
+```bash
+export ARK_REGISTRY_FILE="tests/ark-registry.ini"
+```
+
+You can then run the server locally:
+
+```bash
+./ark.py -s
+```
+
+Or use the convenient just command:
+
+```bash
+just run
 ```
 
 
@@ -115,7 +134,7 @@ created from the generic `uuid.NAMESPACE_URL` the Python library [uuid](https://
 provides and the string `https://dasch.swiss` and is therefore itself a UUID version 5.
 
 Projects migrated from salsah.org to DSP need to have parameter `AllowVersion0` set to `true` in their project 
-configuration (`ark-registry.ini`). Otherwise, the ARK URLs of version 0 are rejected.
+configuration (registry file). Otherwise, the ARK URLs of version 0 are rejected.
 
 
 ## Server routes
@@ -163,7 +182,7 @@ docker run -p 3336:3336 \
   -e ARK_INTERNAL_PORT="3336" \
   -e ARK_NAAN="72163" \
   -e ARK_HTTPS_PROXY="true" \
-  -e ARK_REGISTRY_FILE="/app/ark_resolver/ark-registry.ini" \
+  -e ARK_REGISTRY_FILE="tests/ark-registry.ini" \
   -e ARK_GITHUB_SECRET="your-webhook-secret" \
   daschswiss/ark-resolver
 ```

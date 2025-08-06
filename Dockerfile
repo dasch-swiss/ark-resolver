@@ -106,4 +106,4 @@ HEALTHCHECK --start-period=60s --interval=60s --timeout=10s --retries=3 \
 
 COPY --chmod=0755 entrypoint.sh /entrypoint.sh
 ENTRYPOINT ["/entrypoint.sh"]
-CMD ["-s", "-c", "/app/ark_resolver/ark-config.ini"]
+CMD ["-s"]

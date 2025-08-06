@@ -205,7 +205,7 @@ mod tests {
     use crate::adapters::pyo3::settings::ArkUrlSettings;
 
     fn get_test_settings() -> ArkUrlSettings {
-        ArkUrlSettings::new("ark_resolver/ark-config.ini".to_string()).unwrap()
+        ArkUrlSettings::new().unwrap()
     }
 
     #[test]

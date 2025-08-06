@@ -193,7 +193,7 @@ async def schedule_reload() -> None:
 
 
 def reload_config() -> None:
-    settings = load_settings(app.config.config_path)
+    settings = load_settings()
     app.config.settings = settings
     logger.info("Configuration reloaded.")
 
@@ -202,28 +202,27 @@ def reload_config() -> None:
 # Loading of config and registry files.
 
 
-def load_settings(config_path: str) -> ArkUrlSettings:
+def load_settings() -> ArkUrlSettings:
     """
-    Loads configuration from given path and returns an ArkUrlSettings.
+    Loads configuration from environment variables and returns an ArkUrlSettings.
     """
-    app.config.config_path = config_path
-
-    # Default configuration from environment variables.
+    # Configuration from environment variables with defaults.
     environment_vars = {
         "ArkExternalHost": os.environ.get("ARK_EXTERNAL_HOST", "ark.example.org"),
         "ArkInternalHost": os.environ.get("ARK_INTERNAL_HOST", "0.0.0.0"),
         "ArkInternalPort": os.environ.get("ARK_INTERNAL_PORT", "3336"),
         "ArkNaan": os.environ.get("ARK_NAAN", "00000"),
         "ArkHttpsProxy": os.environ.get("ARK_HTTPS_PROXY", "true"),
-        "ArkRegistry": os.environ.get("ARK_REGISTRY_FILE", "ark-registry.ini"),
         "ArkGitHubSecret": os.environ.get("ARK_GITHUB_SECRET", ""),
     }
 
-    # Read the config and registry files.
+    # Create config parser with environment variables as defaults
     config = configparser.ConfigParser(defaults=environment_vars)
-    config.read_file(open(config_path))
 
-    registry_path = config["DEFAULT"]["ArkRegistry"]
+    # Registry path is only from environment variable
+    registry_path = os.environ.get("ARK_REGISTRY_FILE")
+    if not registry_path:
+        raise ValueError("ARK_REGISTRY_FILE environment variable is required")
 
     if registry_path.startswith("http"):
         registry_str = requests.get(registry_path, timeout=10).text
@@ -245,9 +244,7 @@ def main() -> None:
     Main method for app started as CLI
     """
     # parses the command-line arguments
-    default_config_path = "ark-config.ini"
     parser = argparse.ArgumentParser(description="Convert between DSP resource IRIs and ARK URLs.")
-    parser.add_argument("-c", "--config", help="config file (default {})".format(default_config_path))
     group = parser.add_mutually_exclusive_group()
     group.add_argument("-s", "--server", help="start server", action="store_true")
     group.add_argument("-i", "--iri", help="print the converted ARK URL from a given DSP resource IRI (add -v and -d optionally)")
@@ -257,14 +254,8 @@ def main() -> None:
     parser.add_argument("-d", "--date", help="DSP ARK timestamp (has to be provided with -i)")
     args = parser.parse_args()
 
-    # reads the config and registry files
-    if args.config is not None:
-        config_path = args.config
-    else:
-        config_path = default_config_path
-
     try:
-        settings = load_settings(config_path)
+        settings = load_settings()
 
         if args.server:
             # starts the app as server

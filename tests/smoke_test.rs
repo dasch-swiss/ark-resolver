@@ -51,7 +51,7 @@ fn smoke_test() {
 
     // Step 3: Test convert route (Version 0 ARK -> Version 1 ARK)
     println!("Testing convert route...");
-    let convert_url = "http://localhost:3336/convert/ark:/99999/0002-751e0b8a-6";
+    let convert_url = "http://localhost:3336/convert/ark:/99999/0803-751e0b8a-6";
     match reqwest::blocking::get(convert_url) {
         Ok(response) => {
             if !response.status().is_success() {
@@ -68,7 +68,7 @@ fn smoke_test() {
 
     // Step 4: Test redirect route (Version 1 ARK -> redirect to resource)
     println!("Testing redirect route...");
-    let redirect_url = "http://localhost:3336/ark:/99999/1/0002";
+    let redirect_url = "http://localhost:3336/ark:/99999/1/0803";
     let client = reqwest::blocking::Client::builder()
         .redirect(reqwest::redirect::Policy::none())
         .build()

@@ -41,10 +41,10 @@ impl SettingsManager {
     }
 
     /// Load complete settings from configuration file
-    pub async fn load_settings(&self, config_path: &str) -> SettingsResult<SettingsWithRegexes> {
+    pub async fn load_settings(&self) -> SettingsResult<SettingsWithRegexes> {
         // Check cache first if repository is available
         if let Some(repo) = &self.repository {
-            if let Ok(Some(cached)) = repo.get_cached_settings(config_path).await {
+            if let Ok(Some(cached)) = repo.get_cached_settings("env_settings").await {
                 return Ok(cached);
             }
         }
@@ -52,12 +52,17 @@ impl SettingsManager {
         // Load environment-based ARK configuration
         let registry_path = self
             .environment_provider
-            .get_env_var_or_default("ARK_REGISTRY_FILE", "ark_resolver/ark-registry.ini")
-            .await?;
+            .get_env_var("ARK_REGISTRY_FILE")
+            .await?
+            .ok_or_else(|| {
+                crate::core::errors::settings::SettingsError::EnvironmentError(
+                    "ARK_REGISTRY_FILE environment variable is required".to_string(),
+                )
+            })?;
 
         let ark_config = self
             .environment_provider
-            .build_ark_config(registry_path.clone())
+            .build_ark_config("".to_string()) // Empty string since no config file
             .await?;
 
         // Validate ARK configuration
@@ -91,7 +96,7 @@ impl SettingsManager {
         // Cache the settings if repository is available
         if let Some(repo) = &self.repository {
             let _ = repo
-                .cache_settings(config_path, &settings_with_regexes)
+                .cache_settings("env_settings", &settings_with_regexes)
                 .await;
         }
 
@@ -102,8 +107,13 @@ impl SettingsManager {
     pub async fn load_minimal_settings(&self) -> SettingsResult<SettingsWithRegexes> {
         let registry_path = self
             .environment_provider
-            .get_env_var_or_default("ARK_REGISTRY_FILE", "ark_resolver/ark-registry.ini")
-            .await?;
+            .get_env_var("ARK_REGISTRY_FILE")
+            .await?
+            .ok_or_else(|| {
+                crate::core::errors::settings::SettingsError::EnvironmentError(
+                    "ARK_REGISTRY_FILE environment variable is required".to_string(),
+                )
+            })?;
 
         let ark_config = self
             .environment_provider
@@ -127,14 +137,14 @@ impl SettingsManager {
     }
 
     /// Reload settings and clear cache
-    pub async fn reload_settings(&self, config_path: &str) -> SettingsResult<SettingsWithRegexes> {
+    pub async fn reload_settings(&self) -> SettingsResult<SettingsWithRegexes> {
         // Clear cache first
         if let Some(repo) = &self.repository {
             repo.clear_cache().await?;
         }
 
         // Load fresh settings
-        self.load_settings(config_path).await
+        self.load_settings().await
     }
 
     /// Get project configuration with defaults merged
@@ -290,9 +300,12 @@ mod tests {
             registry_data: HashMap::new(),
             config_data: HashMap::new(),
         });
-        let env_provider = Arc::new(MockEnvironmentProvider {
-            env_vars: HashMap::new(),
-        });
+        let mut env_vars = HashMap::new();
+        env_vars.insert(
+            "ARK_REGISTRY_FILE".to_string(),
+            "tests/ark-registry.ini".to_string(),
+        );
+        let env_provider = Arc::new(MockEnvironmentProvider { env_vars });
         let regex_provider = Arc::new(MockRegexProvider);
         let transformer = Arc::new(DefaultSettingsTransformer);
         let validator = Arc::new(DefaultSettingsValidator);
@@ -306,7 +319,7 @@ mod tests {
             validator,
         );
 
-        let settings = manager.load_settings("test.ini").await.unwrap();
+        let settings = manager.load_settings().await.unwrap();
         assert_eq!(settings.settings.dsp_ark_version, 1);
         assert_eq!(settings.settings.resource_int_id_factor, 982451653);
     }
@@ -317,9 +330,12 @@ mod tests {
             registry_data: HashMap::new(),
             config_data: HashMap::new(),
         });
-        let env_provider = Arc::new(MockEnvironmentProvider {
-            env_vars: HashMap::new(),
-        });
+        let mut env_vars = HashMap::new();
+        env_vars.insert(
+            "ARK_REGISTRY_FILE".to_string(),
+            "tests/ark-registry.ini".to_string(),
+        );
+        let env_provider = Arc::new(MockEnvironmentProvider { env_vars });
         let regex_provider = Arc::new(MockRegexProvider);
         let transformer = Arc::new(DefaultSettingsTransformer);
         let validator = Arc::new(DefaultSettingsValidator);
