@@ -13,4 +13,4 @@ services:
       ARK_INTERNAL_PORT: "3336"
       ARK_NAAN: "99999"
       ARK_HTTPS_PROXY: false
-      ARK_REGISTRY_FILE: "/app/ark_resolver/ark-registry.ini"
+      ARK_REGISTRY_FILE: "https://raw.githubusercontent.com/dasch-swiss/ark-resolver-data/master/data/dasch_ark_registry_staging.ini"

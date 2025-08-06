@@ -66,8 +66,8 @@ pub struct ArkUrlSettings {
 #[pymethods]
 impl ArkUrlSettings {
     #[new]
-    #[pyo3(text_signature = "(config_path)")]
-    pub fn new(config_path: String) -> PyResult<Self> {
+    #[pyo3(text_signature = "()")]
+    pub fn new() -> PyResult<Self> {
         // Create runtime for async operations
         let rt = tokio::runtime::Runtime::new()
             .map_err(|e| pyo3::exceptions::PyRuntimeError::new_err(e.to_string()))?;
@@ -91,8 +91,8 @@ impl ArkUrlSettings {
                     validator,
                 );
 
-                // Load settings
-                manager.load_settings(&config_path).await
+                // Load settings using environment variables only (no config file)
+                manager.load_settings().await
             })
             .map_err(|e: SettingsError| match e {
                 SettingsError::FileSystemError(msg) => pyo3::exceptions::PyIOError::new_err(msg),
@@ -176,8 +176,8 @@ impl ArkUrlSettings {
 
 /// Expose a direct function for Python to load settings
 #[pyfunction]
-pub fn load_settings(config_path: String) -> PyResult<ArkUrlSettings> {
-    ArkUrlSettings::new(config_path)
+pub fn load_settings() -> PyResult<ArkUrlSettings> {
+    ArkUrlSettings::new()
 }
 
 #[cfg(test)]

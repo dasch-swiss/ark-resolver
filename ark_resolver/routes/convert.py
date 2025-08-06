@@ -47,7 +47,7 @@ async def convert(req: Request, ark_id: str = "") -> HTTPResponse:
                 return ArkUrlFormatter(req.app.config.settings).resource_iri_to_ark_id(resource_iri=resource_iri, timestamp=timestamp)
 
             def rust_convert():
-                rust_settings = load_settings_rust(req.app.config.config_path)
+                rust_settings = load_settings_rust()
                 ark_url_info = ArkUrlInfoRust(rust_settings, ark_id_decoded)
                 resource_iri = ark_url_info.to_resource_iri()
                 timestamp = ark_url_info.get_timestamp()

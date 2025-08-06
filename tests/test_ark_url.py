@@ -11,9 +11,8 @@ from ark_resolver.ark_url import ArkUrlInfo
 @pytest.fixture(scope="module")
 def settings():
     """Loads settings."""
-    config_path = "ark_resolver/ark-config.ini"
-    os.environ["ARK_REGISTRY_FILE"] = "ark_resolver/ark-registry.ini"
-    return ark.load_settings(config_path)
+    os.environ["ARK_REGISTRY_FILE"] = "tests/ark-registry.ini"
+    return ark.load_settings()
 
 
 def test_ark_url_formatter_to_url(settings):
