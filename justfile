@@ -59,12 +59,12 @@ pytest: build
 
 # Run ark-resolver locally
 run: build
-    export ARK_REGISTRY_FILE="tests/ark-registry.ini" && uv run ark_resolver/ark.py -s
+    export ARK_REGISTRY="tests/ark-registry.ini" && uv run ark_resolver/ark.py -s
 
 # Run Rust unit tests
 test:
     @echo "🧪 Running Rust unit tests..."
-    export ARK_REGISTRY_FILE="tests/ark-registry.ini" && cargo nextest run --lib --no-default-features
+    export ARK_REGISTRY="tests/ark-registry.ini" && cargo nextest run --lib --no-default-features
     @echo "✅ Rust unit tests completed successfully!"
     @echo "💡 Use 'just pytest' to run comprehensive Python integration tests"
 

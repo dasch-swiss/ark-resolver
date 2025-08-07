@@ -52,11 +52,11 @@ impl SettingsManager {
         // Load environment-based ARK configuration
         let registry_path = self
             .environment_provider
-            .get_env_var("ARK_REGISTRY_FILE")
+            .get_env_var("ARK_REGISTRY")
             .await?
             .ok_or_else(|| {
                 crate::core::errors::settings::SettingsError::EnvironmentError(
-                    "ARK_REGISTRY_FILE environment variable is required".to_string(),
+                    "ARK_REGISTRY environment variable is required".to_string(),
                 )
             })?;
 
@@ -107,11 +107,11 @@ impl SettingsManager {
     pub async fn load_minimal_settings(&self) -> SettingsResult<SettingsWithRegexes> {
         let registry_path = self
             .environment_provider
-            .get_env_var("ARK_REGISTRY_FILE")
+            .get_env_var("ARK_REGISTRY")
             .await?
             .ok_or_else(|| {
                 crate::core::errors::settings::SettingsError::EnvironmentError(
-                    "ARK_REGISTRY_FILE environment variable is required".to_string(),
+                    "ARK_REGISTRY environment variable is required".to_string(),
                 )
             })?;
 
@@ -302,7 +302,7 @@ mod tests {
         });
         let mut env_vars = HashMap::new();
         env_vars.insert(
-            "ARK_REGISTRY_FILE".to_string(),
+            "ARK_REGISTRY".to_string(),
             "tests/ark-registry.ini".to_string(),
         );
         let env_provider = Arc::new(MockEnvironmentProvider { env_vars });
@@ -332,7 +332,7 @@ mod tests {
         });
         let mut env_vars = HashMap::new();
         env_vars.insert(
-            "ARK_REGISTRY_FILE".to_string(),
+            "ARK_REGISTRY".to_string(),
             "tests/ark-registry.ini".to_string(),
         );
         let env_provider = Arc::new(MockEnvironmentProvider { env_vars });

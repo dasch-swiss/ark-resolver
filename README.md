@@ -14,7 +14,7 @@ The DSP ARK Resolver is a **hybrid Python/Rust application** currently undergoin
 ### Architecture
 - **Python (Sanic)**: Main HTTP server, routing, and business logic
 - **Rust (PyO3)**: Performance-critical functions exposed as Python extensions
-- **Environment-driven configuration**: Uses environment variables with defaults, registry loaded from `ARK_REGISTRY_FILE`
+- **Environment-driven configuration**: Uses environment variables with defaults, registry loaded from `ARK_REGISTRY`
 
 ## Modes of operation
 
@@ -45,10 +45,10 @@ The application can be configured using the following environment variables:
 - `ARK_INTERNAL_PORT`: Port for the server to bind to (default: `3336`)
 - `ARK_NAAN`: Name Assigning Authority Number (default: `00000`)
 - `ARK_HTTPS_PROXY`: Whether behind HTTPS proxy (default: `true`)
-- `ARK_REGISTRY_FILE`: Path or URL to the project registry file (**required**)
+- `ARK_REGISTRY`: Path or URL to the project registry file (**required**)
 - `ARK_GITHUB_SECRET`: Secret for GitHub webhook authentication
 
-For production deployments, `ARK_REGISTRY_FILE` should point to the appropriate registry file from the [ark-resolver-data](https://github.com/dasch-swiss/ark-resolver-data) repository.
+For production deployments, `ARK_REGISTRY` should point to the appropriate registry file from the [ark-resolver-data](https://github.com/dasch-swiss/ark-resolver-data) repository.
 
 In the sample registry file, the redirect URLs are DSP-API URLs,
 but it is recommended that in production, redirect URLs should refer to
@@ -75,7 +75,7 @@ uv sync
 For local development and testing, set the registry file environment variable:
 
 ```bash
-export ARK_REGISTRY_FILE="tests/ark-registry.ini"
+export ARK_REGISTRY="tests/ark-registry.ini"
 ```
 
 You can then run the server locally:
@@ -182,7 +182,7 @@ docker run -p 3336:3336 \
   -e ARK_INTERNAL_PORT="3336" \
   -e ARK_NAAN="72163" \
   -e ARK_HTTPS_PROXY="true" \
-  -e ARK_REGISTRY_FILE="tests/ark-registry.ini" \
+  -e ARK_REGISTRY="tests/ark-registry.ini" \
   -e ARK_GITHUB_SECRET="your-webhook-secret" \
   daschswiss/ark-resolver
 ```
@@ -194,12 +194,12 @@ For staging and production deployments, set the registry file to load from the e
 ```bash
 # Staging
 docker run -p 3336:3336 \
-  -e ARK_REGISTRY_FILE="https://raw.githubusercontent.com/dasch-swiss/ark-resolver-data/master/data/dasch_ark_registry_staging.ini" \
+  -e ARK_REGISTRY="https://raw.githubusercontent.com/dasch-swiss/ark-resolver-data/master/data/dasch_ark_registry_staging.ini" \
   daschswiss/ark-resolver
 
 # Production
 docker run -p 3336:3336 \
-  -e ARK_REGISTRY_FILE="https://raw.githubusercontent.com/dasch-swiss/ark-resolver-data/master/data/dasch_ark_registry_prod.ini" \
+  -e ARK_REGISTRY="https://raw.githubusercontent.com/dasch-swiss/ark-resolver-data/master/data/dasch_ark_registry_prod.ini" \
   daschswiss/ark-resolver
 ```
 

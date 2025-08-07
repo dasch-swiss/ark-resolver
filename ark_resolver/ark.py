@@ -220,9 +220,9 @@ def load_settings() -> ArkUrlSettings:
     config = configparser.ConfigParser(defaults=environment_vars)
 
     # Registry path is only from environment variable
-    registry_path = os.environ.get("ARK_REGISTRY_FILE")
+    registry_path = os.environ.get("ARK_REGISTRY")
     if not registry_path:
-        raise ValueError("ARK_REGISTRY_FILE environment variable is required")
+        raise ValueError("ARK_REGISTRY environment variable is required")
 
     if registry_path.startswith("http"):
         registry_str = requests.get(registry_path, timeout=10).text
