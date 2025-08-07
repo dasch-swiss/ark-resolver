@@ -9,7 +9,7 @@ from ark_resolver._rust import load_settings  # type: ignore[import-untyped]
 @pytest.fixture(scope="module")
 def settings():
     """Loads settings."""
-    os.environ["ARK_REGISTRY_FILE"] = "tests/ark-registry.ini"
+    os.environ["ARK_REGISTRY"] = "tests/ark-registry.ini"
     return load_settings()
 
 
