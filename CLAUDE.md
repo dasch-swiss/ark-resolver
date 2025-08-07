@@ -6,7 +6,100 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Notes
 Claude MUST first present plan. Only after confirmation, start implementing plan and changing code.
 Claude MUST ask questions about code coverage and if adding new unit tests or extending existing tests is required.
-Claude MUST keep the docs/todos.md file uptodate with the current plan, and ckeck off the tasks that where completed.
+
+## Documentation Conventions
+
+### Business Rules Documentation
+
+When working with Claude Code, provide requirements and specifications at the **business rules level** rather than implementation details. This approach enables Claude Code to make informed decisions about how to best implement these rules in code.
+
+#### Business Rule Prefix Convention
+
+All business rules embedded in code must be prefixed with `BR: ` to ensure:
+- Easy searchability across the codebase
+- Clear distinction between business logic and implementation details
+- Traceability from requirements to code
+
+**Example:**
+```rust
+// BR: Premium customers receive 20% discount on orders over $100
+if customer.is_premium && order.total > 100.0 {
+    order.apply_discount(0.20);
+}
+```
+
+### Comment Philosophy
+
+#### Focus on "Why" Not "What"
+
+Comments should explain the **reasoning** behind decisions, not describe what the code does:
+
+❌ **Avoid "What" Comments:**
+```rust
+// Loop through all users
+for user in users.iter() {
+    // Check if user is active
+    if user.is_active {
+        // Send email to user
+        send_email(user);
+    }
+}
+```
+
+✅ **Prefer "Why" Comments:**
+```rust
+// BR: Inactive users should not receive promotional emails per GDPR compliance
+for user in users.iter() {
+    if user.is_active {
+        send_email(user);
+    }
+}
+```
+
+#### Code Clarity Principle
+
+If you find yourself needing to explain **what** the code does, this is a signal that the code should be refactored for clarity:
+
+**Instead of commenting unclear code:**
+```rust
+// Calculate compound interest
+let result = p * (1.0 + r/n).powf(n*t);
+```
+
+**Refactor for self-documentation:**
+```rust
+fn calculate_compound_interest(principal: f64, rate: f64, times_compounded: f64, years: f64) -> f64 {
+    // BR: Compound interest formula required by financial regulations
+    principal * (1.0 + rate/times_compounded).powf(times_compounded * years)
+}
+
+let result = calculate_compound_interest(principal, rate, times_compounded, years);
+```
+
+### Best Practices
+
+1. **Business Rules First**: When describing requirements to Claude Code, focus on business rules and constraints rather than implementation specifics
+
+2. **Searchable Documentation**: Use the `BR: ` prefix consistently to make business rules easily discoverable
+
+3. **Self-Documenting Code**: Write code that clearly expresses its intent through meaningful names and structure
+
+4. **Refactor Over Comment**: If code requires explanation of what it does, refactor it to be more understandable
+
+5. **Context Over Description**: Comments should provide context, rationale, and business justification
+
+### Example Business Rules Format
+
+When providing requirements to Claude Code, structure them as business rules:
+
+```
+BR: Orders must be processed within 24 hours during business days
+BR: Customers with failed payments should be notified after 3 attempts
+BR: Inventory levels below 20% trigger automatic reorder
+BR: Price changes require manager approval if variance exceeds 15%
+```
+
+This approach ensures that the implementation remains flexible while the business logic is clearly documented and traceable.
 
 ## Project Overview
 
