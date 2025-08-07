@@ -1,3 +1,4 @@
+from ark_resolver import check_digit as check_digit_py
 from ark_resolver import check_digit_rust as check_digit_rust_py
 
 
@@ -36,7 +37,6 @@ def test_base64url_check_digit_rust():
 
 def test_rust_vs_python_parity():
     """Test that Rust and Python implementations produce identical results."""
-    from ark_resolver import check_digit as check_digit_py
 
     test_codes = [
         "cmfk1DMHRBiR4-_6HXpEFA",
@@ -88,7 +88,6 @@ def test_rust_vs_python_parity():
 
 def test_helper_functions():
     """Test helper functions for parity."""
-    from ark_resolver import check_digit as check_digit_py
 
     # Test to_int
     test_chars = ["A", "Z", "a", "z", "0", "9", "-", "_"]

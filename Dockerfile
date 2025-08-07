@@ -10,9 +10,9 @@ RUN \
     ca-certificates \
     python3 \
     python3-dev \
-    libressl-dev \
     pkgconf \
     gcompat \
+    perl \
     && rm -rf /var/cache/apk/*
 
 # - Copy from the cache instead of linking since it's a mounted volume,
