@@ -1,4 +1,5 @@
 use async_trait::async_trait;
+use reqwest::Proxy;
 use std::collections::HashMap;
 use std::env;
 use std::error::Error as StdError;
@@ -16,22 +17,53 @@ pub struct HttpConfigurationProvider {
 
 impl HttpConfigurationProvider {
     pub fn new() -> Self {
-        // BR: Use rustls with embedded Mozilla roots; avoid system CA dependencies
-        // BR: Fail fast for shadow execution to avoid delaying user responses
+        // BR: Match Python requests timeout behavior (10s total)
+        // BR: Use generous timeouts since this runs in background parallel execution
         let connect_timeout_ms = env::var("ARK_RUST_HTTP_CONNECT_TIMEOUT_MS")
             .ok()
             .and_then(|s| s.parse::<u64>().ok())
-            .unwrap_or(1_000);
+            .unwrap_or(5_000); // 5s connect timeout
         let total_timeout_ms = env::var("ARK_RUST_HTTP_TIMEOUT_MS")
             .ok()
             .and_then(|s| s.parse::<u64>().ok())
-            .unwrap_or(2_000);
+            .unwrap_or(10_000); // 10s total timeout to match Python
 
-        let client = reqwest::Client::builder()
+        // BR: Support outbound proxies via environment
+        let proxy_from_env = || -> Option<String> {
+            let keys = [
+                "ARK_OUTBOUND_PROXY",
+                "HTTPS_PROXY",
+                "https_proxy",
+                "HTTP_PROXY",
+                "http_proxy",
+                "ALL_PROXY",
+                "all_proxy",
+            ];
+            for key in keys {
+                if let Ok(val) = env::var(key) {
+                    if !val.trim().is_empty() {
+                        return Some(val);
+                    }
+                }
+            }
+            None
+        }();
+
+        let mut builder = reqwest::Client::builder()
             .connect_timeout(Duration::from_millis(connect_timeout_ms))
             .timeout(Duration::from_millis(total_timeout_ms))
-            .build()
-            .expect("Failed to create HTTP client");
+            // BR: Use standard User-Agent to match Python requests behavior
+            .user_agent("ark-resolver/1.0 (Rust)")
+            // BR: Follow redirects like Python requests (up to 10)
+            .redirect(reqwest::redirect::Policy::limited(10));
+
+        if let Some(proxy_url) = proxy_from_env {
+            if let Ok(p) = Proxy::all(&proxy_url) {
+                builder = builder.proxy(p);
+            }
+        }
+
+        let client = builder.build().expect("Failed to create HTTP client");
 
         Self { client }
     }
@@ -44,7 +76,10 @@ impl HttpConfigurationProvider {
     /// Fetch content from HTTP URL
     async fn fetch_url_content(&self, url: &str) -> SettingsResult<String> {
         // BR: Provide rich diagnostics to help debug Stage TLS/network issues safely
+        let start_time = std::time::Instant::now();
+
         let response = self.client.get(url).send().await.map_err(|e| {
+            let elapsed = start_time.elapsed();
             let classification = if e.is_timeout() {
                 "timeout"
             } else if e.is_connect() {
@@ -61,8 +96,36 @@ impl HttpConfigurationProvider {
                 "network"
             };
 
-            let mut msg =
-                format!("Failed to fetch URL '{url}' (class: {classification}, tls: rustls): {e}");
+            let proxy_present = [
+                "ARK_OUTBOUND_PROXY",
+                "HTTPS_PROXY",
+                "https_proxy",
+                "HTTP_PROXY",
+                "http_proxy",
+                "ALL_PROXY",
+                "all_proxy",
+            ]
+            .iter()
+            .any(|k| env::var(k).ok().filter(|v| !v.trim().is_empty()).is_some());
+
+            let connect_timeout = env::var("ARK_RUST_HTTP_CONNECT_TIMEOUT_MS")
+                .ok()
+                .and_then(|s| s.parse::<u64>().ok())
+                .unwrap_or(5_000);
+            let total_timeout = env::var("ARK_RUST_HTTP_TIMEOUT_MS")
+                .ok()
+                .and_then(|s| s.parse::<u64>().ok())
+                .unwrap_or(10_000);
+
+            let mut msg = if proxy_present {
+                format!(
+                    "Failed to fetch URL '{url}' (class: {classification}, tls: rustls, proxy: detected, elapsed: {elapsed:?}, timeouts: connect={connect_timeout}ms total={total_timeout}ms): {e}"
+                )
+            } else {
+                format!(
+                    "Failed to fetch URL '{url}' (class: {classification}, tls: rustls, elapsed: {elapsed:?}, timeouts: connect={connect_timeout}ms total={total_timeout}ms): {e}"
+                )
+            };
 
             if let Some(src) = e.source() {
                 // Include one level of source error for deeper insight
