@@ -1,4 +1,4 @@
-# CLAUDE.md
+# AGENTS.md
 
 This file provides guidance to coding agents when working with code in this repository.
 
@@ -200,14 +200,14 @@ just fmt  # Runs both rustfmt and pyfmt
 - Key Rust functions exposed: `base64url_check_digit`, `load_settings`, `initialize_tracing`
 - Settings loading and parsing performance optimized in Rust (`src/ark_url_settings.rs`)
 
-### Configuration System
+### Configuration System  
 - All configuration is done via environment variables (host, port, GitHub webhook secret, registry file)
 - `tests/ark-registry.ini`: Project-specific ARK URL templates and redirect targets (for local testing only)
 - Settings are loaded via Rust for performance (`ArkUrlSettings` class)
 
 ### Key Python Modules
 - `ark_resolver/ark.py`: Main server and CLI entry point
-- `ark_resolver/ark_url.py`: ARK URL parsing and formatting logic
+- `ark_resolver/ark_url.py`: ARK URL parsing and formatting logic  
 - `ark_resolver/routes/`: Sanic route handlers (health, convert endpoints)
 - `ark_resolver/check_digit.py`: ARK check digit validation
 
