@@ -1,5 +1,24 @@
 # Changelog
 
+## [1.12.3](https://github.com/dasch-swiss/ark-resolver/compare/ark_resolver-v1.12.2...ark_resolver-v1.12.3) (2025-08-08)
+
+
+### Documentation
+
+* Make examples inline with domain ([#128](https://github.com/dasch-swiss/ark-resolver/issues/128)) ([375dee3](https://github.com/dasch-swiss/ark-resolver/commit/375dee315f7fa4dcad60848a831816c25469ff52))
+
+
+### Bug Fixes
+
+* Add http config fetching in Rust ([#127](https://github.com/dasch-swiss/ark-resolver/issues/127)) ([281f5bf](https://github.com/dasch-swiss/ark-resolver/commit/281f5bf26b5abf1a838ba48369f2ec8acc95847b))
+* Http config fetching in Rust ([#129](https://github.com/dasch-swiss/ark-resolver/issues/129)) ([f45ece4](https://github.com/dasch-swiss/ark-resolver/commit/f45ece40144193e5da73796df6ead49fac5a78ac))
+* Http config fetching in Rust ([#130](https://github.com/dasch-swiss/ark-resolver/issues/130)) ([6c4a35a](https://github.com/dasch-swiss/ark-resolver/commit/6c4a35a428638e3af96392f96ea83b9c6b11a1ef))
+* Http config fetching in Rust ([#131](https://github.com/dasch-swiss/ark-resolver/issues/131)) ([17f6e6e](https://github.com/dasch-swiss/ark-resolver/commit/17f6e6e640f5e9136b0d36a4c211ec7daf4c3875))
+* Http config fetching in Rust ([#132](https://github.com/dasch-swiss/ark-resolver/issues/132)) ([e276b86](https://github.com/dasch-swiss/ark-resolver/commit/e276b869baf24c49ddfa78af846bafd79c22f42c))
+* Simplify config ([#125](https://github.com/dasch-swiss/ark-resolver/issues/125)) ([fa1d1a2](https://github.com/dasch-swiss/ark-resolver/commit/fa1d1a2759a1de07d9e86af0512cddf3ea85ff56))
+* Use correct environment variable ([#126](https://github.com/dasch-swiss/ark-resolver/issues/126)) ([089de08](https://github.com/dasch-swiss/ark-resolver/commit/089de08dd7098bf0a815dd699591be0a3c80c796))
+* Use correct environment variable for registry file ([#123](https://github.com/dasch-swiss/ark-resolver/issues/123)) ([1d9906c](https://github.com/dasch-swiss/ark-resolver/commit/1d9906c9bd42839f8446e0df035878e4486bb1cd))
+
 ## [1.12.2](https://github.com/dasch-swiss/ark-resolver/compare/ark_resolver-v1.12.1...ark_resolver-v1.12.2) (2025-07-24)
 
 
