@@ -15,6 +15,7 @@ The DSP ARK Resolver is a **hybrid Python/Rust application** currently undergoin
 - **Python (Sanic)**: Main HTTP server, routing, and business logic
 - **Rust (PyO3)**: Performance-critical functions exposed as Python extensions
 - **Environment-driven configuration**: Uses environment variables with defaults, registry loaded from `ARK_REGISTRY`
+ - **HTTPS via Rustls**: Rust HTTP client uses `rustls` with embedded Mozilla roots, avoiding dependency on system CA bundles
 
 ## Modes of operation
 
@@ -197,6 +198,8 @@ docker run -p 3336:3336 \
   -e ARK_REGISTRY="https://raw.githubusercontent.com/dasch-swiss/ark-resolver-data/master/data/dasch_ark_registry_staging.ini" \
   daschswiss/ark-resolver
 
+Note on TLS: The Rust settings loader fetches the registry over HTTPS using `reqwest` with `rustls`. No `ca-certificates` package is required in the runtime image.
+
 # Production
 docker run -p 3336:3336 \
   -e ARK_REGISTRY="https://raw.githubusercontent.com/dasch-swiss/ark-resolver-data/master/data/dasch_ark_registry_prod.ini" \
@@ -218,4 +221,3 @@ just docker-build-intel
 # For linux/arm64  
 just docker-build-arm
 ```
-
