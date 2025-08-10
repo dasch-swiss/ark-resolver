@@ -49,6 +49,17 @@ The application can be configured using the following environment variables:
 - `ARK_REGISTRY`: Path or URL to the project registry file (**required**)
 - `ARK_GITHUB_SECRET`: Secret for GitHub webhook authentication
 
+### Rust HTTP Client Configuration (Advanced)
+
+Additional environment variables for debugging and timeout control in containerized environments:
+
+- `ARK_RUST_LOAD_TIMEOUT_MS`: Application-level timeout for settings loading (default: `15000`) - prevents container SIGTERM
+- `ARK_RUST_HTTP_TIMEOUT_MS`: HTTP request total timeout in milliseconds (default: `10000`) 
+- `ARK_RUST_HTTP_CONNECT_TIMEOUT_MS`: HTTP connection timeout in milliseconds (default: `5000`)
+- `RUST_LOG`: Controls tracing verbosity (e.g., `RUST_LOG=ark_resolver=debug,reqwest=debug,hyper=debug`)
+
+The Rust HTTP client also supports standard proxy environment variables (`HTTPS_PROXY`, `HTTP_PROXY`, `ALL_PROXY`).
+
 For production deployments, `ARK_REGISTRY` should point to the appropriate registry file from the [ark-resolver-data](https://github.com/dasch-swiss/ark-resolver-data) repository.
 
 In the sample registry file, the redirect URLs are DSP-API URLs,
@@ -198,7 +209,9 @@ docker run -p 3336:3336 \
   -e ARK_REGISTRY="https://raw.githubusercontent.com/dasch-swiss/ark-resolver-data/master/data/dasch_ark_registry_staging.ini" \
   daschswiss/ark-resolver
 
-Note on TLS: The Rust settings loader fetches the registry over HTTPS using `reqwest` with `rustls`. No `ca-certificates` package is required in the runtime image.
+**Note on TLS**: The Rust settings loader fetches the registry over HTTPS using `reqwest` with `rustls`. No `ca-certificates` package is required in the runtime image.
+
+**Note on SIGTERM Prevention**: The Rust HTTP client includes application-level timeouts (15s default) to prevent container orchestrators from killing the service during slow HTTP requests. Use `ARK_RUST_LOAD_TIMEOUT_MS` to adjust if needed.
 
 # Production
 docker run -p 3336:3336 \

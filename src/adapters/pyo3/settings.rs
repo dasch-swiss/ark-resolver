@@ -92,7 +92,22 @@ impl ArkUrlSettings {
                 );
 
                 // Load settings using environment variables only (no config file)
-                manager.load_settings().await
+                // BR: Add application-level timeout to prevent container SIGTERM
+                let timeout_ms = std::env::var("ARK_RUST_LOAD_TIMEOUT_MS")
+                    .ok()
+                    .and_then(|s| s.parse::<u64>().ok())
+                    .unwrap_or(15_000); // 15s default, shorter than typical container timeouts
+
+                tokio::time::timeout(
+                    std::time::Duration::from_millis(timeout_ms),
+                    manager.load_settings(),
+                )
+                .await
+                .map_err(|_| {
+                    SettingsError::FileSystemError(format!(
+                    "Settings loading timed out after {timeout_ms}ms - prevented container SIGTERM"
+                ))
+                })?
             })
             .map_err(|e: SettingsError| match e {
                 SettingsError::FileSystemError(msg) => pyo3::exceptions::PyIOError::new_err(msg),

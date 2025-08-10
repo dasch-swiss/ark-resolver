@@ -6,6 +6,7 @@ use std::error::Error as StdError;
 use std::net::IpAddr;
 use std::time::{Duration, Instant};
 use tokio::net::lookup_host;
+use tracing::{debug, error, info, instrument, warn};
 use url::Url;
 
 use crate::adapters::common::IniProcessor;
@@ -85,81 +86,106 @@ impl HttpConfigurationProvider {
     }
 
     /// Fetch content from HTTP URL
+    #[instrument(skip(self), fields(url = %url))]
     async fn fetch_url_content(&self, url: &str) -> SettingsResult<String> {
-        // BR: Provide rich diagnostics to help debug Stage TLS/network issues safely
+        // BR: Fast path first - try HTTP request immediately without diagnostics overhead
         let start_time = Instant::now();
 
-        // BR: Perform comprehensive pre-flight diagnostics for debugging
-        let diagnostics = match NetworkDiagnostics::new(url).await {
-            Ok(diag) => diag,
+        info!("Starting HTTP request to {}", url);
+        debug!(
+            "HTTP client config: connect_timeout={}ms, total_timeout={}ms",
+            env::var("ARK_RUST_HTTP_CONNECT_TIMEOUT_MS").unwrap_or_else(|_| "5000".to_string()),
+            env::var("ARK_RUST_HTTP_TIMEOUT_MS").unwrap_or_else(|_| "10000".to_string())
+        );
+
+        let response_result = self.client.get(url).send().await;
+
+        let response = match response_result {
+            Ok(resp) => resp,
             Err(e) => {
-                return Err(SettingsError::FileSystemError(format!(
-                    "Pre-flight diagnostics failed for '{url}': {e}"
-                )));
+                let elapsed = start_time.elapsed();
+                error!(
+                    duration_ms = elapsed.as_millis(),
+                    error = %e,
+                    "HTTP request failed"
+                );
+
+                let classification = if e.is_timeout() {
+                    "timeout"
+                } else if e.is_connect() {
+                    "connect"
+                } else if e.is_request() {
+                    "request"
+                } else if e.is_redirect() {
+                    "redirect"
+                } else if e.is_body() {
+                    "body"
+                } else if e.is_decode() {
+                    "decode"
+                } else {
+                    "network"
+                };
+
+                let proxy_present = [
+                    "ARK_OUTBOUND_PROXY",
+                    "HTTPS_PROXY",
+                    "https_proxy",
+                    "HTTP_PROXY",
+                    "http_proxy",
+                    "ALL_PROXY",
+                    "all_proxy",
+                ]
+                .iter()
+                .any(|k| env::var(k).ok().filter(|v| !v.trim().is_empty()).is_some());
+
+                let connect_timeout = env::var("ARK_RUST_HTTP_CONNECT_TIMEOUT_MS")
+                    .ok()
+                    .and_then(|s| s.parse::<u64>().ok())
+                    .unwrap_or(5_000);
+                let total_timeout = env::var("ARK_RUST_HTTP_TIMEOUT_MS")
+                    .ok()
+                    .and_then(|s| s.parse::<u64>().ok())
+                    .unwrap_or(10_000);
+
+                // BR: Only collect diagnostics on failure (lazy diagnostics for performance)
+                let diagnostics = NetworkDiagnostics::new_on_failure(url)
+                    .await
+                    .unwrap_or_else(|err| {
+                        NetworkDiagnostics::minimal_with_error(
+                            &format!("Diagnostic collection failed: {err}"),
+                            url,
+                        )
+                    });
+
+                // BR: Create comprehensive error message with diagnostics
+                let mut msg = create_detailed_error_message(ErrorContext {
+                    url,
+                    diagnostics: &diagnostics,
+                    classification,
+                    elapsed,
+                    connect_timeout,
+                    total_timeout,
+                    error: &e,
+                    proxy_present,
+                });
+
+                if let Some(src) = e.source() {
+                    // Include one level of source error for deeper insight
+                    msg.push_str(&format!("; source: {src}"));
+                }
+
+                return Err(SettingsError::FileSystemError(msg));
             }
         };
 
-        let response = self.client.get(url).send().await.map_err(|e| {
-            let elapsed = start_time.elapsed();
-            let classification = if e.is_timeout() {
-                "timeout"
-            } else if e.is_connect() {
-                "connect"
-            } else if e.is_request() {
-                "request"
-            } else if e.is_redirect() {
-                "redirect"
-            } else if e.is_body() {
-                "body"
-            } else if e.is_decode() {
-                "decode"
-            } else {
-                "network"
-            };
-
-            let proxy_present = [
-                "ARK_OUTBOUND_PROXY",
-                "HTTPS_PROXY",
-                "https_proxy",
-                "HTTP_PROXY",
-                "http_proxy",
-                "ALL_PROXY",
-                "all_proxy",
-            ]
-            .iter()
-            .any(|k| env::var(k).ok().filter(|v| !v.trim().is_empty()).is_some());
-
-            let connect_timeout = env::var("ARK_RUST_HTTP_CONNECT_TIMEOUT_MS")
-                .ok()
-                .and_then(|s| s.parse::<u64>().ok())
-                .unwrap_or(5_000);
-            let total_timeout = env::var("ARK_RUST_HTTP_TIMEOUT_MS")
-                .ok()
-                .and_then(|s| s.parse::<u64>().ok())
-                .unwrap_or(10_000);
-
-            // BR: Create comprehensive error message with diagnostics
-            let mut msg = create_detailed_error_message(ErrorContext {
-                url,
-                diagnostics: &diagnostics,
-                classification,
-                elapsed,
-                connect_timeout,
-                total_timeout,
-                error: &e,
-                proxy_present,
-            });
-
-            if let Some(src) = e.source() {
-                // Include one level of source error for deeper insight
-                msg.push_str(&format!("; source: {src}"));
-            }
-
-            SettingsError::FileSystemError(msg)
-        })?;
-
         let final_url = response.url().to_string();
         let status = response.status();
+        let elapsed_request = start_time.elapsed();
+
+        debug!(
+            "HTTP response received: {} {} in {:?}",
+            status, final_url, elapsed_request
+        );
 
         if !status.is_success() {
             // Try to extract a short snippet of the body for additional context
@@ -182,6 +208,15 @@ impl HttpConfigurationProvider {
                 "Failed to read response from '{final_url}': {e}"
             ))
         })?;
+
+        let total_elapsed = start_time.elapsed();
+        info!(
+            duration_ms = total_elapsed.as_millis(),
+            content_length = content.len(),
+            final_url = %final_url,
+            status = %status,
+            "HTTP request completed successfully"
+        );
 
         Ok(content)
     }
@@ -208,9 +243,11 @@ struct ContainerContext {
 }
 
 impl NetworkDiagnostics {
-    /// Create comprehensive network diagnostics for a URL
-    async fn new(url: &str) -> Result<Self, String> {
+    /// Create comprehensive network diagnostics for a URL (only use on failure for performance)
+    #[instrument(fields(url = %url))]
+    async fn new_on_failure(url: &str) -> Result<Self, String> {
         let start_time = Instant::now();
+        debug!("Starting diagnostic collection for failed request");
 
         // Parse URL
         let parsed = Url::parse(url).map_err(|e| format!("URL parse error: {e}"))?;
@@ -219,15 +256,28 @@ impl NetworkDiagnostics {
         let scheme = parsed.scheme().to_string();
 
         // Attempt DNS resolution
+        debug!("Attempting DNS resolution for {}:{}", host, port);
         let (resolved_ips, dns_success) = match lookup_host(&format!("{host}:{port}")).await {
             Ok(addrs) => {
                 let ips: Vec<IpAddr> = addrs.map(|addr| addr.ip()).collect();
+                debug!("DNS resolution successful: {} IPs found", ips.len());
                 (ips, true)
             }
-            Err(_) => (Vec::new(), false),
+            Err(e) => {
+                warn!("DNS resolution failed for {}:{}: {}", host, port, e);
+                (Vec::new(), false)
+            }
         };
 
         let dns_resolution_time = start_time.elapsed();
+        debug!(
+            host = %host,
+            port = %port,
+            dns_duration_ms = dns_resolution_time.as_millis(),
+            dns_success = dns_success,
+            resolved_ip_count = resolved_ips.len(),
+            "DNS resolution completed"
+        );
 
         // Gather container context
         let container_context = ContainerContext::detect();
@@ -241,6 +291,30 @@ impl NetworkDiagnostics {
             dns_success,
             container_context,
         })
+    }
+
+    /// Create minimal diagnostics when comprehensive diagnostics fail
+    fn minimal_with_error(error_msg: &str, url: &str) -> Self {
+        let parsed = Url::parse(url).unwrap_or_else(|_| Url::parse("https://unknown/").unwrap());
+        let host = parsed.host_str().unwrap_or("unknown").to_string();
+        let port = parsed.port_or_known_default().unwrap_or(80);
+        let scheme = parsed.scheme().to_string();
+
+        Self {
+            host,
+            port,
+            scheme,
+            dns_resolution_time: Duration::from_millis(0),
+            resolved_ips: Vec::new(),
+            dns_success: false,
+            container_context: ContainerContext {
+                is_container: false,
+                hostname: None,
+                relevant_env_vars: [("DIAGNOSTIC_ERROR".to_string(), error_msg.to_string())]
+                    .into_iter()
+                    .collect(),
+            },
+        }
     }
 }
 
