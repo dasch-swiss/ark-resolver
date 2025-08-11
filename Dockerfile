@@ -55,8 +55,6 @@ RUN if [ "$TARGETPLATFORM" = "linux/arm64" ]; then \
         uv run maturin develop --release --target x86_64-unknown-linux-musl; \
     fi
 
-RUN cargo clean
-
 # ---- Setup Python Service ----
 FROM python:3.12-alpine3.21 AS runtime
 

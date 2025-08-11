@@ -49,11 +49,7 @@ async def convert(req: Request, ark_id: str = "") -> HTTPResponse:
 
             def rust_convert():
                 # BR: Enable debug tracing for comprehensive HTTP diagnostics when Rust code path executes
-                try:
-                    initialize_debug_tracing()
-                except (RuntimeError, OSError) as e:
-                    # If debug tracing initialization fails, continue without it (tracing may already be initialized)
-                    logger.debug(f"Debug tracing initialization failed: {e}")
+                initialize_debug_tracing()
 
                 rust_settings = load_settings_rust()
                 ark_url_info = ArkUrlInfoRust(rust_settings, ark_id_decoded)

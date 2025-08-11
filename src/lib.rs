@@ -29,19 +29,37 @@ pub fn initialize_tracing(py_impl: Bound<'_, PyAny>) {
 pub fn initialize_debug_tracing() -> PyResult<()> {
     use tracing_subscriber::{fmt, EnvFilter};
 
-    // Initialize tracing for debug logging with environment control
-    let filter = EnvFilter::try_from_default_env()
-        .or_else(|_| EnvFilter::try_new("ark_resolver=debug,reqwest=debug,hyper=debug"))
-        .unwrap();
+    // BR: Check if global subscriber already exists to prevent multiple initialization panic
+    static TRACING_INITIALIZED: std::sync::Once = std::sync::Once::new();
 
-    fmt::Subscriber::builder()
-        .with_env_filter(filter)
-        .with_target(true)
-        .with_thread_ids(true)
-        .with_level(true)
-        .init();
+    let mut already_initialized = false;
+    TRACING_INITIALIZED.call_once(|| {
+        // Initialize tracing for debug logging with environment control
+        let filter = EnvFilter::try_from_default_env()
+            .or_else(|_| EnvFilter::try_new("ark_resolver=debug,reqwest=debug,hyper=debug"))
+            .unwrap();
 
-    tracing::info!("Debug tracing initialized - use RUST_LOG to control verbosity");
+        // Use try_init to gracefully handle existing global subscriber
+        match fmt::Subscriber::builder()
+            .with_env_filter(filter)
+            .with_target(true)
+            .with_thread_ids(true)
+            .with_level(true)
+            .try_init()
+        {
+            Ok(()) => {
+                tracing::info!("Debug tracing initialized - use RUST_LOG to control verbosity");
+            }
+            Err(_) => {
+                // Global subscriber already exists (likely from initialize_tracing for Sentry)
+                already_initialized = true;
+            }
+        }
+    });
+
+    if already_initialized {
+        tracing::debug!("Debug tracing initialization skipped - global subscriber already exists");
+    }
 
     Ok(())
 }
