@@ -197,13 +197,23 @@ just fmt  # Runs both rustfmt and pyfmt
 
 ### Python-Rust Integration
 - Rust code is compiled as a Python extension module (`_rust`) using maturin/PyO3
-- Key Rust functions exposed: `base64url_check_digit`, `load_settings`, `initialize_tracing`
+- Key Rust functions exposed: `base64url_check_digit`, `load_settings`, `initialize_tracing`, `initialize_debug_tracing`
 - Settings loading and parsing performance optimized in Rust (`src/ark_url_settings.rs`)
+- HTTP configuration fetching with comprehensive error diagnostics and SIGTERM prevention
+- Debug tracing integration for HTTP request troubleshooting in containerized environments
 
 ### Configuration System
 - All configuration is done via environment variables (host, port, GitHub webhook secret, registry file)
 - `tests/ark-registry.ini`: Project-specific ARK URL templates and redirect targets (for local testing only)
 - Settings are loaded via Rust for performance (`ArkUrlSettings` class)
+
+### Rust HTTP Client Configuration
+Additional environment variables for debugging and timeout control:
+- `ARK_RUST_LOAD_TIMEOUT_MS`: Application-level timeout for settings loading (default: 15000ms) - prevents SIGTERM
+- `ARK_RUST_HTTP_TIMEOUT_MS`: HTTP request total timeout (default: 10000ms) - matches Python behavior
+- `ARK_RUST_HTTP_CONNECT_TIMEOUT_MS`: HTTP connection timeout (default: 5000ms)
+- `RUST_LOG`: Controls tracing verbosity (e.g., `RUST_LOG=ark_resolver=debug,reqwest=debug,hyper=debug`)
+- Proxy support via standard environment variables (`HTTPS_PROXY`, `HTTP_PROXY`, `ALL_PROXY`)
 
 ### Key Python Modules
 - `ark_resolver/ark.py`: Main server and CLI entry point

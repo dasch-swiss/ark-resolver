@@ -25,6 +25,27 @@ pub fn initialize_tracing(py_impl: Bound<'_, PyAny>) {
         .init();
 }
 
+#[pyfunction]
+pub fn initialize_debug_tracing() -> PyResult<()> {
+    use tracing_subscriber::{fmt, EnvFilter};
+
+    // Initialize tracing for debug logging with environment control
+    let filter = EnvFilter::try_from_default_env()
+        .or_else(|_| EnvFilter::try_new("ark_resolver=debug,reqwest=debug,hyper=debug"))
+        .unwrap();
+
+    fmt::Subscriber::builder()
+        .with_env_filter(filter)
+        .with_target(true)
+        .with_thread_ids(true)
+        .with_level(true)
+        .init();
+
+    tracing::info!("Debug tracing initialized - use RUST_LOG to control verbosity");
+
+    Ok(())
+}
+
 /// Add a check digit to a UUID and escape hyphens for ARK URL compatibility.
 ///
 /// This is the PyO3 wrapper for the UUID processing function.
@@ -61,6 +82,7 @@ fn _rust(py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     // Settings and tracing functions
     m.add_function(wrap_pyfunction_bound!(load_settings, py)?)?;
     m.add_function(wrap_pyfunction!(initialize_tracing, m)?)?;
+    m.add_function(wrap_pyfunction_bound!(initialize_debug_tracing, py)?)?;
     m.add_class::<ArkUrlSettings>()?;
 
     // ARK URL formatter
