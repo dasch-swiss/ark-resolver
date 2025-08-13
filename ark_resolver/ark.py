@@ -58,6 +58,31 @@ app.blueprint(ark_resolver.routes.redirect.redirect_bp)
 
 
 @app.before_server_start
+async def init_environment_logging(_: Any) -> None:
+    """
+    Initialize debug tracing and log environment variables before server starts.
+    This runs before any other server initialization to ensure visibility.
+    """
+    # Initialize debug tracing first to ensure Rust tracing works
+    try:
+        _rust.initialize_debug_tracing()
+        logger.info("Debug tracing initialized for environment variable logging")
+    except ImportError:
+        logger.warning("Rust module not available, debug tracing initialization skipped")
+    except (RuntimeError, ValueError) as e:
+        logger.warning(f"Failed to initialize debug tracing: {e}")
+
+    # Log environment variables for operational visibility
+    try:
+        _rust.log_environment_variables()
+        logger.info("Environment variables logged successfully")
+    except ImportError:
+        logger.warning("Rust module not available, skipping environment variables logging")
+    except (RuntimeError, ValueError) as e:
+        logger.warning(f"Failed to log environment variables: {e}")
+
+
+@app.before_server_start
 async def init_sentry(_: Any) -> None:
     sentry_dsn = os.environ.get("ARK_SENTRY_DSN", None)
     sentry_debug_str = os.environ.get("ARK_SENTRY_DEBUG", "False")
@@ -176,14 +201,6 @@ def server(settings: ArkUrlSettings) -> None:
     """
     Starts the app as server with the given settings.
     """
-    # Log environment variables for operational visibility
-    try:
-        _rust.log_environment_variables()
-    except ImportError:
-        logger.warning("Rust module not available, skipping environment variables logging")
-    except RuntimeError as e:
-        logger.warning(f"Failed to log environment variables: {e}")
-
     app.config.settings = settings
     app.run(host=settings.top_config["ArkInternalHost"], port=settings.top_config.getint("ArkInternalPort"))
 

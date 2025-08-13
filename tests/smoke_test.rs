@@ -257,6 +257,105 @@ fn test_registry_failure_scenario() {
     println!("✅ Registry failure scenario test completed");
 }
 
+fn test_environment_logging_logs(logs: &str) -> Result<(), String> {
+    println!("Analyzing environment variable logging...");
+
+    // Expected patterns from our new environment logging
+    let env_logging_patterns = [
+        "Debug tracing initialized for environment variable logging",
+        "Environment variables logged successfully",
+        "Environment Configuration:",
+        "┌─ Core Service Configuration",
+        "├─ ARK_EXTERNAL_HOST:",
+        "├─ ARK_INTERNAL_HOST:",
+        "├─ ARK_INTERNAL_PORT:",
+        "├─ ARK_NAAN:",
+        "├─ ARK_REGISTRY:",
+        "┌─ Security Configuration",
+        "┌─ Rust HTTP Client Configuration",
+        "┌─ Tracing Configuration",
+        "├─ RUST_LOG:",
+        "┌─ Summary:",
+    ];
+
+    let mut found_patterns = Vec::new();
+
+    for pattern in &env_logging_patterns {
+        if logs.contains(pattern) {
+            found_patterns.push(*pattern);
+        }
+    }
+
+    println!(
+        "✅ Found {}/{} environment logging patterns:",
+        found_patterns.len(),
+        env_logging_patterns.len()
+    );
+    for pattern in &found_patterns {
+        println!("   ✓ {}", pattern);
+    }
+
+    // Check for critical environment logging patterns
+    let critical_patterns = [
+        "Environment Configuration:",
+        "Debug tracing initialized for environment variable logging",
+        "Environment variables logged successfully",
+    ];
+
+    let mut missing_critical = Vec::new();
+    for pattern in &critical_patterns {
+        if !logs.contains(pattern) {
+            missing_critical.push(*pattern);
+        }
+    }
+
+    if !missing_critical.is_empty() {
+        return Err(format!(
+            "Missing critical environment logging patterns: {:?}",
+            missing_critical
+        ));
+    }
+
+    // Verify that environment variable logging happens early
+    // It should appear before Sentry initialization
+    let env_config_pos = logs.find("Environment Configuration:");
+    let sentry_init_pos = logs.find("Sentry initialized.");
+
+    if let (Some(env_pos), Some(sentry_pos)) = (env_config_pos, sentry_init_pos) {
+        if env_pos > sentry_pos {
+            return Err(
+                "Environment variable logging should happen before Sentry initialization"
+                    .to_string(),
+            );
+        }
+        println!("✅ Environment variables logged before Sentry initialization");
+    }
+
+    // Check that we have the comprehensive format (tree structure with ├─ and ┌─)
+    let tree_patterns = ["├─", "┌─"];
+    let found_tree_chars = tree_patterns.iter().any(|pattern| logs.contains(pattern));
+
+    if !found_tree_chars {
+        return Err(
+            "Environment variable logging should use tree structure format (├─, ┌─)".to_string(),
+        );
+    }
+
+    println!("✅ Environment variable logging uses proper tree structure format");
+
+    // Verify summary line exists and has reasonable format
+    if let Some(summary_line) = logs
+        .lines()
+        .find(|line| line.contains("Summary:") && line.contains("variables configured"))
+    {
+        println!("✅ Found environment summary: {}", summary_line.trim());
+    } else {
+        return Err("Missing environment variable summary line".to_string());
+    }
+
+    Ok(())
+}
+
 #[test]
 fn smoke_test() {
     // Step 0: Check if Docker is available
@@ -366,7 +465,13 @@ fn smoke_test() {
         panic!("Parallel execution analysis failed: {}", e);
     }
 
-    println!("✅ Log analysis passed - HTTP registry loading is working correctly");
+    // Test environment variable logging
+    if let Err(e) = test_environment_logging_logs(&logs) {
+        cleanup_docker();
+        panic!("Environment variable logging analysis failed: {}", e);
+    }
+
+    println!("✅ Log analysis passed - HTTP registry loading and environment variable logging are working correctly");
 
     // Step 6: Additional test for registry loading failures
     println!("Testing registry loading failure handling...");
