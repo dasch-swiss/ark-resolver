@@ -6,7 +6,7 @@ services:
     environment:
       RUST_LOG: info
       # ARK_SENTRY_DSN: ""
-      SENTRY_DEBUG: "True"
+      ARK_SENTRY_DEBUG: "True"
       ARK_SENTRY_ENVIRONMENT: "local"
       ARK_EXTERNAL_HOST: "ark.example.org"
       ARK_INTERNAL_HOST: "0.0.0.0"
