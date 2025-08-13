@@ -29,10 +29,10 @@ pub fn initialize_tracing(py_impl: Bound<'_, PyAny>) {
 pub fn initialize_debug_tracing() -> PyResult<()> {
     use tracing_subscriber::{fmt, EnvFilter};
 
-    // BR: Check if global subscriber already exists to prevent multiple initialization panic
+    // BR: Prevent multiple tracing initialization in multiprocessing context
     static TRACING_INITIALIZED: std::sync::Once = std::sync::Once::new();
 
-    let mut already_initialized = false;
+    let init_result = Ok(());
     TRACING_INITIALIZED.call_once(|| {
         // Initialize tracing for debug logging with environment control
         let filter = EnvFilter::try_from_default_env()
@@ -50,18 +50,17 @@ pub fn initialize_debug_tracing() -> PyResult<()> {
             Ok(()) => {
                 tracing::info!("Debug tracing initialized - use RUST_LOG to control verbosity");
             }
-            Err(_) => {
-                // Global subscriber already exists (likely from initialize_tracing for Sentry)
-                already_initialized = true;
+            Err(e) => {
+                // This is expected when Sentry or other tracing integration is already active
+                // The environment logging will still work through Python logging
+                tracing::debug!(
+                    "Debug tracing initialization skipped - subscriber already active: {e}"
+                );
             }
         }
     });
 
-    if already_initialized {
-        tracing::debug!("Debug tracing initialization skipped - global subscriber already exists");
-    }
-
-    Ok(())
+    init_result
 }
 
 #[cfg(feature = "pyo3")]

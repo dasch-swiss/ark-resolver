@@ -37,16 +37,6 @@ jobs:
       - run: just install
       - run: just test
       - run: just pytest
-      - name: Build and load Docker image
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          push: false
-          load: true
-          tags: daschswiss/ark-resolver:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-      - run: just smoke-test
   smoke:
     name: ARK Resolver Smoke-Test
     runs-on: ubuntu-latest
