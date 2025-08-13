@@ -58,6 +58,7 @@ Additional environment variables for debugging and timeout control in containeri
 - `ARK_RUST_HTTP_CONNECT_TIMEOUT_MS`: HTTP connection timeout in milliseconds (default: `5000`)
 - `ARK_RUST_FORCE_IPV4`: Force IPv4-only connections, disable IPv6 (default: `false`) - fixes container IPv6 connectivity issues
 - `RUST_LOG`: Controls tracing verbosity (e.g., `RUST_LOG=ark_resolver=debug,reqwest=debug,hyper=debug`)
+- `ARK_SENTRY_DEBUG`: Enable Sentry debug mode (default: `false`) - accepts "true"/"1"/"yes"/"on" for true
 
 The Rust HTTP client also supports standard proxy environment variables (`HTTPS_PROXY`, `HTTP_PROXY`, `ALL_PROXY`).
 

@@ -60,13 +60,15 @@ app.blueprint(ark_resolver.routes.redirect.redirect_bp)
 @app.before_server_start
 async def init_sentry(_: Any) -> None:
     sentry_dsn = os.environ.get("ARK_SENTRY_DSN", None)
-    sentry_debug = os.environ.get("ARK_SENTRY_DEBUG", "False")
+    sentry_debug_str = os.environ.get("ARK_SENTRY_DEBUG", "False")
+    # BR: Convert string environment variable to boolean for Sentry SDK compatibility
+    sentry_debug = sentry_debug_str.lower() in ("true", "1", "yes", "on")
     sentry_environment = os.environ.get("ARK_SENTRY_ENVIRONMENT", None)
     sentry_release = os.environ.get("ARK_SENTRY_RELEASE", None)
     if sentry_dsn:
         sentry_sdk.init(
             dsn=sentry_dsn,
-            debug=sentry_debug,  # type: ignore[arg-type]
+            debug=sentry_debug,
             environment=sentry_environment,
             release=sentry_release,
             # Add data like request headers and IP for users;
