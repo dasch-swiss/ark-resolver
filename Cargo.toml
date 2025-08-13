@@ -34,4 +34,5 @@ pyo3-build-config = "0.23.5"
 
 [features]
 extension-module = ["pyo3/extension-module"]
-default = ["extension-module"]
+pyo3 = []
+default = ["extension-module", "pyo3"]

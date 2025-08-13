@@ -64,6 +64,17 @@ pub fn initialize_debug_tracing() -> PyResult<()> {
     Ok(())
 }
 
+#[cfg(feature = "pyo3")]
+use crate::adapters::environment::env_logger::log_environment_variables_python;
+
+/// Log all relevant environment variables with their values and defaults
+/// This is a PyO3 wrapper that delegates to the environment logger module
+#[cfg(feature = "pyo3")]
+#[pyfunction]
+pub fn log_environment_variables(py: Python<'_>) -> PyResult<()> {
+    log_environment_variables_python(py)
+}
+
 /// Add a check digit to a UUID and escape hyphens for ARK URL compatibility.
 ///
 /// This is the PyO3 wrapper for the UUID processing function.
@@ -101,6 +112,8 @@ fn _rust(py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction_bound!(load_settings, py)?)?;
     m.add_function(wrap_pyfunction!(initialize_tracing, m)?)?;
     m.add_function(wrap_pyfunction_bound!(initialize_debug_tracing, py)?)?;
+    #[cfg(feature = "pyo3")]
+    m.add_function(wrap_pyfunction_bound!(log_environment_variables, py)?)?;
     m.add_class::<ArkUrlSettings>()?;
 
     // ARK URL formatter

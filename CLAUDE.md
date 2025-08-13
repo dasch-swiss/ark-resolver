@@ -7,6 +7,14 @@ This file provides guidance to coding agents when working with code in this repo
 The coding agent MUST first present plan. Only after confirmation, start implementing plan and changing code.
 The coding agent MUST ask questions about code coverage and if adding new unit tests or extending existing tests is required.
 
+## Documentation Synchronization
+When updating configuration or environment variables, ensure all documentation files stay synchronized:
+- **CLAUDE.md** (this file): Comprehensive technical details for coding agents
+- **AGENTS.md**: Agent-specific guidance and architecture overview  
+- **README.md**: User-facing documentation and deployment instructions
+
+Changes to environment variables, configuration options, or architecture details must be reflected across all three files.
+
 ## Documentation Conventions
 
 ### Business Rules Documentation
@@ -212,6 +220,7 @@ Additional environment variables for debugging and timeout control:
 - `ARK_RUST_LOAD_TIMEOUT_MS`: Application-level timeout for settings loading (default: 15000ms) - prevents SIGTERM
 - `ARK_RUST_HTTP_TIMEOUT_MS`: HTTP request total timeout (default: 10000ms) - matches Python behavior
 - `ARK_RUST_HTTP_CONNECT_TIMEOUT_MS`: HTTP connection timeout (default: 5000ms)
+- `ARK_RUST_FORCE_IPV4`: Force IPv4-only connections, disable IPv6 (default: false) - fixes container IPv6 connectivity issues
 - `RUST_LOG`: Controls tracing verbosity (e.g., `RUST_LOG=ark_resolver=debug,reqwest=debug,hyper=debug`)
 - Proxy support via standard environment variables (`HTTPS_PROXY`, `HTTP_PROXY`, `ALL_PROXY`)
 
