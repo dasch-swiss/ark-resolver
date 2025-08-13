@@ -1,10 +1,11 @@
 services:
   ark-resolver:
+    # build: .  # Use for testing local changes
     image: daschswiss/ark-resolver:latest
     ports:
       - "3336:3336"
     environment:
-      RUST_LOG: info
+      RUST_LOG: ark_resolver=debug
       # ARK_SENTRY_DSN: ""
       ARK_SENTRY_DEBUG: "True"
       ARK_SENTRY_ENVIRONMENT: "local"
