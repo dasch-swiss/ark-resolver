@@ -174,6 +174,14 @@ def server(settings: ArkUrlSettings) -> None:
     """
     Starts the app as server with the given settings.
     """
+    # Log environment variables for operational visibility
+    try:
+        _rust.log_environment_variables()
+    except ImportError:
+        logger.warning("Rust module not available, skipping environment variables logging")
+    except RuntimeError as e:
+        logger.warning(f"Failed to log environment variables: {e}")
+
     app.config.settings = settings
     app.run(host=settings.top_config["ArkInternalHost"], port=settings.top_config.getint("ArkInternalPort"))
 

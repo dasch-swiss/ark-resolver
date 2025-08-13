@@ -69,6 +69,12 @@ impl HttpConfigurationProvider {
             // BR: Set longer read timeout for slow networks
             .read_timeout(Duration::from_millis(total_timeout_ms / 2));
 
+        // BR: Force IPv4-only connections in container environments with broken IPv6
+        if env::var("ARK_RUST_FORCE_IPV4").is_ok_and(|v| v.to_lowercase() == "true") {
+            builder =
+                builder.local_address(Some(std::net::IpAddr::V4(std::net::Ipv4Addr::UNSPECIFIED)));
+        }
+
         if let Some(proxy_url) = proxy_from_env {
             if let Ok(p) = Proxy::all(&proxy_url) {
                 builder = builder.proxy(p);
