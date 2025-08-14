@@ -58,12 +58,12 @@ app.blueprint(ark_resolver.routes.redirect.redirect_bp)
 
 
 @app.before_server_start
-async def init_environment_logging(_: Any) -> None:
+async def init_tracing_and_sentry(_: Any) -> None:
     """
-    Initialize debug tracing and log environment variables before server starts.
-    This runs before any other server initialization to ensure visibility.
+    Initialize tracing systems (debug tracing + Sentry) and log environment variables.
+    Consolidated to prevent multiprocessing conflicts with global subscribers.
     """
-    # Initialize debug tracing first to ensure Rust tracing works
+    # Initialize debug tracing first, before Sentry
     try:
         _rust.initialize_debug_tracing()
         logger.info("Debug tracing initialized for environment variable logging")
@@ -81,9 +81,7 @@ async def init_environment_logging(_: Any) -> None:
     except (RuntimeError, ValueError) as e:
         logger.warning(f"Failed to log environment variables: {e}")
 
-
-@app.before_server_start
-async def init_sentry(_: Any) -> None:
+    # Initialize Sentry after debug tracing is set up
     sentry_dsn = os.environ.get("ARK_SENTRY_DSN", None)
     sentry_debug_str = os.environ.get("ARK_SENTRY_DEBUG", "False")
     # BR: Convert string environment variable to boolean for Sentry SDK compatibility
@@ -117,7 +115,7 @@ async def init_sentry(_: Any) -> None:
         )
         logger.info("Sentry initialized.")
     else:
-        logger.info("No SENTRY_DSN found in environment variables. Sentry will not be initialized.")
+        logger.info("ARK_SENTRY_DSN not set. Sentry will not be initialized.")
 
 
 def get_safe_config() -> str:

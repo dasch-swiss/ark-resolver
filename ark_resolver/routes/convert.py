@@ -10,7 +10,6 @@ from sanic import response
 from sanic.log import logger
 
 import ark_resolver.check_digit as check_digit_py
-from ark_resolver._rust import initialize_debug_tracing
 from ark_resolver._rust import load_settings as load_settings_rust
 from ark_resolver.ark_url import ArkUrlException
 from ark_resolver.ark_url import ArkUrlFormatter
@@ -48,9 +47,6 @@ async def convert(req: Request, ark_id: str = "") -> HTTPResponse:
                 return ArkUrlFormatter(req.app.config.settings).resource_iri_to_ark_id(resource_iri=resource_iri, timestamp=timestamp)
 
             def rust_convert():
-                # BR: Enable debug tracing for comprehensive HTTP diagnostics when Rust code path executes
-                initialize_debug_tracing()
-
                 rust_settings = load_settings_rust()
                 ark_url_info = ArkUrlInfoRust(rust_settings, ark_id_decoded)
                 resource_iri = ark_url_info.to_resource_iri()
