@@ -182,7 +182,7 @@ fn test_registry_failure_scenario() {
     environment:
       RUST_LOG: info
       ARK_EXTERNAL_HOST: "ark.example.org"
-      ARK_INTERNAL_HOST: "0.0.0.0" 
+      ARK_INTERNAL_HOST: "0.0.0.0"
       ARK_INTERNAL_PORT: "3336"
       ARK_NAAN: "99999"
       ARK_HTTPS_PROXY: false
@@ -402,7 +402,7 @@ fn smoke_test() {
     // Step 3: Test convert route (Version 0 ARK -> Version 1 ARK)
     // This specifically tests the parallel execution that was failing in staging
     println!("Testing convert route (this triggers parallel Python/Rust execution)...");
-    let convert_url = "http://localhost:3336/convert/ark:/99999/0803-751e0b8a-6";
+    let convert_url = "http://localhost:3336/convert/ark:/72163/0803-751e0b8a-6";
     match reqwest::blocking::get(convert_url) {
         Ok(response) => {
             if !response.status().is_success() {
@@ -426,7 +426,7 @@ fn smoke_test() {
 
     // Step 4: Test redirect route (Version 1 ARK -> redirect to resource)
     println!("Testing redirect route...");
-    let redirect_url = "http://localhost:3336/ark:/99999/1/0803";
+    let redirect_url = "http://localhost:3336/ark:/72163/1/0803";
     let client = reqwest::blocking::Client::builder()
         .redirect(reqwest::redirect::Policy::none())
         .build()

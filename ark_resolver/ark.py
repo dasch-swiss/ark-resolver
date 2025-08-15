@@ -89,31 +89,51 @@ async def init_tracing_and_sentry(_: Any) -> None:
     sentry_environment = os.environ.get("ARK_SENTRY_ENVIRONMENT", None)
     sentry_release = os.environ.get("ARK_SENTRY_RELEASE", None)
     if sentry_dsn:
-        sentry_sdk.init(
-            dsn=sentry_dsn,
-            debug=sentry_debug,
-            environment=sentry_environment,
-            release=sentry_release,
-            # Add data like request headers and IP for users;
-            # see https://docs.sentry.io/platforms/python/data-management/data-collected/ for more info
-            send_default_pii=True,
-            # Set traces_sample_rate to 1.0 to capture 100%
-            # of transactions for tracing.
-            traces_sample_rate=1.0,
-            # Set profiles_sample_rate to 1.0 to profile 100%
-            # of sampled transactions.
-            # We recommend adjusting this value in production.
-            profiles_sample_rate=1.0,
-            instrumenter="otel",
-            integrations=[
-                RustTracingIntegration(
-                    "_rust",
-                    _rust.initialize_tracing,
-                    include_tracing_fields=True,
+        try:
+            sentry_sdk.init(
+                dsn=sentry_dsn,
+                debug=sentry_debug,
+                environment=sentry_environment,
+                release=sentry_release,
+                # Add data like request headers and IP for users;
+                # see https://docs.sentry.io/platforms/python/data-management/data-collected/ for more info
+                send_default_pii=True,
+                # Set traces_sample_rate to 1.0 to capture 100%
+                # of transactions for tracing.
+                traces_sample_rate=1.0,
+                # Set profiles_sample_rate to 1.0 to profile 100%
+                # of sampled transactions.
+                # We recommend adjusting this value in production.
+                profiles_sample_rate=1.0,
+                instrumenter="otel",
+                integrations=[
+                    RustTracingIntegration(
+                        "_rust",
+                        _rust.initialize_tracing,
+                        include_tracing_fields=True,
+                    )
+                ],
+            )
+            logger.info("Sentry initialized.")
+        except ImportError:
+            logger.warning("Rust module not available, Sentry with Rust tracing integration disabled")
+        except (RuntimeError, ValueError, OSError) as e:
+            logger.warning(f"Failed to initialize Sentry with Rust tracing integration: {e}")
+            # Fall back to Sentry without Rust tracing integration
+            try:
+                sentry_sdk.init(
+                    dsn=sentry_dsn,
+                    debug=sentry_debug,
+                    environment=sentry_environment,
+                    release=sentry_release,
+                    send_default_pii=True,
+                    traces_sample_rate=1.0,
+                    profiles_sample_rate=1.0,
+                    instrumenter="otel",
                 )
-            ],
-        )
-        logger.info("Sentry initialized.")
+                logger.info("Sentry initialized without Rust tracing integration.")
+            except (RuntimeError, ValueError, OSError) as fallback_e:
+                logger.error(f"Failed to initialize Sentry completely: {fallback_e}")
     else:
         logger.info("ARK_SENTRY_DSN not set. Sentry will not be initialized.")
 

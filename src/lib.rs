@@ -20,9 +20,26 @@ pub mod core;
 
 #[pyfunction]
 pub fn initialize_tracing(py_impl: Bound<'_, PyAny>) {
-    tracing_subscriber::registry()
-        .with(pyo3_python_tracing_subscriber::PythonCallbackLayerBridge::new(py_impl))
-        .init();
+    // BR: Prevent multiple Sentry tracing initialization in multiprocessing context
+    static SENTRY_TRACING_INITIALIZED: std::sync::Once = std::sync::Once::new();
+
+    SENTRY_TRACING_INITIALIZED.call_once(|| {
+        // Use try_init to gracefully handle existing global subscriber
+        match tracing_subscriber::registry()
+            .with(pyo3_python_tracing_subscriber::PythonCallbackLayerBridge::new(py_impl))
+            .try_init()
+        {
+            Ok(()) => {
+                tracing::debug!("Sentry tracing initialized successfully");
+            }
+            Err(e) => {
+                // This is expected when debug tracing or other subscriber is already active
+                tracing::debug!(
+                    "Sentry tracing initialization skipped - subscriber already active: {e}"
+                );
+            }
+        }
+    });
 }
 
 #[pyfunction]

@@ -7,11 +7,11 @@ services:
     environment:
       RUST_LOG: ark_resolver=debug
       # ARK_SENTRY_DSN: ""
-      ARK_SENTRY_DEBUG: "True"
+      ARK_SENTRY_DEBUG: "true"
       ARK_SENTRY_ENVIRONMENT: "local"
       ARK_EXTERNAL_HOST: "ark.example.org"
       ARK_INTERNAL_HOST: "0.0.0.0"
       ARK_INTERNAL_PORT: "3336"
-      ARK_NAAN: "99999"
+      ARK_NAAN: "72163"
       ARK_HTTPS_PROXY: false
       ARK_REGISTRY: "https://raw.githubusercontent.com/dasch-swiss/ark-resolver-data/master/data/dasch_ark_registry_staging.ini"
