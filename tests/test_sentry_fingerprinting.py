@@ -5,7 +5,6 @@ fingerprinting to group Sentry issues by category, not by individual input.
 """
 
 from unittest.mock import MagicMock
-from unittest.mock import call
 from unittest.mock import patch
 
 from ark_resolver.parallel_execution import ComparisonResult
@@ -103,5 +102,6 @@ class TestParallelExecutorSentryFingerprinting:
 
         context_call = mock_scope.set_context.call_args
         details = context_call[0][1]
-        assert len(details["python_result"]) == 500
-        assert len(details["rust_result"]) == 500
+        max_len = 500
+        assert len(details["python_result"]) == max_len
+        assert len(details["rust_result"]) == max_len

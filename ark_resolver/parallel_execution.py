@@ -190,12 +190,15 @@ class ParallelExecutor:
                 scope.fingerprint = ["shadow", execution_result.operation, execution_result.comparison.value]
                 scope.set_tag("shadow.operation", execution_result.operation)
                 scope.set_tag("shadow.comparison", execution_result.comparison.value)
-                scope.set_context("shadow_details", {
-                    "python_result": str(execution_result.python_result)[:500],
-                    "rust_result": str(execution_result.rust_result)[:500],
-                    "python_duration_ms": execution_result.python_duration_ms,
-                    "rust_duration_ms": execution_result.rust_duration_ms,
-                })
+                scope.set_context(
+                    "shadow_details",
+                    {
+                        "python_result": str(execution_result.python_result)[:500],
+                        "rust_result": str(execution_result.rust_result)[:500],
+                        "python_duration_ms": execution_result.python_duration_ms,
+                        "rust_duration_ms": execution_result.rust_duration_ms,
+                    },
+                )
                 sentry_sdk.capture_message(
                     f"Shadow {execution_result.comparison.value}: {execution_result.operation}",
                     level="warning",

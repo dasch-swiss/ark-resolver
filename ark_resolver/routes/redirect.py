@@ -36,6 +36,7 @@ async def catch_all(_: Request, path: str = "") -> HTTPResponse:
         span.set_attribute("ark_id", ark_id_decoded)  # Attach ARK ID as metadata
 
         try:
+
             def python_redirect():
                 return ArkUrlInfo(
                     settings=_.app.config.settings,
@@ -48,9 +49,7 @@ async def catch_all(_: Request, path: str = "") -> HTTPResponse:
                     raise RuntimeError("Rust settings not available")
                 return ArkUrlInfoRust(rust_settings, ark_id_decoded).to_redirect_url()
 
-            redirect_url, execution_result = parallel_executor.execute_parallel(
-                "redirect", python_redirect, rust_redirect
-            )
+            redirect_url, execution_result = parallel_executor.execute_parallel("redirect", python_redirect, rust_redirect)
 
             parallel_executor.add_to_span(span, execution_result)
             parallel_executor.track_with_sentry(execution_result)

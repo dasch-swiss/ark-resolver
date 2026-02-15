@@ -90,11 +90,7 @@ def test_redirect_url_parity(python_settings, rust_settings, ark_id):
     """Python and Rust must produce identical redirect URLs."""
     python_url = PythonArkUrlInfo(python_settings, ark_id).to_redirect_url()
     rust_url = RustArkUrlInfo(rust_settings, ark_id).to_redirect_url()
-    assert python_url == rust_url, (
-        f"Parity mismatch for {ark_id}:\n"
-        f"  Python: {python_url}\n"
-        f"  Rust:   {rust_url}"
-    )
+    assert python_url == rust_url, f"Parity mismatch for {ark_id}:\n  Python: {python_url}\n  Rust:   {rust_url}"
 
 
 @pytest.mark.parametrize(
@@ -114,14 +110,12 @@ def test_error_parity(python_settings, rust_settings, ark_id):
     rust_error = None
     try:
         PythonArkUrlInfo(python_settings, ark_id).to_redirect_url()
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         python_error = type(e).__name__
     try:
         RustArkUrlInfo(rust_settings, ark_id).to_redirect_url()
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         rust_error = type(e).__name__
     assert (python_error is not None) == (rust_error is not None), (
-        f"Error parity mismatch for {ark_id}:\n"
-        f"  Python error: {python_error}\n"
-        f"  Rust error:   {rust_error}"
+        f"Error parity mismatch for {ark_id}:\n  Python error: {python_error}\n  Rust error:   {rust_error}"
     )

@@ -225,7 +225,7 @@ def server(settings: ArkUrlSettings) -> None:
     try:
         app.config.rust_settings = load_settings_rust()
         logger.info("Rust settings cached at startup.")
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         logger.warning(f"Failed to load Rust settings at startup: {e}")
         app.config.rust_settings = None
 
@@ -253,7 +253,7 @@ def reload_config() -> None:
     try:
         app.config.rust_settings = load_settings_rust()
         logger.info("Rust settings reloaded.")
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         logger.warning(f"Failed to reload Rust settings, keeping cached version: {e}")
 
     logger.info("Configuration reloaded.")
