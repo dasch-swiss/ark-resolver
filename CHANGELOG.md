@@ -1,5 +1,59 @@
 # Changelog
 
+## [1.13.0](https://github.com/dasch-swiss/ark-resolver/compare/ark_resolver-v1.12.2...ark_resolver-v1.13.0) (2026-02-15)
+
+
+### Maintenances
+
+* Add early debug logging ([#137](https://github.com/dasch-swiss/ark-resolver/issues/137)) ([6c5cf21](https://github.com/dasch-swiss/ark-resolver/commit/6c5cf2145de4eba2de21d6fb9b0258c0e0daad05))
+* Add environment variable logging ([#135](https://github.com/dasch-swiss/ark-resolver/issues/135)) ([048ce9d](https://github.com/dasch-swiss/ark-resolver/commit/048ce9dac6e01cecd0a26375ea3da8830382a65e))
+* Rename sentry debug env variable ([#136](https://github.com/dasch-swiss/ark-resolver/issues/136)) ([4505a92](https://github.com/dasch-swiss/ark-resolver/commit/4505a925c12f57ef27d9758536c0a31be884dbbc))
+* Use cached Rust settings in convert route ([1867a38](https://github.com/dasch-swiss/ark-resolver/commit/1867a38b8af4e6d6e768d0b3e586ff50fb63839d))
+
+
+### Documentation
+
+* **learnings:** Add PyO3 shadow execution parity learnings ([033b6e1](https://github.com/dasch-swiss/ark-resolver/commit/033b6e1bf5bf9fead674a5500bdcdfe49e31c397))
+* Make examples inline with domain ([#128](https://github.com/dasch-swiss/ark-resolver/issues/128)) ([375dee3](https://github.com/dasch-swiss/ark-resolver/commit/375dee315f7fa4dcad60848a831816c25469ff52))
+* Note redirect route parallel execution in CLAUDE.md ([5dd64ee](https://github.com/dasch-swiss/ark-resolver/commit/5dd64eee4aaece9d6a4a653e9a1445fe3b1680fc))
+
+
+### Enhancements
+
+* Add custom Sentry fingerprinting to group errors by category ([1a5ebdc](https://github.com/dasch-swiss/ark-resolver/commit/1a5ebdcf356587108241e592a11751ca2e353876))
+* Add parallel shadow execution to redirect route ([72db278](https://github.com/dasch-swiss/ark-resolver/commit/72db278be50216259de4403f916559699ee6a91d))
+* Cache Rust settings at startup for parallel validation ([5840733](https://github.com/dasch-swiss/ark-resolver/commit/58407330aa1e94b622860ef91006d8ad64822ec2))
+
+
+### Bug Fixes
+
+* Add http config fetching in Rust ([#127](https://github.com/dasch-swiss/ark-resolver/issues/127)) ([281f5bf](https://github.com/dasch-swiss/ark-resolver/commit/281f5bf26b5abf1a838ba48369f2ec8acc95847b))
+* Add http config fetching in Rust (3) ([#134](https://github.com/dasch-swiss/ark-resolver/issues/134)) ([b931895](https://github.com/dasch-swiss/ark-resolver/commit/b931895591e3b9d7260ab59959721e0b44a17ece))
+* Early debug logging ([#138](https://github.com/dasch-swiss/ark-resolver/issues/138)) ([8476bc3](https://github.com/dasch-swiss/ark-resolver/commit/8476bc39b6ff13cf52c850c15c58eacd96bf3fc3))
+* Http config fetching in Rust ([#129](https://github.com/dasch-swiss/ark-resolver/issues/129)) ([f45ece4](https://github.com/dasch-swiss/ark-resolver/commit/f45ece40144193e5da73796df6ead49fac5a78ac))
+* Http config fetching in Rust ([#130](https://github.com/dasch-swiss/ark-resolver/issues/130)) ([6c4a35a](https://github.com/dasch-swiss/ark-resolver/commit/6c4a35a428638e3af96392f96ea83b9c6b11a1ef))
+* Http config fetching in Rust ([#131](https://github.com/dasch-swiss/ark-resolver/issues/131)) ([17f6e6e](https://github.com/dasch-swiss/ark-resolver/commit/17f6e6e640f5e9136b0d36a4c211ec7daf4c3875))
+* Http config fetching in Rust ([#132](https://github.com/dasch-swiss/ark-resolver/issues/132)) ([e276b86](https://github.com/dasch-swiss/ark-resolver/commit/e276b869baf24c49ddfa78af846bafd79c22f42c))
+* Http config fetching in Rust ([#133](https://github.com/dasch-swiss/ark-resolver/issues/133)) ([dd35ed3](https://github.com/dasch-swiss/ark-resolver/commit/dd35ed333e859f3f5e57981ab3cb82356f4e759c))
+* Re-raise KeyboardInterrupt and SystemExit in BaseException catch ([d7c3dad](https://github.com/dasch-swiss/ark-resolver/commit/d7c3dad0553bfb3e3de39aeea8bc23a6a2478106))
+* Rust tracing initialization ([#139](https://github.com/dasch-swiss/ark-resolver/issues/139)) ([f92db0f](https://github.com/dasch-swiss/ark-resolver/commit/f92db0f0ad5a89748d8beb1ab5653a9b4847db04))
+* Simplify config ([#125](https://github.com/dasch-swiss/ark-resolver/issues/125)) ([fa1d1a2](https://github.com/dasch-swiss/ark-resolver/commit/fa1d1a2759a1de07d9e86af0512cddf3ea85ff56))
+* Uppercase v1 project IDs in Rust to match Python parity ([c7e1b76](https://github.com/dasch-swiss/ark-resolver/commit/c7e1b76693cc09b7d5e92ad505ac3dfb1a93688b))
+* Use correct environment variable ([#126](https://github.com/dasch-swiss/ark-resolver/issues/126)) ([089de08](https://github.com/dasch-swiss/ark-resolver/commit/089de08dd7098bf0a815dd699591be0a3c80c796))
+* Use correct environment variable for registry file ([#123](https://github.com/dasch-swiss/ark-resolver/issues/123)) ([1d9906c](https://github.com/dasch-swiss/ark-resolver/commit/1d9906c9bd42839f8446e0df035878e4486bb1cd))
+
+
+### Tests
+
+* Add Python-Rust redirect URL parity tests ([aec349c](https://github.com/dasch-swiss/ark-resolver/commit/aec349c6c85e5cf7ee2b182d4199752236b99d06))
+* Add redirect parity cases to smoke test ([28e6005](https://github.com/dasch-swiss/ark-resolver/commit/28e6005bed290417885d851bb389fd57f01443f1))
+
+
+### Styles
+
+* Fix formatting and lint compliance ([6796173](https://github.com/dasch-swiss/ark-resolver/commit/6796173b853945a4cb8241baf4c5ebd4cb5b570c))
+* Remove unused noqa directive on BaseException catch ([33534c5](https://github.com/dasch-swiss/ark-resolver/commit/33534c55d407ba4730fd2a986e4c68ccfb9325df))
+
 ## [1.12.2](https://github.com/dasch-swiss/ark-resolver/compare/ark_resolver-v1.12.1...ark_resolver-v1.12.2) (2025-07-24)
 
 
