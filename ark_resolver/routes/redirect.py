@@ -12,6 +12,8 @@ from sanic.log import logger
 import ark_resolver.check_digit as check_digit_py
 from ark_resolver.ark_url import ArkUrlException
 from ark_resolver.ark_url import ArkUrlInfo
+from ark_resolver.ark_url_rust import ArkUrlInfo as ArkUrlInfoRust
+from ark_resolver.parallel_execution import parallel_executor
 from ark_resolver.tracing import tracer
 
 redirect_bp = Blueprint("redirect", url_prefix="")
@@ -34,8 +36,26 @@ async def catch_all(_: Request, path: str = "") -> HTTPResponse:
         span.set_attribute("ark_id", ark_id_decoded)  # Attach ARK ID as metadata
 
         try:
-            redirect_url = ArkUrlInfo(settings=_.app.config.settings, ark_id=ark_id_decoded).to_redirect_url()
-            span.set_status(Status(StatusCode.OK))  # Mark as successful
+            def python_redirect():
+                return ArkUrlInfo(
+                    settings=_.app.config.settings,
+                    ark_id=ark_id_decoded,
+                ).to_redirect_url()
+
+            def rust_redirect():
+                rust_settings = _.app.config.rust_settings
+                if rust_settings is None:
+                    raise RuntimeError("Rust settings not available")
+                return ArkUrlInfoRust(rust_settings, ark_id_decoded).to_redirect_url()
+
+            redirect_url, execution_result = parallel_executor.execute_parallel(
+                "redirect", python_redirect, rust_redirect
+            )
+
+            parallel_executor.add_to_span(span, execution_result)
+            parallel_executor.track_with_sentry(execution_result)
+
+            span.set_status(Status(StatusCode.OK))
 
         except ArkUrlException as ex:
             with sentry_sdk.push_scope() as scope:
