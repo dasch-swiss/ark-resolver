@@ -228,7 +228,7 @@ Additional environment variables for debugging and timeout control:
 ### Key Python Modules
 - `ark_resolver/ark.py`: Main server and CLI entry point
 - `ark_resolver/ark_url.py`: ARK URL parsing and formatting logic
-- `ark_resolver/routes/`: Sanic route handlers (health, convert endpoints)
+- `ark_resolver/routes/`: Sanic route handlers (health, redirect, convert). Both redirect and convert routes use `ParallelExecutor` for shadow Rust execution.
 - `ark_resolver/check_digit.py`: ARK check digit validation
 
 ### UUID Generation for Legacy Migration
