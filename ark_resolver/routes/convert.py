@@ -11,7 +11,6 @@ from sanic import response
 from sanic.log import logger
 
 import ark_resolver.check_digit as check_digit_py
-from ark_resolver._rust import load_settings as load_settings_rust
 from ark_resolver.ark_url import ArkUrlException
 from ark_resolver.ark_url import ArkUrlFormatter
 from ark_resolver.ark_url import ArkUrlInfo
@@ -48,7 +47,9 @@ async def convert(req: Request, ark_id: str = "") -> HTTPResponse:
                 return ArkUrlFormatter(req.app.config.settings).resource_iri_to_ark_id(resource_iri=resource_iri, timestamp=timestamp)
 
             def rust_convert():
-                rust_settings = load_settings_rust()
+                rust_settings = req.app.config.rust_settings
+                if rust_settings is None:
+                    raise RuntimeError("Rust settings not available")
                 ark_url_info = ArkUrlInfoRust(rust_settings, ark_id_decoded)
                 resource_iri = ark_url_info.to_resource_iri()
                 timestamp = ark_url_info.get_timestamp()
