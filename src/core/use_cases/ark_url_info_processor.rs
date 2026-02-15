@@ -48,7 +48,8 @@ where
         // First try to parse as version 1 ARK ID
         if let Some(components) = self.parser.parse_ark_v1(ark_id) {
             let url_version = components.0;
-            let project_id = components.1;
+            // BR: Uppercase v1 project IDs to match Python parity (v0 already uppercases at line 92)
+            let project_id = components.1.map(|id| id.to_uppercase());
             let escaped_resource_id = components.2;
             let escaped_value_id = components.3;
             let timestamp = components.4;

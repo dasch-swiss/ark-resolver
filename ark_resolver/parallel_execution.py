@@ -49,7 +49,7 @@ class ParallelExecutionResult:
     operation: str
     error_details: str = ""
     python_error: Optional[Exception] = None
-    rust_error: Optional[Exception] = None
+    rust_error: Optional[BaseException] = None
 
 
 class ParallelExecutor:
@@ -111,7 +111,9 @@ class ParallelExecutor:
 
         try:
             rust_result = rust_func(*args, **kwargs)
-        except Exception as e:  # noqa: BLE001
+        except BaseException as e:  # Catch BaseException for PyO3 PanicException safety
+            if isinstance(e, (KeyboardInterrupt, SystemExit)):
+                raise
             rust_error = e
             self.logger.warning(f"Rust execution failed for {operation}: {e}", exc_info=True)
 
@@ -171,6 +173,9 @@ class ParallelExecutor:
         """
         Track parallel execution metrics with Sentry.
 
+        Uses custom fingerprinting to group shadow execution events by operation
+        and result type, not by individual input values.
+
         Args:
             execution_result: Result of parallel execution
         """
@@ -182,17 +187,24 @@ class ParallelExecutor:
         sentry_sdk.set_measurement("parallel.rust_duration_ms", execution_result.rust_duration_ms)
         sentry_sdk.set_measurement("parallel.performance_improvement_percent", execution_result.performance_improvement_percent)
 
-        # Track mismatches as custom events
-        if execution_result.comparison == ComparisonResult.MISMATCH:
-            sentry_sdk.capture_message(
-                f"Parallel execution mismatch in {execution_result.operation}",
-                level="warning",
-                extras={
-                    "python_result": str(execution_result.python_result),
-                    "rust_result": str(execution_result.rust_result),
-                    "performance_improvement": execution_result.performance_improvement_percent,
-                },
-            )
+        if execution_result.comparison in (ComparisonResult.MISMATCH, ComparisonResult.RUST_ERROR):
+            with sentry_sdk.push_scope() as scope:
+                scope.fingerprint = ["shadow", execution_result.operation, execution_result.comparison.value]
+                scope.set_tag("shadow.operation", execution_result.operation)
+                scope.set_tag("shadow.comparison", execution_result.comparison.value)
+                scope.set_context(
+                    "shadow_details",
+                    {
+                        "python_result": str(execution_result.python_result)[:500],
+                        "rust_result": str(execution_result.rust_result)[:500],
+                        "python_duration_ms": execution_result.python_duration_ms,
+                        "rust_duration_ms": execution_result.rust_duration_ms,
+                    },
+                )
+                sentry_sdk.capture_message(
+                    f"Shadow {execution_result.comparison.value}: {execution_result.operation}",
+                    level="warning",
+                )
 
     def get_metrics_summary(self) -> Dict[str, Any]:
         """
@@ -216,7 +228,7 @@ class ParallelExecutor:
         }
 
     def _compare_results(
-        self, python_result: Any, rust_result: Any, python_error: Optional[Exception], rust_error: Optional[Exception]
+        self, python_result: Any, rust_result: Any, python_error: Optional[Exception], rust_error: Optional[BaseException]
     ) -> ComparisonResult:
         """Compare results from Python and Rust implementations."""
         if python_error and rust_error:
@@ -230,7 +242,7 @@ class ParallelExecutor:
         else:
             return ComparisonResult.MISMATCH
 
-    def _format_error_details(self, python_error: Optional[Exception], rust_error: Optional[Exception]) -> str:
+    def _format_error_details(self, python_error: Optional[Exception], rust_error: Optional[BaseException]) -> str:
         """Format error details for logging."""
         details = []
         if python_error:

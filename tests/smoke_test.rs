@@ -137,10 +137,13 @@ fn test_parallel_execution_logs(logs: &str) -> Result<(), String> {
         "Both implementations succeeded",
     ];
 
-    // Look for parallel execution failures
+    // Look for parallel execution failures (convert and redirect routes)
     let parallel_failure_patterns = [
         "Parallel execution ERROR: convert - Rust",
+        "Parallel execution ERROR: redirect - Rust",
         "WARNING: Rust execution failed for convert",
+        "WARNING: Rust execution failed for redirect",
+        "Parallel execution MISMATCH",
         "The python code works as expected and is able to fetch the ark-registry.ini hosted on github, while the Rust code has problems"
     ];
 
@@ -159,6 +162,12 @@ fn test_parallel_execution_logs(logs: &str) -> Result<(), String> {
         }
     }
 
+    // If we see parallel execution SUCCESS patterns in logs, that's good
+    if logs.contains("Parallel execution SUCCESS") {
+        println!("✅ Found parallel execution SUCCESS in logs");
+        return Ok(());
+    }
+
     // If we see convert requests but no explicit failures, that's likely success
     if logs.contains("Convert ark:/99999/") && !logs.contains("ERROR") {
         println!("✅ Convert operations completed without errors");
@@ -167,6 +176,113 @@ fn test_parallel_execution_logs(logs: &str) -> Result<(), String> {
 
     println!("ℹ️  No explicit parallel execution results found in logs");
     Ok(())
+}
+
+/// Test all ARK URL format variations against the running service.
+///
+/// These tests mirror the 17 parity test cases from test_redirect_parity.py,
+/// adapted for the staging registry (NAAN 72163). 13 of 17 map directly;
+/// 4 (custom ProjectHost and custom redirect patterns) are covered by parity
+/// unit tests and don't need end-to-end smoke testing.
+fn test_redirect_parity_cases(client: &reqwest::blocking::Client) {
+    println!("Testing redirect parity cases (all ARK URL format variations)...");
+
+    // BR: Each tuple is (test_name, ark_path, expected_redirect_status)
+    // All valid ARKs should return 3xx redirects.
+    let test_cases: &[(&str, &str)] = &[
+        // --- Top-level ---
+        ("top-level", "/ark:/72163/1"),
+        // --- Project redirects ---
+        // Project with default ProjectHost (meta.stage.dasch.swiss)
+        ("project", "/ark:/72163/1/0803"),
+        // Project with uppercase ID (tests case handling)
+        ("project-uppercase", "/ark:/72163/1/080E"),
+        // Project with lowercase ID (tests case normalization: 080e -> 080E)
+        ("project-lowercase", "/ark:/72163/1/080e"),
+        // --- v1 Resource redirects ---
+        // Resource without timestamp
+        ("resource", "/ark:/72163/1/0803/cmfk1DMHRBiR4=_6HXpEFAn"),
+        // Resource with fractional-second timestamp
+        (
+            "resource-ts-fractional",
+            "/ark:/72163/1/0803/cmfk1DMHRBiR4=_6HXpEFAn.20180604T085622513Z",
+        ),
+        // Resource with whole-second timestamp
+        (
+            "resource-ts-no-fractional",
+            "/ark:/72163/1/0803/cmfk1DMHRBiR4=_6HXpEFAn.20180604T085622Z",
+        ),
+        // --- v1 Value redirects ---
+        // Value without timestamp
+        (
+            "value",
+            "/ark:/72163/1/0803/SQkTPdHdTzq_gqbwj6QR=AR/=SSbnPK3Q7WWxzBT1UPpRgo",
+        ),
+        // Value with timestamp
+        (
+            "value-with-ts",
+            "/ark:/72163/1/0803/cmfk1DMHRBiR4=_6HXpEFAn/pLlW4ODASumZfZFbJdpw1gu.20180604T085622Z",
+        ),
+        // --- v0 salsah redirects (projects with AllowVersion0) ---
+        // v0 ARK for project 0803
+        ("v0-salsah", "/ark:/72163/0803-779b9990a0c3f-6e"),
+        // v0 ARK with timestamp
+        ("v0-salsah-ts", "/ark:/72163/0803-779b9990a0c3f-6e.20190129"),
+        // v0 ARK with lowercase project ID (080e -> 080E)
+        ("v0-salsah-lowercase", "/ark:/72163/080e-76bb2132d30d6-0"),
+        // v0 ARK with lowercase project ID and timestamp
+        (
+            "v0-salsah-lowercase-ts",
+            "/ark:/72163/080e-76bb2132d30d6-0.20190129",
+        ),
+        // v0 ARK with too-short timestamp (treated as no timestamp)
+        (
+            "v0-salsah-short-ts",
+            "/ark:/72163/080e-76bb2132d30d6-0.2019111",
+        ),
+    ];
+
+    // Not tested here (covered by test_redirect_parity.py unit tests):
+    // - project-custom-host: requires a project with custom ProjectHost in staging registry
+    // - project-salsah-host: same
+    // - resource-custom-pattern: requires a project with custom DSPResourceRedirectUrl
+    // - value-custom-pattern: requires a project with custom DSPValueRedirectUrl
+
+    let mut failures = Vec::new();
+
+    for (name, path) in test_cases {
+        let url = format!("http://localhost:3336{}", path);
+        match client.get(&url).send() {
+            Ok(response) => {
+                if response.status().is_redirection() {
+                    let location = response
+                        .headers()
+                        .get("location")
+                        .and_then(|v| v.to_str().ok())
+                        .unwrap_or("(no location header)");
+                    println!("  ✅ {}: {} -> {}", name, response.status(), location);
+                } else {
+                    println!("  ❌ {}: expected 3xx, got {}", name, response.status());
+                    failures.push(format!("{}: got {}", name, response.status()));
+                }
+            }
+            Err(e) => {
+                println!("  ❌ {}: request failed: {}", name, e);
+                failures.push(format!("{}: {}", name, e));
+            }
+        }
+    }
+
+    if !failures.is_empty() {
+        panic!(
+            "Redirect parity smoke tests failed ({}/{}):\n  {}",
+            failures.len(),
+            test_cases.len(),
+            failures.join("\n  ")
+        );
+    }
+
+    println!("✅ All {} redirect parity cases passed", test_cases.len());
 }
 
 fn test_registry_failure_scenario() {
@@ -424,30 +540,15 @@ fn smoke_test() {
         }
     }
 
-    // Step 4: Test redirect route (Version 1 ARK -> redirect to resource)
-    println!("Testing redirect route...");
-    let redirect_url = "http://localhost:3336/ark:/72163/1/0803";
+    // Step 4: Test redirect routes for all ARK URL format variations
+    // Uses a no-redirect client to verify 3xx responses
+    println!("Testing redirect routes...");
     let client = reqwest::blocking::Client::builder()
         .redirect(reqwest::redirect::Policy::none())
         .build()
         .expect("Failed to create HTTP client");
 
-    match client.get(redirect_url).send() {
-        Ok(response) => {
-            if !response.status().is_redirection() {
-                cleanup_docker();
-                panic!(
-                    "Redirect route should return 3xx status, got: {}",
-                    response.status()
-                );
-            }
-            println!("Redirect route test passed");
-        }
-        Err(e) => {
-            cleanup_docker();
-            panic!("Redirect route test failed: {}", e);
-        }
-    }
+    test_redirect_parity_cases(&client);
 
     // Step 5: Analyze logs before cleanup
     println!("Analyzing container logs for HTTP registry loading...");

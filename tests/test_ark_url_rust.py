@@ -83,7 +83,7 @@ def test_ark_url_case_insensitive_project(settings):
     # parse and redirect an ARK URL with lowercase project ID
     ark_url_info = ark_url_rust.ArkUrlInfo(settings, "ark:/00000/1/080e")
     redirect_url = ark_url_info.to_redirect_url()
-    assert redirect_url == "http://meta.dasch.swiss/projects/080e"
+    assert redirect_url == "http://meta.dasch.swiss/projects/080E"
 
 
 def test_ark_url_info_redirect_resource(settings):

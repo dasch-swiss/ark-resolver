@@ -37,6 +37,7 @@ import ark_resolver.routes.convert
 import ark_resolver.routes.health
 import ark_resolver.routes.redirect
 from ark_resolver import _rust  # type: ignore[attr-defined]
+from ark_resolver._rust import load_settings as load_settings_rust  # type: ignore[attr-defined]
 from ark_resolver.ark_url import ArkUrlException
 from ark_resolver.ark_url import ArkUrlFormatter
 from ark_resolver.ark_url import ArkUrlInfo
@@ -220,6 +221,14 @@ def server(settings: ArkUrlSettings) -> None:
     Starts the app as server with the given settings.
     """
     app.config.settings = settings
+
+    try:
+        app.config.rust_settings = load_settings_rust()
+        logger.info("Rust settings cached at startup.")
+    except Exception as e:  # noqa: BLE001
+        logger.warning(f"Failed to load Rust settings at startup: {e}")
+        app.config.rust_settings = None
+
     app.run(host=settings.top_config["ArkInternalHost"], port=settings.top_config.getint("ArkInternalPort"))
 
 
@@ -240,6 +249,13 @@ async def schedule_reload() -> None:
 def reload_config() -> None:
     settings = load_settings()
     app.config.settings = settings
+
+    try:
+        app.config.rust_settings = load_settings_rust()
+        logger.info("Rust settings reloaded.")
+    except Exception as e:  # noqa: BLE001
+        logger.warning(f"Failed to reload Rust settings, keeping cached version: {e}")
+
     logger.info("Configuration reloaded.")
 
 
