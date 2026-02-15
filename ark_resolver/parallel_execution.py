@@ -49,7 +49,7 @@ class ParallelExecutionResult:
     operation: str
     error_details: str = ""
     python_error: Optional[Exception] = None
-    rust_error: Optional[Exception] = None
+    rust_error: Optional[BaseException] = None
 
 
 class ParallelExecutor:
@@ -111,7 +111,7 @@ class ParallelExecutor:
 
         try:
             rust_result = rust_func(*args, **kwargs)
-        except Exception as e:  # noqa: BLE001
+        except BaseException as e:  # noqa: BLE001  # Catch BaseException for PyO3 PanicException safety
             rust_error = e
             self.logger.warning(f"Rust execution failed for {operation}: {e}", exc_info=True)
 
@@ -223,7 +223,7 @@ class ParallelExecutor:
         }
 
     def _compare_results(
-        self, python_result: Any, rust_result: Any, python_error: Optional[Exception], rust_error: Optional[Exception]
+        self, python_result: Any, rust_result: Any, python_error: Optional[Exception], rust_error: Optional[BaseException]
     ) -> ComparisonResult:
         """Compare results from Python and Rust implementations."""
         if python_error and rust_error:
@@ -237,7 +237,7 @@ class ParallelExecutor:
         else:
             return ComparisonResult.MISMATCH
 
-    def _format_error_details(self, python_error: Optional[Exception], rust_error: Optional[Exception]) -> str:
+    def _format_error_details(self, python_error: Optional[Exception], rust_error: Optional[BaseException]) -> str:
         """Format error details for logging."""
         details = []
         if python_error:
