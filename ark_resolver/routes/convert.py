@@ -1,5 +1,6 @@
 from urllib.parse import unquote
 
+import sentry_sdk
 from opentelemetry.trace import Status
 from opentelemetry.trace import StatusCode
 from sanic import Blueprint
@@ -65,16 +66,31 @@ async def convert(req: Request, ark_id: str = "") -> HTTPResponse:
             span.set_status(Status(StatusCode.OK))  # Mark as successful
 
         except ArkUrlException as ex:
+            with sentry_sdk.push_scope() as scope:
+                scope.fingerprint = ["convert", "invalid-ark-id"]
+                scope.set_tag("ark_id", ark_id_decoded[:100])
+                scope.set_tag("error_type", "ArkUrlException")
+                sentry_sdk.capture_exception(ex)
             span.set_status(Status(StatusCode.ERROR, "Invalid ARK ID"))
             logger.error(f"Invalid ARK ID: {ark_id_decoded}")
             return response.text(body=ex.message, status=400)
 
         except check_digit_py.CheckDigitException as ex:
+            with sentry_sdk.push_scope() as scope:
+                scope.fingerprint = ["convert", "check-digit-error"]
+                scope.set_tag("ark_id", ark_id_decoded[:100])
+                scope.set_tag("error_type", "CheckDigitException")
+                sentry_sdk.capture_exception(ex)
             span.set_status(Status(StatusCode.ERROR, "Check Digit Error"))
             logger.error(f"Invalid ARK ID (wrong check digit): {ark_id_decoded}", exc_info=ex)
             return response.text(body=ex.message, status=400)
 
         except KeyError as ex:
+            with sentry_sdk.push_scope() as scope:
+                scope.fingerprint = ["convert", "project-not-found"]
+                scope.set_tag("ark_id", ark_id_decoded[:100])
+                scope.set_tag("project_id", str(ex)[:10])
+                sentry_sdk.capture_exception(ex)
             span.set_status(Status(StatusCode.ERROR, "KeyError (project not found)"))
             logger.error(f"Invalid ARK ID (project not found): {ark_id_decoded}", exc_info=ex)
             return response.text(body="Invalid ARK ID", status=400)

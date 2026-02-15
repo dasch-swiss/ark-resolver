@@ -171,6 +171,9 @@ class ParallelExecutor:
         """
         Track parallel execution metrics with Sentry.
 
+        Uses custom fingerprinting to group shadow execution events by operation
+        and result type, not by individual input values.
+
         Args:
             execution_result: Result of parallel execution
         """
@@ -182,17 +185,21 @@ class ParallelExecutor:
         sentry_sdk.set_measurement("parallel.rust_duration_ms", execution_result.rust_duration_ms)
         sentry_sdk.set_measurement("parallel.performance_improvement_percent", execution_result.performance_improvement_percent)
 
-        # Track mismatches as custom events
-        if execution_result.comparison == ComparisonResult.MISMATCH:
-            sentry_sdk.capture_message(
-                f"Parallel execution mismatch in {execution_result.operation}",
-                level="warning",
-                extras={
-                    "python_result": str(execution_result.python_result),
-                    "rust_result": str(execution_result.rust_result),
-                    "performance_improvement": execution_result.performance_improvement_percent,
-                },
-            )
+        if execution_result.comparison in (ComparisonResult.MISMATCH, ComparisonResult.RUST_ERROR):
+            with sentry_sdk.push_scope() as scope:
+                scope.fingerprint = ["shadow", execution_result.operation, execution_result.comparison.value]
+                scope.set_tag("shadow.operation", execution_result.operation)
+                scope.set_tag("shadow.comparison", execution_result.comparison.value)
+                scope.set_context("shadow_details", {
+                    "python_result": str(execution_result.python_result)[:500],
+                    "rust_result": str(execution_result.rust_result)[:500],
+                    "python_duration_ms": execution_result.python_duration_ms,
+                    "rust_duration_ms": execution_result.rust_duration_ms,
+                })
+                sentry_sdk.capture_message(
+                    f"Shadow {execution_result.comparison.value}: {execution_result.operation}",
+                    level="warning",
+                )
 
     def get_metrics_summary(self) -> Dict[str, Any]:
         """
