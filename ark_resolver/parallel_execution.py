@@ -112,6 +112,8 @@ class ParallelExecutor:
         try:
             rust_result = rust_func(*args, **kwargs)
         except BaseException as e:  # noqa: BLE001  # Catch BaseException for PyO3 PanicException safety
+            if isinstance(e, (KeyboardInterrupt, SystemExit)):
+                raise
             rust_error = e
             self.logger.warning(f"Rust execution failed for {operation}: {e}", exc_info=True)
 
