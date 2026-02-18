@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.13.1](https://github.com/dasch-swiss/ark-resolver/compare/ark_resolver-v1.13.0...ark_resolver-v1.13.1) (2026-02-18)
+
+
+### Maintenances
+
+* **deploy:** Add auto-deployment to prod (INFRA-1022) ([5c224aa](https://github.com/dasch-swiss/ark-resolver/commit/5c224aa295c0a9d366c9871dd7be127c8883a2bf))
+
 ## [1.13.0](https://github.com/dasch-swiss/ark-resolver/compare/ark_resolver-v1.12.2...ark_resolver-v1.13.0) (2026-02-15)
 
 
