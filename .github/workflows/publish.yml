@@ -4,8 +4,6 @@ on:
   push:
     branches:
       - main
-  # This triggers for any tag or branch creation. We'll filter for tags in the job.
-  create:
   release:
     types: [released]
 jobs:
