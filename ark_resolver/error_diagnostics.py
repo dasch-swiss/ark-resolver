@@ -13,6 +13,7 @@ import re
 from dataclasses import dataclass
 from enum import Enum
 
+import sentry_sdk
 from sanic import HTTPResponse
 from sanic import json as sanic_json
 
@@ -255,6 +256,25 @@ def diagnose_non_ark_path(path: str) -> ArkErrorDiagnostic:
         ark_id=path,
         http_status=400,
     )
+
+
+def report_error_to_sentry(
+    endpoint: str,
+    diagnostic: ArkErrorDiagnostic,
+    ark_id_decoded: str,
+    exception: Exception | None = None,
+) -> None:
+    """BR: Report structured error diagnostics to Sentry with granular fingerprints for better issue grouping."""
+    with sentry_sdk.push_scope() as scope:
+        scope.fingerprint = [endpoint, diagnostic.code.value]
+        scope.set_tag("ark_id", ark_id_decoded[:100])
+        scope.set_tag("error_code", diagnostic.code.value)
+        if diagnostic.detail:
+            scope.set_tag("error_detail", diagnostic.detail[:50])
+        if exception is not None:
+            sentry_sdk.capture_exception(exception)
+        else:
+            sentry_sdk.capture_message(diagnostic.message, level="error")
 
 
 def error_response(diagnostic: ArkErrorDiagnostic) -> HTTPResponse:
