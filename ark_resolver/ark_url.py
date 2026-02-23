@@ -66,6 +66,14 @@ class ArkUrlException(Exception):
         self.message = message
 
 
+class VersionZeroNotAllowedException(ArkUrlException):
+    """BR: Raised when a V0 ARK is used for a project that only accepts V1."""
+
+
+class VersionMismatchException(ArkUrlException):
+    """BR: Raised when the ARK version number doesn't match the expected version."""
+
+
 class ArkUrlInfo:
     """
     Represents the information retrieved from a DSP ARK ID.
@@ -130,9 +138,9 @@ class ArkUrlInfo:
             project_config = self.settings.config[self.project_id]
 
             if not project_config.getboolean("AllowVersion0"):
-                raise ArkUrlException(f"Invalid ARK ID (version 0 not allowed): {ark_id}")
+                raise VersionZeroNotAllowedException(f"Invalid ARK ID (version 0 not allowed): {ark_id}")
         else:
-            raise ArkUrlException(f"Invalid ARK ID {ark_id}. The version of the ARK ID doesn't match the version defined in the settings.")
+            raise VersionMismatchException(f"Invalid ARK ID {ark_id}. The version of the ARK ID doesn't match the version defined in the settings.")
 
         self.template_dict = {
             "url_version": self.url_version,

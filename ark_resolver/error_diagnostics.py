@@ -18,6 +18,8 @@ from sanic import HTTPResponse
 from sanic import json as sanic_json
 
 from ark_resolver.ark_url import ArkUrlException
+from ark_resolver.ark_url import VersionMismatchException
+from ark_resolver.ark_url import VersionZeroNotAllowedException
 from ark_resolver.check_digit import CheckDigitException
 
 # BR: Expected UUID length is 22 base64url characters + 1 check digit = 23
@@ -201,34 +203,32 @@ def classify_exception(
             http_status=400,
         )
 
+    if isinstance(exception, VersionZeroNotAllowedException):
+        return ArkErrorDiagnostic(
+            code=ArkErrorCode.VERSION_0_NOT_ALLOWED,
+            message=exception.message,
+            hint=(
+                "This project does not accept version 0 (legacy salsah.org) ARK URLs. "
+                "Use the version 1 format: ark:/{NAAN}/1/{project_id}/{uuid}{check_digit}"
+            ),
+            ark_id=ark_id,
+            http_status=422,
+        )
+
+    if isinstance(exception, VersionMismatchException):
+        return ArkErrorDiagnostic(
+            code=ArkErrorCode.VERSION_MISMATCH,
+            message=exception.message,
+            hint="The ARK version number does not match the expected version. The current version is 1.",
+            ark_id=ark_id,
+            http_status=422,
+        )
+
     if isinstance(exception, ArkUrlException):
-        msg = exception.message
-
-        if "version 0 not allowed" in msg:
-            return ArkErrorDiagnostic(
-                code=ArkErrorCode.VERSION_0_NOT_ALLOWED,
-                message=msg,
-                hint=(
-                    "This project does not accept version 0 (legacy salsah.org) ARK URLs. "
-                    "Use the version 1 format: ark:/{NAAN}/1/{project_id}/{uuid}{check_digit}"
-                ),
-                ark_id=ark_id,
-                http_status=422,
-            )
-
-        if "version" in msg.lower() and "match" in msg.lower():
-            return ArkErrorDiagnostic(
-                code=ArkErrorCode.VERSION_MISMATCH,
-                message=msg,
-                hint="The ARK version number does not match the expected version. The current version is 1.",
-                ark_id=ark_id,
-                http_status=422,
-            )
-
         # BR: Generic ArkUrlException — the regex didn't match any known ARK format
         return ArkErrorDiagnostic(
             code=ArkErrorCode.MALFORMED_ARK,
-            message=msg,
+            message=exception.message,
             hint=(
                 "Expected format: ark:/{NAAN}/1/{4-hex-project-id}/{base64url-resource-id}{check-digit}"
                 " — Example: ark:/72163/1/0001/cmfk1DMHRBiR4=_6HXpEFAn"
