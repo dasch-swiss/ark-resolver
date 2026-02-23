@@ -1,0 +1,65 @@
+# Copyright © 2015 - 2025 Swiss National Data and Service Center for the Humanities and/or DaSCH Service Platform contributors.
+# SPDX-License-Identifier: Apache-2.0
+
+# On-demand Claude Code AI assistance for pull requests.
+# Trigger by mentioning @claude in any PR comment, review comment, or review body.
+# Can also be triggered manually from the Actions tab with a PR number.
+
+name: claude-review
+
+on:
+  issue_comment:
+    types: [created]
+  pull_request_review_comment:
+    types: [created]
+  pull_request_review:
+    types: [submitted]
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: "Pull request number to review"
+        required: true
+        type: number
+
+# One review at a time per PR; queue (do not cancel) concurrent requests
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.issue.number || github.event.pull_request.number || github.event.inputs.pr_number || github.run_id }}
+  cancel-in-progress: false
+
+jobs:
+  claude:
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'issue_comment' && github.event.issue.pull_request &&
+        contains(github.event.comment.body, '@claude')) ||
+      (github.event_name == 'pull_request_review_comment' &&
+        contains(github.event.comment.body, '@claude')) ||
+      (github.event_name == 'pull_request_review' &&
+        contains(github.event.review.body, '@claude'))
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+      id-token: write
+      actions: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run Claude Code
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+
+          prompt: >-
+            ${{ github.event_name == 'workflow_dispatch' &&
+            format(
+              'Review PR #{0}. Analyze the changes for: (1) code quality and correctness, (2) security issues, (3) adherence to the Python-to-Rust migration patterns documented in CLAUDE.md, (4) proper use of BR: prefix for business rule comments, (5) check digit validation logic, and (6) comparative test coverage between Python and Rust implementations.',
+              github.event.inputs.pr_number
+            ) || '' }}
+
+          model: claude-opus-4-6
+          max_turns: "15"
