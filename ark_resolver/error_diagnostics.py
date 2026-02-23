@@ -107,6 +107,9 @@ def pre_validate_ark(ark_id: str) -> ArkErrorDiagnostic | None:
     """
     BR: Pre-validate ARK ID for common corruption patterns before parsing.
     Returns an ArkErrorDiagnostic if corruption is detected, None if the input looks clean.
+
+    Check ordering matters: HTML entities must be checked before trailing junk because
+    semicolons (;) in _TRAILING_JUNK would incorrectly match entity suffixes like &lt;
     """
     # BR: HTML entities indicate the ARK was copied from HTML source code rather than rendered text
     entity_match = _HTML_ENTITIES.search(ark_id)
@@ -168,6 +171,8 @@ def pre_validate_ark(ark_id: str) -> ArkErrorDiagnostic | None:
                 detail=f"length={len(uuid_part)}, expected={EXPECTED_UUID_LENGTH}",
             )
 
+        # BR: Allow up to 30 extra chars to avoid false positives on value-path
+        # segments or future format extensions; only flag truly pathological lengths
         if len(uuid_part) > EXPECTED_UUID_LENGTH + 30:
             return ArkErrorDiagnostic(
                 code=ArkErrorCode.UUID_TOO_LONG,

@@ -140,7 +140,9 @@ class ArkUrlInfo:
             if not project_config.getboolean("AllowVersion0"):
                 raise VersionZeroNotAllowedException(f"Invalid ARK ID (version 0 not allowed): {ark_id}")
         else:
-            raise VersionMismatchException(f"Invalid ARK ID {ark_id}. The version of the ARK ID doesn't match the version defined in the settings.")
+            raise VersionMismatchException(
+                f"Invalid ARK ID {ark_id}. The version of the ARK ID doesn't match the version defined in the settings."
+            )
 
         self.template_dict = {
             "url_version": self.url_version,

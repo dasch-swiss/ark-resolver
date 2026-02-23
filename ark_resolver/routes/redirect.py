@@ -28,7 +28,8 @@ async def catch_all(_: Request, path: str = "") -> HTTPResponse:
     """
     Catch all URL. Tries to redirect the given ARK ID.
     """
-    # BR: Paths not starting with ark:/ are not ARK identifiers
+    # BR: Paths not starting with ark:/ are not ARK identifiers.
+    # Skip Sentry reporting here to avoid noise from crawlers (favicon.ico, robots.txt, etc.)
     if not path.startswith("ark:/"):
         diagnostic = diagnose_non_ark_path(path)
         return error_response(diagnostic)

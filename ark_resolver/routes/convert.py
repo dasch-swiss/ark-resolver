@@ -29,7 +29,8 @@ convert_bp = Blueprint("convert", url_prefix="/convert")
 async def convert(req: Request, ark_id: str = "") -> HTTPResponse:
     """Ark V0 to V1 conversion endpoint with shadow execution"""
 
-    # BR: Paths not starting with ark:/ are not ARK identifiers
+    # BR: Paths not starting with ark:/ are not ARK identifiers.
+    # Skip Sentry reporting here to avoid noise from crawlers (favicon.ico, robots.txt, etc.)
     if not ark_id.startswith("ark:/"):
         diagnostic = diagnose_non_ark_path(ark_id)
         return error_response(diagnostic)
