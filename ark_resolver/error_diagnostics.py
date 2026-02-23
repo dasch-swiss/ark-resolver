@@ -87,11 +87,20 @@ class ArkErrorDiagnostic:
 _ENTITY_REPLACEMENTS = {"lt": "<", "gt": ">", "amp": "&", "quot": '"'}
 
 
+def _replace_entity(m: re.Match) -> str:
+    """BR: Resolve HTML entities (named and numeric) to their character equivalents for hint display."""
+    name = m.group(1)
+    if name in _ENTITY_REPLACEMENTS:
+        return _ENTITY_REPLACEMENTS[name]
+    if name.startswith("#x"):
+        return chr(int(name[2:], 16))
+    if name.startswith("#"):
+        return chr(int(name[1:]))
+    return ""
+
+
 def _clean_html_entities(ark_id: str) -> str:
-    return _HTML_ENTITIES.sub(
-        lambda m: _ENTITY_REPLACEMENTS.get(m.group(1), ""),
-        ark_id,
-    )
+    return _HTML_ENTITIES.sub(_replace_entity, ark_id)
 
 
 def pre_validate_ark(ark_id: str) -> ArkErrorDiagnostic | None:

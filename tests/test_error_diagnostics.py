@@ -49,6 +49,20 @@ class TestPreValidateHtmlEntities:
         assert diag is not None
         assert "ark:/72163/1/080E/Yw_JcLphScqZSPBFNJxtYg<" in diag.hint
 
+    def test_numeric_decimal_entity_cleaned(self):
+        """Numeric decimal entity &#123; should resolve to '{' in hint."""
+        diag = pre_validate_ark("ark:/72163/1/0001/test&#123;abc")
+        assert diag is not None
+        assert diag.code == ArkErrorCode.HTML_ENTITY_CORRUPTION
+        assert "test{abc" in diag.hint
+
+    def test_numeric_hex_entity_cleaned(self):
+        """Numeric hex entity &#x7B; should resolve to '{' in hint."""
+        diag = pre_validate_ark("ark:/72163/1/0001/test&#x7B;abc")
+        assert diag is not None
+        assert diag.code == ArkErrorCode.HTML_ENTITY_CORRUPTION
+        assert "test{abc" in diag.hint
+
 
 # ──────────────────────────────────────────────────────────────────────
 # Pre-validation: Trailing junk
