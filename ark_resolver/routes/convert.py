@@ -1,6 +1,5 @@
 from urllib.parse import unquote
 
-import sentry_sdk
 from opentelemetry.trace import Status
 from opentelemetry.trace import StatusCode
 from sanic import Blueprint
@@ -19,24 +18,11 @@ from ark_resolver.error_diagnostics import classify_exception
 from ark_resolver.error_diagnostics import diagnose_non_ark_path
 from ark_resolver.error_diagnostics import error_response
 from ark_resolver.error_diagnostics import pre_validate_ark
+from ark_resolver.error_diagnostics import report_error_to_sentry
 from ark_resolver.parallel_execution import parallel_executor
 from ark_resolver.tracing import tracer
 
 convert_bp = Blueprint("convert", url_prefix="/convert")
-
-
-def _report_error_to_sentry(diagnostic, ark_id_decoded: str, exception: Exception | None = None) -> None:
-    """BR: Report structured error diagnostics to Sentry with granular fingerprints for better issue grouping."""
-    with sentry_sdk.push_scope() as scope:
-        scope.fingerprint = ["convert", diagnostic.code.value]
-        scope.set_tag("ark_id", ark_id_decoded[:100])
-        scope.set_tag("error_code", diagnostic.code.value)
-        if diagnostic.detail:
-            scope.set_tag("error_detail", diagnostic.detail[:50])
-        if exception is not None:
-            sentry_sdk.capture_exception(exception)
-        else:
-            sentry_sdk.capture_message(diagnostic.message, level="error")
 
 
 @convert_bp.get("/<ark_id:path>")
@@ -58,7 +44,7 @@ async def convert(req: Request, ark_id: str = "") -> HTTPResponse:
         # BR: Pre-validate for common corruption patterns before parsing
         diagnostic = pre_validate_ark(ark_id_decoded)
         if diagnostic is not None:
-            _report_error_to_sentry(diagnostic, ark_id_decoded)
+            report_error_to_sentry("convert", diagnostic, ark_id_decoded)
             span.set_status(Status(StatusCode.ERROR, diagnostic.code.value))
             logger.error(f"Invalid ARK ID ({diagnostic.code.value}): {ark_id_decoded}")
             return error_response(diagnostic)
@@ -93,7 +79,7 @@ async def convert(req: Request, ark_id: str = "") -> HTTPResponse:
 
         except (ArkUrlException, check_digit_py.CheckDigitException, KeyError) as ex:
             diagnostic = classify_exception(ex, ark_id_decoded)
-            _report_error_to_sentry(diagnostic, ark_id_decoded, exception=ex)
+            report_error_to_sentry("convert", diagnostic, ark_id_decoded, exception=ex)
             span.set_status(Status(StatusCode.ERROR, diagnostic.code.value))
             logger.error(f"Invalid ARK ID ({diagnostic.code.value}): {ark_id_decoded}")
             return error_response(diagnostic)
