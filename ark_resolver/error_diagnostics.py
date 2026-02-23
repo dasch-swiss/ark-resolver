@@ -152,7 +152,7 @@ def pre_validate_ark(ark_id: str) -> ArkErrorDiagnostic | None:
                 ),
                 ark_id=ark_id,
                 http_status=400,
-                detail=str(bad_chars),
+                detail=", ".join(repr(c) for c in bad_chars),
             )
 
         if len(uuid_part) < EXPECTED_UUID_LENGTH:
