@@ -113,3 +113,4 @@ venv.bak/
 # Zed
 .zed/
 /.claude/settings.local.json
+/.claude/worktrees/
