@@ -6,6 +6,8 @@
 from http import HTTPStatus
 
 from ark_resolver.ark_url import ArkUrlException
+from ark_resolver.ark_url import VersionMismatchException
+from ark_resolver.ark_url import VersionZeroNotAllowedException
 from ark_resolver.check_digit import CheckDigitException
 from ark_resolver.error_diagnostics import ArkErrorCode
 from ark_resolver.error_diagnostics import ArkErrorDiagnostic
@@ -185,7 +187,7 @@ class TestClassifyCheckDigitException:
 class TestClassifyArkUrlException:
     def test_version_0_not_allowed(self):
         diag = classify_exception(
-            ArkUrlException("Invalid ARK ID (version 0 not allowed): ark:/72163/080c-abc-def"),
+            VersionZeroNotAllowedException("Invalid ARK ID (version 0 not allowed): ark:/72163/080c-abc-def"),
             "ark:/72163/080c-abc-def",
         )
         assert diag.code == ArkErrorCode.VERSION_0_NOT_ALLOWED
@@ -194,7 +196,9 @@ class TestClassifyArkUrlException:
 
     def test_version_mismatch(self):
         diag = classify_exception(
-            ArkUrlException("Invalid ARK ID ark:/72163/99. The version of the ARK ID doesn't match the version defined in the settings."),
+            VersionMismatchException(
+                "Invalid ARK ID ark:/72163/99. The version of the ARK ID doesn't match the version defined in the settings."
+            ),
             "ark:/72163/99",
         )
         assert diag.code == ArkErrorCode.VERSION_MISMATCH
