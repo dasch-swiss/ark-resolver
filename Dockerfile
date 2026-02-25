@@ -66,6 +66,8 @@ RUN apk add --no-cache \
     jq \
     curl
 
+# BR: Upgrade wheel to fix CVE-2026-24049 (path traversal, high 7.1)
+RUN pip install --no-cache-dir --upgrade "wheel>=0.46.2"
 
 # Don't run your app as root.
 RUN \
