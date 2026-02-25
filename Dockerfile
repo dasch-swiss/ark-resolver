@@ -23,7 +23,7 @@ RUN \
 ENV UV_LINK_MODE=copy \
     UV_COMPILE_BYTECODE=1 \
     UV_PYTHON_DOWNLOADS=never \
-    UV_PYTHON=python3.13 \
+    UV_PYTHON=python3.12 \
     UV_PROJECT_ENVIRONMENT=/app
 
 # Synchronize DEPENDENCIES without the application itself.
@@ -82,7 +82,7 @@ WORKDIR /app
 # Optional: add the application virtualenv to search path.
 # We set the venv in the previous stage to `/app`, so we add it to the PATH.
 ENV PATH=/app/bin:$PATH
-ENV PYTHONPATH=/app:/app/lib/python3.13/site-packages
+ENV PYTHONPATH=/app:/app/lib/python3.12/site-packages
 ENV VIRTUAL_ENV=/app
 
 # Verify the installation of the ark_resolver module
