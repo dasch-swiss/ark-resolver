@@ -7,7 +7,7 @@ name = "ark-resolver"
 version = "0.1.0"
 description = "ARK Resolver implemented in Python and Rust"
 readme = "README.md"
-requires-python = ">=3.13"
+requires-python = ">=3.12"
 license = "Apache-2.0"
 
 dependencies = [
