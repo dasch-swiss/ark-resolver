@@ -399,7 +399,7 @@ mod pyo3_bindings {
     #[pyfunction]
     pub fn log_environment_variables_python(py: Python<'_>) -> PyResult<()> {
         // Get Python's logging module for batched output
-        let logging = py.import_bound("logging")?;
+        let logging = py.import("logging")?;
         let logger = logging.getattr("getLogger")?.call1(("ark_resolver",))?;
 
         let definitions = get_env_var_definitions();

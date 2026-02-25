@@ -25,8 +25,7 @@ jobs:
       - name: Install cargo-audit
         run: cargo install cargo-audit --locked
       - name: Run cargo audit
-        # RUSTSEC-2025-0020: pyo3 buffer overflow — requires major upgrade (0.22→0.24), tracked separately
-        run: cargo audit --ignore RUSTSEC-2025-0020
+        run: cargo audit
 
   pip-audit:
     name: Python dependency audit
@@ -38,7 +37,7 @@ jobs:
           version: "0.6.2"
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          python-version: '3.13'
       - name: Export requirements from uv.lock
         run: uv export --format requirements-txt --no-hashes --no-dev > /tmp/requirements.txt
       - uses: pypa/gh-action-pip-audit@v1.1.0
