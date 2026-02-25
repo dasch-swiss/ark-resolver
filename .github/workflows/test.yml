@@ -80,8 +80,6 @@ jobs:
           password: ${{ secrets.DOCKER_HUB_TOKEN }}
       - name: Docker Scout — compare to production
         if: github.event_name == 'pull_request'
-        # BR: compare is best-effort — fails gracefully when no production baseline exists yet
-        continue-on-error: true
         uses: docker/scout-action@v1
         with:
           command: compare
