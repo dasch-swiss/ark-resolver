@@ -1,5 +1,41 @@
 # Changelog
 
+## [1.14.0](https://github.com/dasch-swiss/ark-resolver/compare/ark_resolver-v1.13.0...ark_resolver-v1.14.0) (2026-02-25)
+
+
+### Maintenances
+
+* Add .claude/worktrees/ to .gitignore ([2393c76](https://github.com/dasch-swiss/ark-resolver/commit/2393c76bde044fb00a9522ba45239c53d8dba201))
+* **deploy:** Add auto-deployment to prod (INFRA-1022) ([5c224aa](https://github.com/dasch-swiss/ark-resolver/commit/5c224aa295c0a9d366c9871dd7be127c8883a2bf))
+* Extract duplicated _report_error_to_sentry into error_diagnostics ([6fb71ce](https://github.com/dasch-swiss/ark-resolver/commit/6fb71ce3bdc416cc72a640212449ef9f862af033))
+* Replace fragile string matching with ArkUrlException subclasses ([5f271d8](https://github.com/dasch-swiss/ark-resolver/commit/5f271d8816697af8add59ed800eb07524b042055))
+
+
+### Documentation
+
+* Add BR comments for UUID_TOO_LONG threshold, Sentry skip, and check ordering ([fbc2b34](https://github.com/dasch-swiss/ark-resolver/commit/fbc2b340df77bb4d3ec0a22859a321cc52c75d47))
+
+
+### Enhancements
+
+* Integrate Docker Scout CVE scanning, SBOM, and dependency audits ([2d9d071](https://github.com/dasch-swiss/ark-resolver/commit/2d9d071088186a8b73831666aebafb27575ed61a))
+* Structured JSON error responses with diagnostic codes and hints ([8e4c917](https://github.com/dasch-swiss/ark-resolver/commit/8e4c91754db48051c9a022a8d66186fc0d83bbbb))
+
+
+### Bug Fixes
+
+* Address PR review — least-privilege permissions and conditional login ([a97e7ee](https://github.com/dasch-swiss/ark-resolver/commit/a97e7ee428fda8ec71ca0605d991d5952d97193e))
+* Handle numeric HTML entities in _clean_html_entities ([009d8e4](https://github.com/dasch-swiss/ark-resolver/commit/009d8e43969dd9cebda1a1103479b899354a5533))
+* Make Docker Scout compare best-effort for missing baseline ([a0506b1](https://github.com/dasch-swiss/ark-resolver/commit/a0506b1110aa6f3d4ca45968e7495c8dfa27ecd2))
+* Remove continue-on-error from Scout compare step ([d05e4b3](https://github.com/dasch-swiss/ark-resolver/commit/d05e4b32771f56d316ea2f5b337f59bd01eb6e72))
+* Resolve CI failures in security workflow ([d1e9b9b](https://github.com/dasch-swiss/ark-resolver/commit/d1e9b9b94098c4e206b775c5974f68611872de49))
+* Revert builder Python to 3.12 to match Alpine 3.23 system Python ([9112c2f](https://github.com/dasch-swiss/ark-resolver/commit/9112c2fcb8d4d1a453d445eb0bb55b32495fde35))
+* Upgrade pyo3 to 0.24 and bump Alpine base to 3.23 ([aae7638](https://github.com/dasch-swiss/ark-resolver/commit/aae76389bb17944100a91813b955aaa3f227f105))
+* Upgrade vulnerable Rust dependencies and ignore pyo3 advisory ([11f0ddf](https://github.com/dasch-swiss/ark-resolver/commit/11f0ddf199c65ec0561709af796414ab1b1b5b32))
+* Upgrade wheel to &gt;=0.46.2 to fix CVE-2026-24049 ([906a7bc](https://github.com/dasch-swiss/ark-resolver/commit/906a7bceecfbbdda6ffb7c4a6aa77c97919d63c7))
+* Use clean string format for INVALID_UUID_CHARS detail field ([f136ba3](https://github.com/dasch-swiss/ark-resolver/commit/f136ba3716d80b1bbc96353c220403605e596b05))
+* Use python:3.12-alpine3.23 runtime to match builder ABI ([e7b7057](https://github.com/dasch-swiss/ark-resolver/commit/e7b70579f03f2b72233bd0308fb27e37d7ef1dc8))
+
 ## [1.13.0](https://github.com/dasch-swiss/ark-resolver/compare/ark_resolver-v1.12.2...ark_resolver-v1.13.0) (2026-02-15)
 
 
