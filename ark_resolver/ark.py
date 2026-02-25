@@ -30,7 +30,6 @@ from sanic import Sanic
 from sanic import response
 from sanic.log import logger
 from sanic_cors import CORS  # type: ignore[import-untyped]
-from sentry_sdk.integrations.rust_tracing import RustTracingIntegration
 
 import ark_resolver.check_digit as check_digit_py
 import ark_resolver.routes.convert
@@ -107,34 +106,10 @@ async def init_tracing_and_sentry(_: Any) -> None:
                 # We recommend adjusting this value in production.
                 profiles_sample_rate=1.0,
                 instrumenter="otel",
-                integrations=[
-                    RustTracingIntegration(
-                        "_rust",
-                        _rust.initialize_tracing,
-                        include_tracing_fields=True,
-                    )
-                ],
             )
             logger.info("Sentry initialized.")
-        except ImportError:
-            logger.warning("Rust module not available, Sentry with Rust tracing integration disabled")
         except (RuntimeError, ValueError, OSError) as e:
-            logger.warning(f"Failed to initialize Sentry with Rust tracing integration: {e}")
-            # Fall back to Sentry without Rust tracing integration
-            try:
-                sentry_sdk.init(
-                    dsn=sentry_dsn,
-                    debug=sentry_debug,
-                    environment=sentry_environment,
-                    release=sentry_release,
-                    send_default_pii=True,
-                    traces_sample_rate=1.0,
-                    profiles_sample_rate=1.0,
-                    instrumenter="otel",
-                )
-                logger.info("Sentry initialized without Rust tracing integration.")
-            except (RuntimeError, ValueError, OSError) as fallback_e:
-                logger.error(f"Failed to initialize Sentry completely: {fallback_e}")
+            logger.error(f"Failed to initialize Sentry: {e}")
     else:
         logger.info("ARK_SENTRY_DSN not set. Sentry will not be initialized.")
 

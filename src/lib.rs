@@ -12,35 +12,9 @@ use crate::adapters::pyo3::uuid_processing::{
 };
 use pyo3::prelude::*;
 use pyo3::types::PyModule;
-use pyo3::wrap_pyfunction_bound;
-use tracing_subscriber::prelude::*;
 
 mod adapters;
 pub mod core;
-
-#[pyfunction]
-pub fn initialize_tracing(py_impl: Bound<'_, PyAny>) {
-    // BR: Prevent multiple Sentry tracing initialization in multiprocessing context
-    static SENTRY_TRACING_INITIALIZED: std::sync::Once = std::sync::Once::new();
-
-    SENTRY_TRACING_INITIALIZED.call_once(|| {
-        // Use try_init to gracefully handle existing global subscriber
-        match tracing_subscriber::registry()
-            .with(pyo3_python_tracing_subscriber::PythonCallbackLayerBridge::new(py_impl))
-            .try_init()
-        {
-            Ok(()) => {
-                tracing::debug!("Sentry tracing initialized successfully");
-            }
-            Err(e) => {
-                // This is expected when debug tracing or other subscriber is already active
-                tracing::debug!(
-                    "Sentry tracing initialization skipped - subscriber already active: {e}"
-                );
-            }
-        }
-    });
-}
 
 #[pyfunction]
 pub fn initialize_debug_tracing() -> PyResult<()> {
@@ -112,24 +86,23 @@ pub fn unescape_and_validate_uuid(ark_url: String, escaped_uuid: String) -> PyRe
 
 /// Create Python module and add the functions and classes to it
 #[pymodule]
-fn _rust(py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
+fn _rust(_py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     // Check digit functions
-    m.add_function(wrap_pyfunction_bound!(is_valid, py)?)?;
-    m.add_function(wrap_pyfunction_bound!(calculate_check_digit, py)?)?;
-    m.add_function(wrap_pyfunction_bound!(calculate_modulus, py)?)?;
-    m.add_function(wrap_pyfunction_bound!(weighted_value, py)?)?;
-    m.add_function(wrap_pyfunction_bound!(to_int, py)?)?;
-    m.add_function(wrap_pyfunction_bound!(to_check_digit, py)?)?;
+    m.add_function(wrap_pyfunction!(is_valid, m)?)?;
+    m.add_function(wrap_pyfunction!(calculate_check_digit, m)?)?;
+    m.add_function(wrap_pyfunction!(calculate_modulus, m)?)?;
+    m.add_function(wrap_pyfunction!(weighted_value, m)?)?;
+    m.add_function(wrap_pyfunction!(to_int, m)?)?;
+    m.add_function(wrap_pyfunction!(to_check_digit, m)?)?;
 
     // UUID processing functions
-    m.add_function(wrap_pyfunction_bound!(add_check_digit_and_escape, py)?)?;
-    m.add_function(wrap_pyfunction_bound!(unescape_and_validate_uuid, py)?)?;
+    m.add_function(wrap_pyfunction!(add_check_digit_and_escape, m)?)?;
+    m.add_function(wrap_pyfunction!(unescape_and_validate_uuid, m)?)?;
     // Settings and tracing functions
-    m.add_function(wrap_pyfunction_bound!(load_settings, py)?)?;
-    m.add_function(wrap_pyfunction!(initialize_tracing, m)?)?;
-    m.add_function(wrap_pyfunction_bound!(initialize_debug_tracing, py)?)?;
+    m.add_function(wrap_pyfunction!(load_settings, m)?)?;
+    m.add_function(wrap_pyfunction!(initialize_debug_tracing, m)?)?;
     #[cfg(feature = "pyo3")]
-    m.add_function(wrap_pyfunction_bound!(log_environment_variables, py)?)?;
+    m.add_function(wrap_pyfunction!(log_environment_variables, m)?)?;
     m.add_class::<ArkUrlSettings>()?;
 
     // ARK URL formatter
