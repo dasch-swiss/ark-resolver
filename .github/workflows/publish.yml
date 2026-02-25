@@ -24,10 +24,25 @@ jobs:
         id: output_docker_image_tag
         run: echo "tag=$(just docker-image-tag | tr -d '\n')" >> "$GITHUB_OUTPUT"
         shell: bash # Explicit for fail-fast behaviour
-      - name: build and publish image to Dockerhub
-        run: |
-          echo ${{ secrets.DOCKER_HUB_TOKEN }} | docker login -u ${{ secrets.DOCKER_USER }} --password-stdin
-          just docker-publish-intel
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USER }}
+          password: ${{ secrets.DOCKER_HUB_TOKEN }}
+      - name: Build and publish image to Dockerhub
+        run: just docker-publish-intel
+      - name: Docker Scout — generate SBOM
+        uses: docker/scout-action@v1
+        with:
+          command: sbom
+          image: registry://daschswiss/ark-resolver:${{ steps.output_docker_image_tag.outputs.tag }}
+          output: sbom.spdx.json
+          organization: daschswiss
+      - name: Upload SBOM as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom
+          path: sbom.spdx.json
 
   trigger-stage-deployment:
     name: Trigger deployment to STAGE
@@ -35,6 +50,18 @@ jobs:
     needs: publish
     if: github.ref == 'refs/heads/main'
     steps:
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USER }}
+          password: ${{ secrets.DOCKER_HUB_TOKEN }}
+      - name: Docker Scout — record staging
+        uses: docker/scout-action@v1
+        with:
+          command: environment
+          image: registry://daschswiss/ark-resolver:${{ needs.publish.outputs.tag }}
+          environment: staging
+          organization: daschswiss
       - name: Trigger deployment to STAGE
         env:
           IMAGE_TAG: ${{ needs.publish.outputs.tag }}
@@ -52,6 +79,18 @@ jobs:
     needs: publish
     if: github.event_name == 'release' && startsWith(github.ref, 'refs/tags')
     steps:
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USER }}
+          password: ${{ secrets.DOCKER_HUB_TOKEN }}
+      - name: Docker Scout — record production
+        uses: docker/scout-action@v1
+        with:
+          command: environment
+          image: registry://daschswiss/ark-resolver:${{ needs.publish.outputs.tag }}
+          environment: production
+          organization: daschswiss
       - name: Trigger deployment to PROD
         env:
           IMAGE_TAG: ${{ needs.publish.outputs.tag }}
