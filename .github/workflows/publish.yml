@@ -15,10 +15,10 @@ jobs:
     outputs:
       tag: ${{ steps.output_docker_image_tag.outputs.tag }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
-      - uses: extractions/setup-just@v2
+      - uses: extractions/setup-just@v3
       - uses: docker/setup-buildx-action@v3
       - name: Output docker image tag
         id: output_docker_image_tag
@@ -39,7 +39,7 @@ jobs:
           output: sbom.spdx.json
           organization: daschswiss
       - name: Upload SBOM as artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: sbom
           path: sbom.spdx.json
@@ -125,7 +125,7 @@ jobs:
     needs: [publish, trigger-prod-deployment]
     if: github.event_name == 'release' && startsWith(github.ref, 'refs/tags')
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
       - name: Create and finalize Sentry release
