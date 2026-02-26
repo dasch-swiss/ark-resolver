@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.14.1](https://github.com/dasch-swiss/ark-resolver/compare/v1.14.0...v1.14.1) (2026-02-26)
+
+
+### Bug Fixes
+
+* **ci:** Fix PROD deployment by matching publish job condition to release event trigger ([c5c3e6a](https://github.com/dasch-swiss/ark-resolver/commit/c5c3e6aaeee607143dd923b2944bd4220036eeff))
+
 ## [1.14.0](https://github.com/dasch-swiss/ark-resolver/compare/ark_resolver-v1.13.0...ark_resolver-v1.14.0) (2026-02-25)
 
 
