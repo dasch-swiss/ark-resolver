@@ -56,7 +56,7 @@ RUN if [ "$TARGETPLATFORM" = "linux/arm64" ]; then \
     fi
 
 # ---- Setup Python Service ----
-FROM python:3.12-alpine3.23 AS runtime
+FROM python:3.14-alpine3.23 AS runtime
 
 # Install necessary dependencies
 RUN apk add --no-cache \
