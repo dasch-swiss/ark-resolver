@@ -9,23 +9,23 @@ crate-type = ["cdylib", "lib"]
 [dependencies]
 async-trait = "0.1"
 base64 = "0.22.1"
-config = "0.15.8"
+config = "0.15.21"
 pyo3 = { version = "0.24", features = [] }
 regex = "1.9"
 reqwest = { version = "0.12.12", default-features = false, features = ["blocking", "rustls-tls", "stream"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0.139"
 thiserror = "2.0"
-tokio = { version = "1.0", features = ["full"] }
+tokio = { version = "1.50", features = ["full"] }
 tracing = "0.1"
-tracing-subscriber = { version = "0.3.19", features = ["json", "env-filter"] }
+tracing-subscriber = { version = "0.3.23", features = ["json", "env-filter"] }
 url = "2.5"
 urlencoding = "2.1"
-uuid = { version = "1.0", features = ["v5"] }
+uuid = { version = "1.22", features = ["v5"] }
 
 [dev-dependencies]
-assert_cmd = "2.0"
-tempfile = "3.0"
+assert_cmd = "2.2"
+tempfile = "3.27"
 serial_test = "3.0"
 
 [build-dependencies]
