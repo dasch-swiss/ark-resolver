@@ -1,5 +1,5 @@
 # ---- Build Rust Extension for Multi-Arch ----
-FROM rust:1.93.1-alpine3.23 AS builder
+FROM rust:1.94.1-alpine3.23 AS builder
 COPY --from=ghcr.io/astral-sh/uv:0.6.2 /uv /uvx /bin/
 
 RUN \
