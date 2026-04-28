@@ -29,14 +29,14 @@ jobs:
     runs-on: ubuntu-latest
     name: rust fmt
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
-      - uses: astral-sh/setup-uv@v5
+      - uses: astral-sh/setup-uv@v7
         with:
           version: "0.6.2"
           enable-cache: true
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: '3.13'
       - uses: dtolnay/rust-toolchain@stable
@@ -47,14 +47,14 @@ jobs:
     runs-on: ubuntu-latest
     name: rust clippy
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
-      - uses: astral-sh/setup-uv@v5
+      - uses: astral-sh/setup-uv@v7
         with:
           version: "0.6.2"
           enable-cache: true
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: '3.13'
       - uses: dtolnay/rust-toolchain@stable
@@ -65,10 +65,10 @@ jobs:
     runs-on: ubuntu-latest
     name: python checks
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
-      - uses: astral-sh/setup-uv@v5
+      - uses: astral-sh/setup-uv@v7
         with:
           version: "0.6.2"
           enable-cache: true
