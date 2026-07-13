@@ -9,9 +9,9 @@ project, resource, value, v0 salsah, case variants, and timestamps.
 import os
 
 import pytest
+from ark_resolver._rust import load_settings as load_settings_rust  # type: ignore[import-untyped]
 
 from ark_resolver import ark
-from ark_resolver._rust import load_settings as load_settings_rust  # type: ignore[import-untyped]
 from ark_resolver.ark_url import ArkUrlInfo as PythonArkUrlInfo
 from ark_resolver.ark_url_rust import ArkUrlInfo as RustArkUrlInfo
 

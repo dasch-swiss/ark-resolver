@@ -1,6 +1,6 @@
 # ---- Build Rust Extension for Multi-Arch ----
-FROM rust:1.93.1-alpine3.23 AS builder
-COPY --from=ghcr.io/astral-sh/uv:0.6.2 /uv /uvx /bin/
+FROM rust:1.97.0-alpine3.23 AS builder
+COPY --from=ghcr.io/astral-sh/uv:0.11.28 /uv /uvx /bin/
 
 RUN \
     apk add --no-cache \

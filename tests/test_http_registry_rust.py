@@ -6,8 +6,8 @@ Tests the actual GitHub URL that was failing in staging
 import os
 
 import pytest
-
 from ark_resolver._rust import load_settings as load_settings_rust
+
 from ark_resolver.ark import load_settings as load_settings_python
 
 
@@ -140,7 +140,7 @@ class TestHttpRegistryRust:
         os.environ["ARK_REGISTRY"] = bad_url
 
         try:
-            with pytest.raises(OSError, match="Registry file not found|Failed to fetch|HTTP request failed") as exc_info:
+            with pytest.raises(OSError, match=r"Registry file not found|Failed to fetch|HTTP request failed") as exc_info:
                 load_settings_rust()
 
             # Should get a reasonable error message

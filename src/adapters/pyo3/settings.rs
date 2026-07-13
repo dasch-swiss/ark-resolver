@@ -11,7 +11,9 @@ use crate::core::use_cases::settings_manager::{
 };
 
 /// Python wrapper for project configuration
-#[pyclass]
+// pyo3 0.29 makes the `FromPyObject` derive for Clone pyclasses opt-in; opt in
+// explicitly to preserve the auto-derived extraction behavior from pyo3 0.24.
+#[pyclass(from_py_object)]
 #[derive(Debug, Clone)]
 pub struct ConfigWrapper {
     config: HashMap<String, String>,
@@ -49,7 +51,9 @@ impl From<HashMap<String, String>> for ConfigWrapper {
 }
 
 /// Python wrapper for ARK URL settings using hexagonal architecture
-#[pyclass]
+// pyo3 0.29 makes the `FromPyObject` derive for Clone pyclasses opt-in; ArkUrlSettings
+// is passed back into Rust (e.g. `ArkUrlInfo(settings, ark_id)`), so it must remain extractable.
+#[pyclass(from_py_object)]
 #[derive(Debug, Clone)]
 pub struct ArkUrlSettings {
     settings: SettingsWithRegexes,
