@@ -1,9 +1,9 @@
 import os
 
 import pytest
+from ark_resolver._rust import load_settings  # type: ignore[import-untyped]
 
 from ark_resolver import ark_url_rust
-from ark_resolver._rust import load_settings  # type: ignore[import-untyped]
 
 
 @pytest.fixture(scope="module")

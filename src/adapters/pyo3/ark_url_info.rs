@@ -23,7 +23,9 @@ use uuid::Uuid;
 pyo3::import_exception!(ark_resolver.ark_url, ArkUrlException);
 
 /// PyO3 wrapper for ArkUrlInfo providing Python compatibility.
-#[pyclass(name = "ArkUrlInfo")]
+// pyo3 0.29 makes the `FromPyObject` derive for Clone pyclasses opt-in; opt in
+// explicitly to preserve the auto-derived extraction behavior from pyo3 0.24.
+#[pyclass(name = "ArkUrlInfo", from_py_object)]
 #[derive(Debug, Clone)]
 pub struct PyArkUrlInfo {
     inner: RustArkUrlInfo,

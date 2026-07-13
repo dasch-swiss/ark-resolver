@@ -34,7 +34,7 @@ jobs:
           fetch-depth: 0
       - uses: astral-sh/setup-uv@v5
         with:
-          version: "0.6.2"
+          version: "0.11.28"
           enable-cache: true
       - uses: actions/setup-python@v5
         with:
@@ -52,7 +52,7 @@ jobs:
           fetch-depth: 0
       - uses: astral-sh/setup-uv@v5
         with:
-          version: "0.6.2"
+          version: "0.11.28"
           enable-cache: true
       - uses: actions/setup-python@v5
         with:
@@ -70,7 +70,7 @@ jobs:
           fetch-depth: 0
       - uses: astral-sh/setup-uv@v5
         with:
-          version: "0.6.2"
+          version: "0.11.28"
           enable-cache: true
       - name: Install just
         uses: taiki-e/install-action@just
