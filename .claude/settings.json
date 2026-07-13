@@ -13,9 +13,7 @@
       "Bash(just pycheck:*)",
       "Bash(cargo test:*)",
       "Bash(cargo check:*)",
-      "Bash(cargo clippy:*)",
-      "mcp__linear__get_project",
-      "mcp__linear__list_issues",
+      "Bash(cargo clippy:*)"
     ],
     "deny": []
   }
