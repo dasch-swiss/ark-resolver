@@ -29,7 +29,6 @@ from sanic import Request
 from sanic import Sanic
 from sanic import response
 from sanic.log import logger
-from sanic_cors import CORS  # type: ignore[import-untyped]
 
 import ark_resolver.check_digit as check_digit_py
 import ark_resolver.routes.convert
@@ -49,12 +48,28 @@ from ark_resolver.tracing import tracer
 Sanic.start_method = "fork"
 
 app = Sanic("ark_resolver")
-CORS(app)
 
 # Register routes
 app.blueprint(ark_resolver.routes.health.health_bp)
 app.blueprint(ark_resolver.routes.convert.convert_bp)
 app.blueprint(ark_resolver.routes.redirect.redirect_bp)
+
+
+@app.on_response
+async def add_cors_headers(_: Request, res: HTTPResponse) -> None:
+    """
+    Allow any origin to read resolver responses.
+
+    A static "*" rather than reflecting the request's Origin: every route is a public GET
+    and no credentials are involved, so there is no allowlist to scope. Reflecting an
+    origin is only ever needed together with credentials, which would itself be a defect
+    here -- and "*" makes that combination impossible rather than merely unused.
+
+    Replaces sanic-cors, which was removed: it contributed nothing beyond this header for
+    GET-only routes (simple cross-origin GETs are not preflighted), while carrying
+    PYSEC-2026-3539 with no published fix.
+    """
+    res.headers["Access-Control-Allow-Origin"] = "*"
 
 
 @app.before_server_start
