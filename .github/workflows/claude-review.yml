@@ -27,15 +27,25 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # Gate on author_association (DEV-6884): comment-triggered workflows always run from the
+  # default branch with secrets available, and the repo setting "Require approval for all
+  # external contributors" gates only fork pull_request events — not comment events — so
+  # without this gate any GitHub account able to comment could spend the org's API key.
+  # CONTRIBUTOR is deliberately outside the allowlist; a member can trigger on an outside
+  # contributor's behalf. A blocked trigger skips silently, like a non-matching comment.
+  # workflow_dispatch needs no check: triggering it already requires write access.
   claude:
     if: |
       github.event_name == 'workflow_dispatch' ||
       (github.event_name == 'issue_comment' && github.event.issue.pull_request &&
-        contains(github.event.comment.body, '@claude')) ||
+        contains(github.event.comment.body, '@claude') &&
+        contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association)) ||
       (github.event_name == 'pull_request_review_comment' &&
-        contains(github.event.comment.body, '@claude')) ||
+        contains(github.event.comment.body, '@claude') &&
+        contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association)) ||
       (github.event_name == 'pull_request_review' &&
-        contains(github.event.review.body, '@claude'))
+        contains(github.event.review.body, '@claude') &&
+        contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.review.author_association))
     runs-on: ubuntu-latest
     permissions:
       contents: read
