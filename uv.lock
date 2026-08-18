@@ -51,8 +51,6 @@ dependencies = [
     { name = "requests" },
     { name = "rfc3986" },
     { name = "sanic" },
-    { name = "sanic-cors" },
-    { name = "sanic-plugins-framework" },
     { name = "sanic-routing" },
     { name = "sentry-sdk", extra = ["opentelemetry"] },
     { name = "sniffio" },
@@ -96,8 +94,6 @@ requires-dist = [
     { name = "requests" },
     { name = "rfc3986" },
     { name = "sanic" },
-    { name = "sanic-cors" },
-    { name = "sanic-plugins-framework" },
     { name = "sanic-routing" },
     { name = "sentry-sdk", extras = ["opentelemetry"] },
     { name = "sniffio" },
@@ -939,32 +935,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/27/e2/a902611ef48d0cf942093ad297d079f76ec46133a7dc8d1181aa1ab94bd2/sanic-25.12.1.tar.gz", hash = "sha256:7b51bf608e4030f06a6c002cd08fed2872e4936527e63c9a8a97d5cd06a2b47f", size = 375519, upload-time = "2026-05-31T19:45:46.988Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/9e/91/5ecd9a91374a7b2831cf183357ceeb609fdfc8b390adb5cac90a261fe1f8/sanic-25.12.1-py3-none-any.whl", hash = "sha256:3874f1fe0442e3b12ce4a3f6524f676d5d3c43839c6a4967d1b82fd8db53c0f3", size = 258466, upload-time = "2026-05-31T19:45:45.27Z" },
-]
-
-[[package]]
-name = "sanic-cors"
-version = "2.2.0"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "packaging" },
-    { name = "sanic" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/b2/b8/fd98a4842e54c1fb3d7b7bc85abbc6d76f79871763eb455a391ddfdb934d/Sanic-Cors-2.2.0.tar.gz", hash = "sha256:f8d7515da4c8b837871d422c66314c4b5704396a78894b59c50e26aa72a95873", size = 33670, upload-time = "2022-10-07T02:04:21.03Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/19/bb/749505a2b2580321d778e485bf6dd61fabeb0dc2294205a647242e832b74/Sanic_Cors-2.2.0-py2.py3-none-any.whl", hash = "sha256:c3b133ff1f0bb609a53db35f727f5c371dc4ebeb6be4cc2c37c19dd8b9301115", size = 18336, upload-time = "2022-10-07T02:04:18.424Z" },
-]
-
-[[package]]
-name = "sanic-plugins-framework"
-version = "0.9.4.post1"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "sanic" },
-    { name = "setuptools" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/b8/b1/a870ed90dda230f314cc3ca5ad20e84ff055bc5ed2793dfd2655f5c6ddd3/Sanic-Plugins-Framework-0.9.4.post1.tar.gz", hash = "sha256:eea5b874c15255467c21acfb2e8b16b0e6bff5d11dffed698c63b2e759f3ec50", size = 23753, upload-time = "2020-10-20T02:33:16.149Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/ca/f9/8b2dfad92df5fc37fb764c91b8a45754119ad6f3f9d289188d2bd6f6252f/Sanic_Plugins_Framework-0.9.4.post1-py2.py3-none-any.whl", hash = "sha256:958a648a891526022c33ef20f041782a211ad8bfe7efa21ec9626b9ac59ac6e8", size = 23391, upload-time = "2020-10-20T02:33:14.764Z" },
 ]
 
 [[package]]
