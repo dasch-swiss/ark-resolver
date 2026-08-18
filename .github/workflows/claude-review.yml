@@ -1,9 +1,9 @@
 # Copyright © 2015 - 2025 Swiss National Data and Service Center for the Humanities and/or DaSCH Service Platform contributors.
 # SPDX-License-Identifier: Apache-2.0
 
-# On-demand Claude Code AI assistance for pull requests.
-# Trigger by mentioning @claude in any PR comment, review comment, or review body.
-# Can also be triggered manually from the Actions tab with a PR number.
+# Claude Code on pull requests.
+#   '@claude review' on a PR (or a manual workflow_dispatch) runs the dedicated code review.
+#   '@claude <anything else>' runs the general assistant.
 
 name: claude-review
 
@@ -21,31 +21,185 @@ on:
         required: true
         type: number
 
-# One review at a time per PR; queue (do not cancel) concurrent requests
+# One run at a time per PR; queue (do not cancel) concurrent requests
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.issue.number || github.event.pull_request.number || github.event.inputs.pr_number || github.run_id }}
   cancel-in-progress: false
 
 jobs:
-  # Gate on author_association (DEV-6884): comment-triggered workflows always run from the
-  # default branch with secrets available, and the repo setting "Require approval for all
-  # external contributors" gates only fork pull_request events — not comment events — so
-  # without this gate any GitHub account able to comment could spend the org's API key.
-  # CONTRIBUTOR is deliberately outside the allowlist; a member can trigger on an outside
-  # contributor's behalf. A blocked trigger skips silently, like a non-matching comment.
-  # workflow_dispatch needs no check: triggering it already requires write access.
-  claude:
+  # Job 1: Dedicated code review with a predefined prompt, triggered by '@claude review' on a PR
+  # or by a manual workflow_dispatch.
+  #
+  # Split out of the former single 'claude' job so the review can carry the configuration
+  # validated by the 2026-08 review benchmark without also constraining the general assistant.
+  #
+  # Both jobs gate on author_association (DEV-6884): comment-triggered workflows always run from
+  # the default branch with secrets available, and "Require approval for all external
+  # contributors" gates only fork pull_request events — not comment events. CONTRIBUTOR is
+  # deliberately outside the allowlist; a member can trigger on an outside contributor's behalf.
+  # The check sits inside each trigger arm because issue_comment payloads also carry
+  # issue.author_association. workflow_dispatch needs no check: it already requires write access.
+  # A blocked trigger skips silently, like a non-matching comment.
+  claude-code-review:
     if: |
       github.event_name == 'workflow_dispatch' ||
-      (github.event_name == 'issue_comment' && github.event.issue.pull_request &&
-        contains(github.event.comment.body, '@claude') &&
-        contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association)) ||
-      (github.event_name == 'pull_request_review_comment' &&
-        contains(github.event.comment.body, '@claude') &&
-        contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association)) ||
-      (github.event_name == 'pull_request_review' &&
-        contains(github.event.review.body, '@claude') &&
-        contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.review.author_association))
+      (
+        (github.event.issue.pull_request || github.event.pull_request) &&
+        (contains(github.event.comment.body, '@claude review') || contains(github.event.review.body, '@claude review')) &&
+        (
+          contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association) ||
+          contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.review.author_association)
+        )
+      )
+    runs-on: ubuntu-latest
+    # 30 minutes: the action writes its result only at the end, so a run killed by the timeout
+    # yields no review at all. A generous ceiling costs nothing on runs that finish early.
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      pull-requests: write
+      id-token: write
+      actions: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Run Claude Code Review
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          # --model / --effort / --allowed-tools: from the 2026-08 review benchmark — 157 runs
+          # against 15 commits with known answers in dsp-api and dsp-app, shipped there as
+          # dasch-swiss/dsp-api#4252 and dasch-swiss/dsp-app#3336. The tool list is aligned with
+          # the one validated there, because what a review has to execute is language-
+          # independent: read the diff, read the changed files in full, search the repo, fetch an
+          # external specification, post the review. Only the prompt is repo-specific.
+          #
+          # Model: Opus 5 caught 6/6 planted bugs with zero blocking false positives, while
+          # Opus 4.8 caught 0/6 at the same list price (claude-opus-4-6 is older still).
+          # Effort: medium — detection was identical to high on all nine commits run at both
+          # levels, high's only distinguishing behaviour was holding one clean diff on a real but
+          # non-blocking finding, and medium is ~16% cheaper.
+          #
+          # --allowed-tools is the complete resolved set; the action adds nothing to it, so Read
+          # has to be granted explicitly or "read the changed files in full" cannot be honoured,
+          # and WebFetch/WebSearch are what make the verification clause executable at all.
+          #
+          # --setting-sources user: do NOT load this repo's .claude/settings.json. It is a
+          # local-developer convenience list (ls, find, rg, uv run, just, cargo) that the action
+          # would otherwise union into this job. The review's tool set is defined on this line
+          # and nowhere else.
+          #
+          # max_turns is deliberately NOT set on the review. The previous value of 15 was below
+          # what a review of this kind actually takes — measured runs in the benchmark used 25 to
+          # 61 turns — so it truncated the run before the review was written, and because the
+          # action emits its result only at the end, a truncated run posts nothing at all. If a
+          # hard cost ceiling is wanted here, --max-budget-usd is the right lever: unlike a turn
+          # cap it cannot cut a run off before it posts.
+          claude_args: '--model claude-opus-5 --effort medium --setting-sources user --allowed-tools "Read,Grep,Glob,WebSearch,WebFetch,Bash(gh issue view:*),Bash(gh search:*),Bash(gh issue list:*),Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr list:*)"'
+          prompt: |
+            REPO: ${{ github.repository }}
+            PR NUMBER: ${{ github.event.issue.number || github.event.pull_request.number || github.event.inputs.pr_number }}
+
+            Please review this pull request and provide feedback on:
+            - Code quality and correctness
+            - Security concerns
+            - Adherence to the Python-to-Rust migration patterns documented in CLAUDE.md
+            - Correct use of the `BR: ` prefix for business-rule comments (CLAUDE.md)
+            - Check-digit validation logic
+            - Comparative test coverage between the Python and Rust implementations
+
+            Report issues **only in lines this PR changed** — but read whatever you need to
+            decide whether an issue is real: the changed files in full (diff hunks alone give
+            too little context), their callers, their tests, and the counterpart implementation
+            in the other language. Reading widely is fine; reporting widely is not.
+            Do **not** make any code changes, run commands, or push code; only provide analysis
+            and suggestions.
+
+            Before reporting an issue, name the concrete input or state that triggers it and the
+            wrong output, crash, or regression that results. For a resolver, prefer a concrete
+            identifier or URL as the input. Drop any issue where you cannot; where the
+            justification is only "more robust" or "best practice"; or where a code comment
+            explains it as a deliberate decision (read the comments before flagging, including
+            the `BR: ` ones — they state intended behaviour). If you checked a concern and could
+            not prove it but still believe it matters, report it as Suspected rather than
+            dropping it or inflating its severity. A few defensible issues beat many speculative
+            ones, and reporting no issues at all is a valid and useful outcome.
+
+            Do not assert how a library, a specification or an external service behaves from
+            memory — in either direction. When the diff constructs or parses a value that some
+            other system interprets (an ARK identifier or its NAAN and name parts, a check
+            digit, a resolver URL or redirect target, a path or query template, a regular
+            expression over identifiers, a media-type string), you must check the constructed
+            form against that system's own specification before you either report it **or clear
+            it**. Well-formed is not the same as accepted: a form can be valid syntax, and
+            listed as supported, and still be rejected or silently mis-resolved at runtime
+            because of a precondition attached to that form — a permitted character set or
+            length, a normalisation rule, a limit that depends on the input data rather than on
+            the string, a flag or prefix that must be present for the operation to be allowed.
+            So do not stop at "the syntax is valid": find the preconditions the specification
+            attaches to the form you built, and for each one name the input that would violate it
+            or state why none can. Confirm against the versions this repo builds with
+            (`Cargo.lock` for Rust, `uv.lock` for Python) or the specification itself via web
+            search. If you cannot complete that check, say so explicitly and grade the line
+            Suspected — do not declare it correct.
+
+            Where a change touches only one of the two implementations, say explicitly whether
+            the other one still agrees, and name the input that would show a divergence.
+
+            Structure your review as follows:
+            1. Summary of PR changes (one paragraph)
+            2. Identified issues, blocking ones first. For each: `file:line`, the trigger and
+               wrong outcome you named above, how you verified the mechanism, and a suggested
+               fix. Mark each issue Blocking or Non-blocking. This is independent of how bad the
+               outcome is:
+              - Blocking: you established, from the code or an authoritative external source,
+                that a reachable input or state produces a wrong outcome — an error or panic on a
+                normal path, an identifier that resolves to the wrong target or fails to resolve,
+                incorrect data written or returned, access incorrectly granted or denied, a
+                divergence between the Python and Rust implementations, or a deterministic CI
+                failure. "Reachable" means you can name the input. It does **not** require the
+                feature to stop working, and it does **not** require the outcome to be severe.
+              - Non-blocking: everything else — style, naming, missing tests, performance that is
+                not a regression, and anything you could not verify.
+              - Suspected: a concern you could not prove. Always Non-blocking. State what would
+                confirm or refute it.
+              Separately, grade impact High, Medium or Low, for triage ordering only. Impact
+              never determines Blocking.
+            3. Clear statement whether the PR is ready to merge: "not ready" if any issue is
+               Blocking, otherwise "ready", and state the number of blocking issues. Do not
+               override this in prose — if you find yourself arguing that a Non-blocking issue
+               should hold the PR, it is Blocking; re-mark it.
+
+            Be constructive, precise, and concise. Avoid verbose explanations unless necessary
+            for clarity. Use the repository's CLAUDE.md for conventions and repository-specific
+            best practices.
+            Use `gh pr comment` to leave your review as a comment on the PR.
+
+  # Job 2: General Claude assistant, triggered by '@claude <PROMPT>' on a PR. The negated clause
+  # is exactly job 1's comment condition, so the two jobs are mutually exclusive by construction.
+  # Deliberately unchanged apart from the model: it keeps its permissions, its full-history
+  # checkout, its unrestricted tool set and its turn cap. None of the benchmark's findings are
+  # about this arm.
+  claude-general:
+    if: |
+      (
+        (github.event_name == 'issue_comment' && github.event.issue.pull_request &&
+          contains(github.event.comment.body, '@claude') &&
+          contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association)) ||
+        (github.event_name == 'pull_request_review_comment' &&
+          contains(github.event.comment.body, '@claude') &&
+          contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association)) ||
+        (github.event_name == 'pull_request_review' &&
+          contains(github.event.review.body, '@claude') &&
+          contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.review.author_association))
+      ) &&
+      !(
+        (github.event.issue.pull_request || github.event.pull_request) &&
+        (contains(github.event.comment.body, '@claude review') || contains(github.event.review.body, '@claude review'))
+      )
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -63,13 +217,5 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-
-          prompt: >-
-            ${{ github.event_name == 'workflow_dispatch' &&
-            format(
-              'Review PR #{0}. Analyze the changes for: (1) code quality and correctness, (2) security issues, (3) adherence to the Python-to-Rust migration patterns documented in CLAUDE.md, (4) proper use of BR: prefix for business rule comments, (5) check digit validation logic, and (6) comparative test coverage between Python and Rust implementations.',
-              github.event.inputs.pr_number
-            ) || '' }}
-
-          model: claude-opus-4-6
+          claude_args: "--model claude-opus-5"
           max_turns: "15"
