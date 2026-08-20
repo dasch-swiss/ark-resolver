@@ -1,5 +1,26 @@
 # Changelog
 
+## [1.14.2](https://github.com/dasch-swiss/ark-resolver/compare/v1.14.1...v1.14.2) (2026-08-20)
+
+
+### Maintenances
+
+* **ci:** Drop actions: read from the review job ([2894888](https://github.com/dasch-swiss/ark-resolver/commit/28948883e9324c4b0eaf637898221940470af6d5))
+* **ci:** Split out a review job with the benchmarked gate, model, effort and tools ([d7eb745](https://github.com/dasch-swiss/ark-resolver/commit/d7eb745169df03d46820cf9d2a6cc27d0fd0dcec))
+
+
+### Documentation
+
+* **ci:** State the phase-1 model evidence precisely ([a70d1e1](https://github.com/dasch-swiss/ark-resolver/commit/a70d1e1f4b7b505f6f8d9e0f3316cb16c40ffe5d))
+
+
+### Bug Fixes
+
+* **ci:** Gate the Claude workflow to org members (DEV-6884) ([d5d14cd](https://github.com/dasch-swiss/ark-resolver/commit/d5d14cd78f51281aa3e302f4631bfa5266619af8))
+* **deps:** Drop sanic-cors and set the CORS header directly (PYSEC-2026-3539) ([415a041](https://github.com/dasch-swiss/ark-resolver/commit/415a041bf7ed5a374b121d2cf447400b025a1865))
+* **deps:** Upgrade dependencies to resolve security advisories ([2c75c39](https://github.com/dasch-swiss/ark-resolver/commit/2c75c39a78645702b1eb39888cb028af7286390a))
+* Repair malformed .claude/settings.json ([6401bea](https://github.com/dasch-swiss/ark-resolver/commit/6401beaed6f6f3011225eae0a3274240c497f85f))
+
 ## [1.14.1](https://github.com/dasch-swiss/ark-resolver/compare/v1.14.0...v1.14.1) (2026-02-26)
 
 
