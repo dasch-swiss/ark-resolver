@@ -23,7 +23,9 @@ from ark_resolver.tracing import tracer
 redirect_bp = Blueprint("redirect", url_prefix="")
 
 
-@redirect_bp.get("/<path:path>")
+# BR: HEAD resolves exactly like GET. FAIR assessors and link checkers probe an identifier
+# with HEAD, and FAIR Signposting requires the same answer on both.
+@redirect_bp.route("/<path:path>", methods=["GET", "HEAD"])
 async def catch_all(_: Request, path: str = "") -> HTTPResponse:
     """
     Catch all URL. Tries to redirect the given ARK ID.
