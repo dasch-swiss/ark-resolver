@@ -232,7 +232,7 @@ mod tests {
 
     #[test]
     fn test_processor_default() {
-        let processor = ArkUuidProcessor::default();
+        let processor = ArkUuidProcessor;
 
         let uuid = "0001-12345678-abcd-ef12-3456-789012345678";
         let result = processor.add_check_digit_and_escape(uuid).unwrap();

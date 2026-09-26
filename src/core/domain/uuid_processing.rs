@@ -233,7 +233,7 @@ mod tests {
             );
 
             // Our Rust implementation should be able to process Python-generated escaped UUIDs
-            let recovered = unescape_and_validate_uuid("ark:/test", &python_escaped).unwrap();
+            let recovered = unescape_and_validate_uuid("ark:/test", python_escaped).unwrap();
             assert_eq!(
                 recovered, original_uuid,
                 "Rust should recover Python-escaped UUID: {}",

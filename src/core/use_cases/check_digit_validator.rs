@@ -219,7 +219,7 @@ mod tests {
 
     #[test]
     fn test_validator_default() {
-        let validator = CheckDigitValidator::default();
+        let validator = CheckDigitValidator;
         assert!(validator.is_valid("cmfk1DMHRBiR4-_6HXpEFAn").unwrap());
     }
 }

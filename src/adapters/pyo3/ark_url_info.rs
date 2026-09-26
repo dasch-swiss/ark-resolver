@@ -298,7 +298,6 @@ mod tests {
     fn test_ark_url_parsing_adapter() {
         // Test that the adapter structure is correct
         // FIXME: We can't easily test with real settings without configuration files
-        assert!(true);
     }
 
     #[test]
