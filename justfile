@@ -74,8 +74,8 @@ build: install
     uv run maturin develop
 
 # Run ark-resolver Python unit tests which require Rust code
-pytest: build
-    uv run pytest
+pytest:
+    bazel test //tests/...
 
 # Run ark-resolver locally
 run: build

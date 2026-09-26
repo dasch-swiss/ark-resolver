@@ -1,15 +1,21 @@
+load("@rules_python//python:py_binary.bzl", "py_binary")
+load("@rules_python//python:py_library.bzl", "py_library")
 load("@rules_rust_pyo3//:defs.bzl", "pyo3_extension")
 
 # pip.parse's `uv_lock` attribute and crate.from_specs' `cargo_lockfile`
 # attribute both read their file as a label, so the root package needs a
-# BUILD file exporting it. A later phase adds the `ark_resolver` py_library
-# to this same file.
+# BUILD file exporting it.
 exports_files(
     ["uv.lock", "Cargo.Bazel.lock"],
     # Root package defaults to private per sipi's visibility convention; the
     # module extension resolves this label by path, not a BUILD dependency
     # edge, so visibility does not need to be widened for it.
     visibility = ["//visibility:private"],
+)
+
+exports_files(
+    ["pyproject.toml"],
+    visibility = ["//tests:__pkg__"],
 )
 
 # module_name "ark_resolver._rust" in the ROOT package places the .so at
@@ -21,6 +27,8 @@ pyo3_extension(
     crate_root = "//src:lib.rs",
     crate_name = "ark_resolver",
     crate_features = ["pyo3"],
+    # No "@crates//:pyo3" entry: pyo3_extension injects the registered
+    # rust_pyo3_toolchain's pyo3 crate into every extension automatically.
     deps = [
         "@crates//:base64",
         "@crates//:config",
@@ -43,5 +51,33 @@ pyo3_extension(
     stubs = False,
     # The default "opt" transition puts the .so outside bazel-bin.
     compilation_mode = "current",
+    visibility = ["//visibility:private"],
+)
+
+py_library(
+    name = "ark_resolver",
+    # The Python tree is a package, not a fixed source list, so new modules
+    # under ark_resolver/ pick up the glob without a BUILD edit.
+    srcs = glob(["ark_resolver/**/*.py"]),
+    deps = [
+        ":_rust",
+        "@pypi//opentelemetry_api",
+        "@pypi//opentelemetry_sdk",
+        "@pypi//requests",
+        "@pypi//sanic",
+        "@pypi//sentry_sdk",
+        # Sanic's optional uvloop/httptools acceleration is not imported
+        # directly but is required at runtime, matching the Docker image.
+        "@pypi//httptools",
+        "@pypi//uvloop",
+    ],
+    visibility = ["//tests:__pkg__"],
+)
+
+py_binary(
+    name = "ark_resolver_bin",
+    srcs = ["ark_resolver/ark.py"],
+    main = "ark_resolver/ark.py",
+    deps = [":ark_resolver"],
     visibility = ["//visibility:private"],
 )
