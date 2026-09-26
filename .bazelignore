@@ -1,0 +1,8 @@
+# Bazel ignores any path listed here when walking the workspace for BUILD
+# files (see https://bazel.build/run/build-control#bazelignore).
+.venv
+target
+.idea
+.vscode
+.claude
+.direnv

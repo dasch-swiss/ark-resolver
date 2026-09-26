@@ -1,0 +1,264 @@
+"""ARK Resolver — DSP persistent-identifier resolution service.
+
+Bazel 9.1.0 module. Bazel is the build system; Nix (flake.nix) provisions the
+dev shell only (bazelisk, just, uv, cargo-audit) — no host cargo/rustc/python.
+"""
+
+module(
+    name = "ark_resolver",
+    version = "0.0.0",  # BR: the real version lives in version.txt, stamped at build time
+    compatibility_level = 1,
+)
+
+# ── Foundational rules ────────────────────────────────────────────────────
+bazel_dep(name = "platforms", version = "1.1.0")
+bazel_dep(name = "rules_cc", version = "0.2.19")
+
+# `aspect_bazel_lib` provides `expand_template` with `stamp_substitutions=`,
+# used by a later phase to bake STABLE_* values from tools/workspace_status.sh
+# into build/image metadata.
+bazel_dep(name = "aspect_bazel_lib", version = "2.22.5")
+
+# ── LLVM toolchain — hermetic ─────────────────────────────────────────────
+# `llvm` (hermeticbuild/hermetic-llvm) registers a fully-hermetic LLVM
+# toolchain, mirroring sipi's provider (sipi/MODULE.bazel:168). `ring`
+# (pulled in transitively via reqwest's rustls-tls) compiles C in its cargo
+# build script; without a registered hermetic cc toolchain, that build script
+# silently falls back to the host compiler and produces non-hermetic
+# artifacts.
+bazel_dep(name = "llvm", version = "0.8.18")
+
+# ── Rust toolchain + Crate Universe ────────────────────────────────────────
+bazel_dep(name = "rules_rust", version = "0.70.0")
+
+# `rules_rust_pyo3` is the extensions/pyo3 sub-module of the rules_rust
+# release train, kept at the same 0.70.0 tag. Its toolchain is wired up (and
+# actually registered) in a later phase, alongside the PyO3 extension target;
+# declared here now so the module graph is stable before that lands.
+bazel_dep(name = "rules_rust_pyo3", version = "0.70.0")
+
+# `cargo_build_script` re-invokes the cc_toolchain's compile flags from a build
+# script's runfiles cwd (not the execroot), so `_pwd_flags` in rules_rust rewrites
+# execroot-relative toolchain flags (`--sysroot=`, `-isystem`, `-L`, `-B`,
+# `-resource-dir`) to `${pwd}/…`. It omits `-isysroot`, which hermetic-llvm's
+# macOS toolchain emits alongside `--sysroot=`. The relative `-isysroot
+# external/…/sysroot` then can't resolve from the runfiles cwd, so cc-rs
+# crates (`ring`, pulled in by reqwest's rustls-tls) fail with
+# `'TargetConditionals.h' file not found` on darwin. The patch adds
+# `-isysroot` to `_pwd_flags`, mirroring sipi's own override
+# (sipi/MODULE.bazel:481-497). Drop if/when fixed upstream (rules_rust > 0.70.0).
+single_version_override(
+    module_name = "rules_rust",
+    patch_strip = 1,
+    patches = ["//bazel/patches:rules_rust_cargo_build_script_isysroot.patch"],
+)
+
+bazel_dep(name = "rules_python", version = "2.3.4")  # new to this repo; latest BCR release tested against Bazel 9.x
+
+bazel_dep(name = "rules_oci", version = "2.3.0")
+
+# 0.10.9 (newer than sipi's 0.10.5) fixes `preserve_symlinks` under
+# transitioned configs — needed once a later phase assembles OCI image layers.
+bazel_dep(name = "tar.bzl", version = "0.10.9")
+
+# Forces the MVS-resolved version up from whatever a transitive dep (llvm /
+# rules_oci) would otherwise pull. Needed on macOS with Xcode 27: the
+# lower, transitively-resolved 1.24.2 fails building `gawk` with an
+# absolute-SDK-path error.
+bazel_dep(name = "apple_support", version = "2.9.1")
+
+# hermeticbuild/hermetic-llvm is zero-sysroot: it links each Linux target
+# against per-version glibc stubs it generates itself and ships its own
+# libc++/compiler-rt, so there are no sysroot tarballs to pin and no
+# host-glibc leakage into Bazel-driven compiles. The macOS SDK is fetched
+# hermetically from Apple's CDN, so darwin needs no host Xcode CLT.
+llvm = use_extension("@llvm//extensions:llvm.bzl", "llvm")
+llvm.version(llvm_version = "22.1.7")
+use_repo(llvm, "llvm-project")
+
+# `exec` = the hosts we build ON; `target` = the platforms we build FOR.
+# macos-aarch64 is local dev; linux-x86_64 is the published image; linux-aarch64
+# is CI. Each is declared as both exec and target so a native runner for any
+# of the three compiles and links without falling back to an undeclared host
+# toolchain (which would compile `-stdlib=libc++` but never link the libc++
+# runtime).
+toolchain = use_extension("@llvm//extensions:toolchain.bzl", "toolchain")
+toolchain.exec(
+    arch = "aarch64",
+    os = "macos",
+)
+toolchain.exec(
+    arch = "x86_64",
+    os = "linux",
+)
+toolchain.exec(
+    arch = "aarch64",
+    os = "linux",
+)
+toolchain.target(
+    arch = "aarch64",
+    os = "macos",
+)
+toolchain.target(
+    arch = "x86_64",
+    os = "linux",
+)
+toolchain.target(
+    arch = "aarch64",
+    os = "linux",
+)
+use_repo(toolchain, "llvm_toolchains")
+
+# **Registration ordering is load-bearing.** `cargo_build_script` rules (run
+# for every `*-sys` crate) resolve `cc` from the registered cc_toolchain at
+# materialisation time. This MUST be registered before the Rust toolchain
+# extension below — otherwise build scripts (e.g. ring's) silently pick up
+# the host `cc` and produce non-hermetic artifacts.
+register_toolchains("@llvm_toolchains//:all")
+
+rust = use_extension("@rules_rust//rust:extensions.bzl", "rust")
+rust.toolchain(
+    edition = "2021",
+    versions = ["1.89.0"],
+    # Cross-compile targets alongside the native host triple, mirroring the
+    # three (os, cpu) pairs declared above for the LLVM toolchain.
+    extra_target_triples = [
+        "x86_64-unknown-linux-gnu",
+        "aarch64-unknown-linux-gnu",
+        "aarch64-apple-darwin",
+    ],
+)
+use_repo(rust, "rust_toolchains")
+
+register_toolchains("@rust_toolchains//:all")
+
+# ── Python toolchain — hermetic CPython ────────────────────────────────────
+python = use_extension("@rules_python//python/extensions:python.bzl", "python")
+python.toolchain(
+    python_version = "3.12",  # explicit: rules_python 2.4 changes the default to 3.14
+    is_default = True,
+)
+
+# `uv.lock` is the single Python lock (dev deps included); a spike confirmed
+# uv_lock resolves the Sanic/uvloop/httptools wheels for both host and Linux
+# targets directly, so pip.parse reads it rather than a separate
+# requirements.txt.
+pip = use_extension("@rules_python//python/extensions:pip.bzl", "pip")
+pip.parse(
+    # rules_python 2.3.4 reserves the hub name "pypi" and warns it will be
+    # renamed to "<module>_pypi" in a future release; naming it explicitly now
+    # avoids a forced rename later. Aliased back to `pypi` below so every
+    # `@pypi//...` label in this repo's BUILD files stays stable.
+    hub_name = "ark_resolver_pypi",
+    python_version = "3.12",
+    uv_lock = "//:uv.lock",
+    # Wheels only, no sdist builds. This also avoids rules_python's macOS
+    # `xcodebuild` SDK probe (only triggered when building an sdist), which
+    # fails in the Nix dev shell (mirrors sipi/MODULE.bazel's pip.parse).
+    download_only = True,
+    target_platforms = ["{os}_{arch}", "linux_x86_64"],  # host wheels for tests, manylinux x86_64 for the image
+)
+use_repo(pip, pypi = "ark_resolver_pypi")
+
+# ── Rust crates via crate_universe `from_specs` ────────────────────────────
+# One `@crates` hub. Direct deps mirror Cargo.toml (kept in the repo until a
+# later phase deletes it), minus `pyo3/extension-module` (see the pyo3 spec
+# below) and minus the `pyo3-build-config` build-dependency (build.rs is not
+# invoked by the Bazel build; pyo3-build-config still reaches the graph
+# transitively via pyo3 itself, hence its annotation further down).
+#
+# Repin via: CARGO_BAZEL_REPIN=workspace bazel fetch @crates//:all
+# Runs `cargo update --workspace` against the existing Cargo.Bazel.lock below,
+# so only crates the specs newly require move. Cargo.Bazel.lock must already
+# exist and be seeded close to Cargo.lock (e.g. `cp Cargo.lock
+# Cargo.Bazel.lock`) before repinning, or every transitive version resolves
+# fresh instead of anchoring to what's already locked.
+crate = use_extension("@rules_rust//crate_universe:extensions.bzl", "crate")
+
+crate.spec(package = "async-trait", version = "0.1")
+crate.spec(package = "base64", version = "0.22.1")
+crate.spec(package = "config", version = "0.15.8")
+
+# No `extension-module` feature: a single `@crates//:pyo3` target serves both
+# the embedded unit tests (which call `Python::initialize()` to run an
+# in-process interpreter) and the extension module built from the same
+# sources; the extension links libpython dynamically instead. Cargo.toml's
+# `features = []` does not disable pyo3's own defaults, so this spec leaves
+# `default_features` on to match.
+crate.spec(package = "pyo3", version = "0.29")
+
+# Required by the rust_pyo3_toolchain a later phase registers.
+crate.spec(package = "pyo3-introspection", version = "0.29")
+crate.spec(package = "regex", version = "1.9")
+
+# `default_features = False` keeps `aws-lc-sys` out of the graph. Its cmake
+# build script panics inside Bazel actions ("rust_wrapper.h is not a
+# directory"). Matches Cargo.toml's own `default-features = false` here.
+crate.spec(package = "reqwest", version = "0.12.12", default_features = False, features = ["blocking", "rustls-tls", "stream"])
+crate.spec(package = "serde", version = "1.0", features = ["derive"])
+crate.spec(package = "serde_json", version = "1.0.139")
+crate.spec(package = "thiserror", version = "2.0")
+
+crate.spec(package = "tokio", version = "1.0", features = ["full"])
+crate.spec(package = "tracing", version = "0.1")
+crate.spec(package = "tracing-subscriber", version = "0.3.19", features = ["json", "env-filter"])
+crate.spec(package = "url", version = "2.5")
+crate.spec(package = "urlencoding", version = "2.1")
+
+crate.spec(package = "uuid", version = "1.0", features = ["v5"])
+
+# [dev-dependencies] in Cargo.toml.
+crate.spec(package = "assert_cmd", version = "2.0")
+crate.spec(package = "tempfile", version = "3.0")
+crate.spec(package = "serial_test", version = "3.0")
+
+# RUSTSEC-2026-0285 floor (PR #187). Security floor on a transitive crate:
+# not a direct dependency and no first-party target references it, so
+# pruning-on-sight does not apply here. Fixes TLS 1.3 handshake messages
+# being accepted across encryption level boundaries; fixed in 0.23.45.
+# Features match what reqwest's own `rustls-tls` feature enables on rustls
+# (its Cargo.toml: `default-features = false, features = ["std", "tls12"]`
+# plus `ring` via its `__rustls-ring` feature) so this floor cannot pull in
+# a feature set reqwest itself never asks for. `default_features = False` is
+# load-bearing, not tidiness: rustls' default feature set selects the
+# `aws-lc-rs` provider, which drags `aws-lc-sys` back into the graph.
+crate.spec(package = "rustls", version = ">=0.23.45", default_features = False, features = ["ring", "std", "tls12"])
+
+# `pyo3-ffi`'s and `pyo3-build-config`'s build scripts each probe a Python
+# interpreter to compute link/config flags. Left unannotated they invoke
+# whatever `python3` is first on PATH (version and location unmanaged by
+# Bazel); wiring the PyO3 toolchain in makes that probe hermetic instead. The
+# canonical (not apparent) repo name is required here because crate repos
+# cannot resolve `@rules_rust_pyo3` as an apparent name.
+crate.annotation(
+    build_script_data = ["@@rules_rust_pyo3+//:current_pyo3_toolchain"],
+    build_script_env = {
+        "PYO3_CROSS": "$(PYO3_CROSS)",
+        "PYO3_CROSS_LIB_DIR": "$(PYO3_CROSS_LIB_DIR)",
+        "PYO3_CROSS_PYTHON_IMPLEMENTATION": "$(PYO3_CROSS_PYTHON_IMPLEMENTATION)",
+        "PYO3_CROSS_PYTHON_VERSION": "$(PYO3_CROSS_PYTHON_VERSION)",
+        "PYO3_NO_PYTHON": "$(PYO3_NO_PYTHON)",
+        "PYO3_PYTHON": "$(PYO3_PYTHON)",
+    },
+    build_script_toolchains = ["@@rules_rust_pyo3+//:current_pyo3_toolchain"],
+    crate = "pyo3-ffi",
+)
+crate.annotation(
+    build_script_data = ["@@rules_rust_pyo3+//:current_pyo3_toolchain"],
+    build_script_env = {
+        "PYO3_CROSS": "$(PYO3_CROSS)",
+        "PYO3_CROSS_LIB_DIR": "$(PYO3_CROSS_LIB_DIR)",
+        "PYO3_CROSS_PYTHON_IMPLEMENTATION": "$(PYO3_CROSS_PYTHON_IMPLEMENTATION)",
+        "PYO3_CROSS_PYTHON_VERSION": "$(PYO3_CROSS_PYTHON_VERSION)",
+        "PYO3_NO_PYTHON": "$(PYO3_NO_PYTHON)",
+        "PYO3_PYTHON": "$(PYO3_PYTHON)",
+    },
+    build_script_toolchains = ["@@rules_rust_pyo3+//:current_pyo3_toolchain"],
+    crate = "pyo3-build-config",
+)
+
+# `cargo_lockfile` materializes a Cargo-format lock alongside the Bazel-native
+# resolution. cargo-audit/OSV-Scanner read Cargo.lock syntax, not
+# MODULE.bazel.lock's JSON.
+crate.from_specs(cargo_lockfile = "//:Cargo.Bazel.lock")
+use_repo(crate, "crates")
