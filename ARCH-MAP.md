@@ -15,19 +15,19 @@ The ARK resolver turns DaSCH ARK identifiers (`ark:/72163/...`) into redirects t
 
 ### http-service
 
-- **Paths:** `ark_resolver/ark.py`, `ark_resolver/routes/**`, `ark_resolver/error_diagnostics.py`, `ark_resolver/tracing.py`, `ark_resolver/__init__.py`, `tests/test_cors_headers.py`, `tests/test_error_diagnostics.py`
+- **Paths:** `ark_resolver/ark.py`, `ark_resolver/routes/**`, `ark_resolver/error_diagnostics.py`, `ark_resolver/tracing.py`, `ark_resolver/__init__.py`, `tests/test_cors_headers.py`, `tests/test_error_diagnostics.py`, `tests/test_redirect_head.py`
 - **Purpose:** The Sanic app. It serves the routes, owns settings loading and reloading, and wires in Sentry and OpenTelemetry.
 - **Key entities:** `app`, `main`, `server`, `load_settings`, `reload_config`, `schedule_reload`, `get_safe_config`, `add_cors_headers`, `init_tracing_and_sentry`, `redirect_bp`, `convert_bp`, `health_bp`, `pre_validate_ark`, `classify_exception`, `report_error_to_sentry`, `error_response`, `ArkErrorCode`, `tracer`
 - **Public interface:**
   - HTTP:
-    - `GET /<ark>`: redirect.
+    - `GET|HEAD /<ark>`: redirect.
     - `GET /convert/<ark>`: ARK to IRI.
     - `GET /health/`.
     - `GET|HEAD /config`: config with the secret stripped.
     - `POST /reload`: GitHub webhook, HMAC-SHA1 via `X-Hub-Signature`.
   - CLI: `python -m ark_resolver.ark -s | -i | -a`.
   - Tests use `load_settings()` directly.
-- **Local-context kit:** `ark_resolver/ark.py`, `ark_resolver/routes/redirect.py`, `ark_resolver/routes/convert.py`, `ark_resolver/error_diagnostics.py`, `ark_resolver/parallel_execution.py`, `ark_resolver/ark_url_rust.py`, `tests/test_error_diagnostics.py`
+- **Local-context kit:** `ark_resolver/ark.py`, `ark_resolver/routes/redirect.py`, `ark_resolver/routes/convert.py`, `ark_resolver/error_diagnostics.py`, `ark_resolver/parallel_execution.py`, `ark_resolver/ark_url_rust.py`, `tests/test_redirect_head.py`
 - **Depends on:** shadow-bridge, python-resolution, rust-adapters (direct `_rust` import in `ark.py` for `load_settings`, `initialize_debug_tracing`, `log_environment_variables`)
 - **Used by:** build-and-delivery (entrypoint, Dockerfile HEALTHCHECK, smoke test)
 - **Boundary rules:**
