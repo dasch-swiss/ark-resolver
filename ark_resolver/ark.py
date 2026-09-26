@@ -60,13 +60,13 @@ async def add_cors_headers(_: Request, res: HTTPResponse) -> None:
     """
     Allow any origin to read resolver responses.
 
-    A static "*" rather than reflecting the request's Origin: every route is a public GET
+    A static "*" rather than reflecting the request's Origin: every route is a public GET or HEAD
     and no credentials are involved, so there is no allowlist to scope. Reflecting an
     origin is only ever needed together with credentials, which would itself be a defect
     here -- and "*" makes that combination impossible rather than merely unused.
 
     Replaces sanic-cors, which was removed: it contributed nothing beyond this header for
-    GET-only routes (simple cross-origin GETs are not preflighted), while carrying
+    GET and HEAD routes (simple cross-origin requests are not preflighted), while carrying
     PYSEC-2026-3539 with no published fix.
     """
     res.headers["Access-Control-Allow-Origin"] = "*"
