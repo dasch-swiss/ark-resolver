@@ -1,3 +1,11 @@
+---
+title: "Structured Logging and Observability Upgrade for ARK Resolver Migration"
+date: 2025-06-06
+author: "Ivan Subotic"
+status: draft
+repositories: []
+---
+
 # Structured Logging and Observability Upgrade for ARK Resolver Migration
 
 ### TL;DR

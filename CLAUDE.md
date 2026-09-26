@@ -112,6 +112,15 @@ BR: ARK suffix must include a valid check digit before redirect
 
 This approach ensures that the implementation remains flexible while the business logic is clearly documented and traceable.
 
+## Specs
+
+ark-resolver specs (PRDs, implementation plans, design docs) live directly in [`docs/specs/`](docs/specs/) as flat, date-prefixed files. Platform-wide specs that span several repos stay in [`dasch-specs`](https://github.com/dasch-swiss/dasch-specs); a spec whose primary subject is ark-resolver belongs here even when it touches `ark-resolver-data`, deploy config or another repo.
+
+- **File:** each spec is a flat file directly in `docs/specs/`, named `YYYY-MM-DD-NN-{topic}-{type}.md`. `NN` is a 2-digit daily sequence (`01`, `02`, …) so more than one spec can share a date. `{topic}` is lowercase alphanumeric + hyphens (≤60 chars). `{type}` is one of `PRD` / `plan` / `design` / `journal`. The artifacts of one piece of work share the same `YYYY-MM-DD-NN-{topic}-` stem (e.g. `…-plan.md` alongside its `…-journal.md`).
+- **Assets:** any images go in a sibling `docs/specs/YYYY-MM-DD-NN-{topic}-assets/` directory, referenced relatively.
+- **Frontmatter** (YAML, all spec files): `title`, `date`, `author`, `status: draft | reviewed | approved | implemented`, and `repositories:` listing the *other* code repos the feature modifies. Never list `ark-resolver` itself.
+- **Reference direction is one-way. Specs are a sink.** A spec may reference out (code, docs, ADRs, `CONTEXT.md`), but nothing outside `docs/specs/` may reference into a spec, and a new spec should reference durable artifacts (an ADR, code, the glossary), not another spec. This lets any spec be renamed or deleted without breaking the tree. Flatten test: `grep -rnE "docs/specs/[0-9]{4}" --exclude-dir=specs --exclude-dir=.git .` returns nothing. Enforcement: `review`.
+
 ## Project Overview
 
 The DSP ARK Resolver is a hybrid Python/Rust application that resolves ARK URLs referring to resources in

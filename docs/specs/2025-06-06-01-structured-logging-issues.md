@@ -1,3 +1,11 @@
+---
+title: "Issue Guide: Structured Logging and Observability Upgrade"
+date: 2025-06-06
+author: "Ivan Subotic"
+status: draft
+repositories: []
+---
+
 # Issue Guide: Structured Logging and Observability Upgrade – ARK Resolver Migration
 
 ## Overview and General Instructions
