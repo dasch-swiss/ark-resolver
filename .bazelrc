@@ -1,0 +1,59 @@
+# ark-resolver Bazel configuration: pinned to Bazel 9.1.0 (.bazelversion).
+#
+# Defaults in Bazel 9 (do NOT re-declare):
+#   --enable_bzlmod                                (default in 9)
+#   --incompatible_enable_cc_toolchain_resolution   (default in 9)
+
+# Kept here as a documented cache-hygiene anchor. Strict action env stops
+# unrelated host env vars from poisoning Bazel's cache keys across runs.
+build --incompatible_strict_action_env
+
+# Auto-apply :macos / :linux config blocks below by detected host platform.
+build --enable_platform_specific_config
+
+# Stamp inputs for reproducible binaries and images. The script writes
+# STABLE_GIT_COMMIT, STABLE_ARK_VERSION and STABLE_IMAGE_CREATED, consumed by
+# later `expand_template(..., stamp_substitutions = {...})` / `oci_image` rules.
+build --workspace_status_command=tools/workspace_status.sh
+
+# ── Python (rules_python) ───────────────────────────────────────────────────
+# The rules_python stub normally symlinks a prebuilt venv into place; tar can
+# drop that symlink, and the production image is shell-less distroless, so
+# there is nothing to rebuild it at container start. Disabling the symlink
+# makes the stub rebuild its venv at runtime instead.
+common --@rules_python//python/config_settings:venvs_use_declare_symlink=no
+
+# Turns a wheel/platform mismatch (e.g. an sdist-only package with no
+# manylinux wheel for a target platform) into a build error instead of a
+# silent warning.
+common --@rules_python//python/config_settings:current_config=fail
+
+# ── Rust (rules_rust) ────────────────────────────────────────────────────────
+# rules_rust's exec-config default is `-Cstrip=debuginfo`. Under Xcode 27 that
+# makes proc-macro dylibs unloadable on macOS (`can't find crate for
+# 'thiserror_impl'`); this restores unstripped exec tools on that platform.
+build:macos --@rules_rust//rust/settings:extra_exec_rustc_flag=-Cstrip=none
+
+# ── Test ─────────────────────────────────────────────────────────────────────
+# Surface test stderr immediately on failure rather than collecting it into
+# bazel-testlogs. Useful for inner-loop iteration.
+test --test_output=errors
+
+# Content-addressed cache of external downloads (http_archive tarballs, bzlmod
+# registry files). Bazel's default repository cache lives under the
+# output_user_root; pinning an explicit stable path gives local dev one shared
+# location across workspaces and lets CI persist it across runs.
+common --repository_cache=~/.cache/bazel-repo
+
+# ── CI ───────────────────────────────────────────────────────────────────────
+# rules_android is pulled transitively into the module graph (rules_python ->
+# protobuf) and registers a toolchain that reads ANDROID_HOME at
+# analysis time. GitHub-hosted runners preset ANDROID_HOME to an SDK
+# path with no platforms installed, which fails that analysis; clearing
+# it here takes rules_android's empty-SDK path instead.
+common --repo_env=ANDROID_HOME=
+
+# ── User overrides ─────────────────────────────────────────────────────────
+# Local-machine-only flags (e.g. --disk_cache=...) belong in user.bazelrc;
+# the file is gitignored.
+try-import %workspace%/user.bazelrc

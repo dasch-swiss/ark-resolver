@@ -1,0 +1,11 @@
+# pip.parse's `uv_lock` attribute and crate.from_specs' `cargo_lockfile`
+# attribute both read their file as a label, so the root package needs a
+# BUILD file exporting it. A later phase adds the `_rust` PyO3 extension and
+# the `ark_resolver` py_library to this same file.
+exports_files(
+    ["uv.lock", "Cargo.Bazel.lock"],
+    # Root package defaults to private per sipi's visibility convention; the
+    # module extension resolves this label by path, not a BUILD dependency
+    # edge, so visibility does not need to be widened for it.
+    visibility = ["//visibility:private"],
+)

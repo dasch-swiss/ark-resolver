@@ -74,6 +74,9 @@ target/
 
 # pyenv
 .python-version
+# ark-resolver pins the hermetic Python toolchain version via .python-version
+# (uv and rules_python both read it), so it is tracked, not ignored.
+!.python-version
 
 # celery beat schedule file
 celerybeat-schedule
@@ -117,3 +120,7 @@ venv.bak/
 
 # direnv
 .direnv
+
+# Bazel
+bazel-*
+user.bazelrc
