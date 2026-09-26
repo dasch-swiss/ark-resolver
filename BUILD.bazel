@@ -1,11 +1,47 @@
+load("@rules_rust_pyo3//:defs.bzl", "pyo3_extension")
+
 # pip.parse's `uv_lock` attribute and crate.from_specs' `cargo_lockfile`
 # attribute both read their file as a label, so the root package needs a
-# BUILD file exporting it. A later phase adds the `_rust` PyO3 extension and
-# the `ark_resolver` py_library to this same file.
+# BUILD file exporting it. A later phase adds the `ark_resolver` py_library
+# to this same file.
 exports_files(
     ["uv.lock", "Cargo.Bazel.lock"],
     # Root package defaults to private per sipi's visibility convention; the
     # module extension resolves this label by path, not a BUILD dependency
     # edge, so visibility does not need to be widened for it.
+    visibility = ["//visibility:private"],
+)
+
+# module_name "ark_resolver._rust" in the ROOT package places the .so at
+# ark_resolver/_rust.so; declared inside //ark_resolver it would land at
+# ark_resolver/ark_resolver/_rust.so.
+pyo3_extension(
+    name = "_rust",
+    srcs = ["//src:srcs"],
+    crate_root = "//src:lib.rs",
+    crate_name = "ark_resolver",
+    crate_features = ["pyo3"],
+    deps = [
+        "@crates//:base64",
+        "@crates//:config",
+        "@crates//:regex",
+        "@crates//:reqwest",
+        "@crates//:serde_json",
+        "@crates//:thiserror",
+        "@crates//:tokio",
+        "@crates//:tracing",
+        "@crates//:tracing-subscriber",
+        "@crates//:url",
+        "@crates//:urlencoding",
+        "@crates//:uuid",
+    ],
+    proc_macro_deps = ["@crates//:async-trait"],
+    edition = "2021",
+    module_name = "ark_resolver._rust",
+    # Stub generation needs pyo3's experimental-inspect feature, which
+    # //src:ark_resolver_lib does not enable.
+    stubs = False,
+    # The default "opt" transition puts the .so outside bazel-bin.
+    compilation_mode = "current",
     visibility = ["//visibility:private"],
 )

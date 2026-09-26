@@ -1,0 +1,122 @@
+"""ARK Resolver Rust library.
+
+  //src:ark_resolver_lib   `rust_library` compiling the whole hexagonal
+                           crate (`core` + `adapters`), crate-named
+                           `ark_resolver` to match Cargo.toml. No
+                           `crate_features` set here: parity with today's
+                           `cargo nextest run --lib --no-default-features`,
+                           which leaves the `pyo3` feature (gating
+                           `log_environment_variables` and its adapter) off.
+  //src:unit_tests         `rust_test` running the crate's embedded
+                           `#[cfg(test)]` modules.
+"""
+
+load("@rules_rust//rust:defs.bzl", "rust_library", "rust_test")
+
+package(default_visibility = ["//visibility:private"])
+
+# Explicit list (no glob), mirroring sipi's BUILD.bazel convention. Consumed
+# as a filegroup so a later phase's pyo3_extension target can depend on the
+# same source set without duplicating the file list.
+filegroup(
+    name = "srcs",
+    srcs = [
+        "adapters/common/ini_processor.rs",
+        "adapters/common/mod.rs",
+        "adapters/environment/env_logger.rs",
+        "adapters/environment/mod.rs",
+        "adapters/environment/settings.rs",
+        "adapters/file_system/mod.rs",
+        "adapters/file_system/settings.rs",
+        "adapters/http/mod.rs",
+        "adapters/mod.rs",
+        "adapters/pyo3/ark_url_formatter.rs",
+        "adapters/pyo3/ark_url_info.rs",
+        "adapters/pyo3/check_digit.rs",
+        "adapters/pyo3/mod.rs",
+        "adapters/pyo3/settings.rs",
+        "adapters/pyo3/uuid_processing.rs",
+        "core/domain/ark_url_formatter.rs",
+        "core/domain/ark_url_info.rs",
+        "core/domain/check_digit.rs",
+        "core/domain/mod.rs",
+        "core/domain/parsing.rs",
+        "core/domain/settings.rs",
+        "core/domain/uuid_processing.rs",
+        "core/errors/ark_url_formatter.rs",
+        "core/errors/ark_url_info.rs",
+        "core/errors/check_digit.rs",
+        "core/errors/mod.rs",
+        "core/errors/settings.rs",
+        "core/errors/uuid_processing.rs",
+        "core/mod.rs",
+        "core/ports/ark_url_formatter.rs",
+        "core/ports/ark_url_info.rs",
+        "core/ports/check_digit.rs",
+        "core/ports/mod.rs",
+        "core/ports/settings.rs",
+        "core/ports/uuid_processing.rs",
+        "core/use_cases/ark_url_formatter.rs",
+        "core/use_cases/ark_url_info_processor.rs",
+        "core/use_cases/ark_uuid_processor.rs",
+        "core/use_cases/check_digit_validator.rs",
+        "core/use_cases/mod.rs",
+        "core/use_cases/settings_manager.rs",
+        "lib.rs",
+    ],
+    # Grant matches the root package's future pyo3_extension consumer.
+    visibility = ["//:__pkg__"],
+)
+
+# `lib.rs` is also the crate_root for :ark_resolver_lib; exported separately
+# so the future pyo3_extension can name it without depending on the whole
+# :srcs filegroup.
+exports_files(
+    ["lib.rs"],
+    visibility = ["//:__pkg__"],
+)
+
+rust_library(
+    name = "ark_resolver_lib",
+    srcs = [":srcs"],
+    crate_name = "ark_resolver",
+    crate_root = "lib.rs",
+    edition = "2021",
+    proc_macro_deps = [
+        "@crates//:async-trait",
+    ],
+    deps = [
+        "@crates//:base64",
+        "@crates//:config",
+        "@crates//:pyo3",
+        "@crates//:regex",
+        "@crates//:reqwest",
+        "@crates//:serde_json",
+        "@crates//:thiserror",
+        "@crates//:tokio",
+        "@crates//:tracing",
+        "@crates//:tracing-subscriber",
+        "@crates//:url",
+        "@crates//:urlencoding",
+        "@crates//:uuid",
+    ],
+    visibility = ["//visibility:private"],
+)
+
+rust_test(
+    name = "unit_tests",
+    crate = ":ark_resolver_lib",
+    # `Python::initialize()` (called from src/core/domain/uuid_processing.rs
+    # tests) needs libpython linked into the test binary; the hermetic
+    # Python toolchain's cc libs provide that.
+    deps = [
+        "@crates//:serial_test",
+        "@crates//:tempfile",
+        "@rules_python//python/cc:current_py_cc_libs",
+    ],
+    data = ["//tests:ark-registry.ini"],
+    env = {
+        "ARK_REGISTRY": "$(rootpath //tests:ark-registry.ini)",
+    },
+    visibility = ["//visibility:private"],
+)

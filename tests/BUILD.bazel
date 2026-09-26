@@ -1,0 +1,11 @@
+"""Shared test fixtures.
+
+`ark-registry.ini` is the local-only ARK registry config used by both the
+Rust unit tests (`//src:unit_tests`) and, in a later phase, the Python test
+suite.
+"""
+
+exports_files(
+    ["ark-registry.ini"],
+    visibility = ["//src:__pkg__"],
+)
