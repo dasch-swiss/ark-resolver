@@ -1,12 +1,12 @@
-"""ARK Resolver — DSP persistent-identifier resolution service.
+"""ARK Resolver: DSP persistent-identifier resolution service.
 
 Bazel 9.1.0 module. Bazel is the build system; Nix (flake.nix) provisions the
-dev shell only (bazelisk, just, uv, cargo-audit) — no host cargo/rustc/python.
+dev shell only (bazelisk, just, uv, cargo-audit), no host cargo/rustc/python.
 """
 
 module(
     name = "ark_resolver",
-    version = "0.0.0",  # BR: the real version lives in version.txt, stamped at build time
+    version = "0.0.0",  # the real version lives in version.txt, stamped at build time
     compatibility_level = 1,
 )
 
@@ -19,7 +19,7 @@ bazel_dep(name = "rules_cc", version = "0.2.19")
 # into build/image metadata.
 bazel_dep(name = "aspect_bazel_lib", version = "2.22.5")
 
-# ── LLVM toolchain — hermetic ─────────────────────────────────────────────
+# ── LLVM toolchain (hermetic) ─────────────────────────────────────────────
 # `llvm` (hermeticbuild/hermetic-llvm) registers a fully-hermetic LLVM
 # toolchain, mirroring sipi's provider (sipi/MODULE.bazel:168). `ring`
 # (pulled in transitively via reqwest's rustls-tls) compiles C in its cargo
@@ -58,7 +58,7 @@ bazel_dep(name = "rules_python", version = "2.3.4")  # new to this repo; latest 
 bazel_dep(name = "rules_oci", version = "2.3.0")
 
 # 0.10.9 (newer than sipi's 0.10.5) fixes `preserve_symlinks` under
-# transitioned configs — needed once a later phase assembles OCI image layers.
+# transitioned configs, needed once a later phase assembles OCI image layers.
 bazel_dep(name = "tar.bzl", version = "0.10.9")
 
 # Forces the MVS-resolved version up from whatever a transitive dep (llvm /
@@ -112,7 +112,7 @@ use_repo(toolchain, "llvm_toolchains")
 # **Registration ordering is load-bearing.** `cargo_build_script` rules (run
 # for every `*-sys` crate) resolve `cc` from the registered cc_toolchain at
 # materialisation time. This MUST be registered before the Rust toolchain
-# extension below — otherwise build scripts (e.g. ring's) silently pick up
+# extension below, otherwise build scripts (e.g. ring's) silently pick up
 # the host `cc` and produce non-hermetic artifacts.
 register_toolchains("@llvm_toolchains//:all")
 
@@ -132,7 +132,7 @@ use_repo(rust, "rust_toolchains")
 
 register_toolchains("@rust_toolchains//:all")
 
-# ── Python toolchain — hermetic CPython ────────────────────────────────────
+# ── Python toolchain (hermetic CPython) ────────────────────────────────────
 python = use_extension("@rules_python//python/extensions:python.bzl", "python")
 python.toolchain(
     python_version = "3.12",  # explicit: rules_python 2.4 changes the default to 3.14
@@ -229,31 +229,29 @@ crate.spec(package = "rustls", version = ">=0.23.45", default_features = False, 
 # whatever `python3` is first on PATH (version and location unmanaged by
 # Bazel); wiring the PyO3 toolchain in makes that probe hermetic instead. The
 # canonical (not apparent) repo name is required here because crate repos
-# cannot resolve `@rules_rust_pyo3` as an apparent name.
+# cannot resolve `@rules_rust_pyo3` as an apparent name. Both crates need the
+# identical wiring, so it's shared rather than repeated per annotation.
+_PYO3_TOOLCHAIN = ["@@rules_rust_pyo3+//:current_pyo3_toolchain"]
+
+_PYO3_BUILD_SCRIPT_ENV = {
+    "PYO3_CROSS": "$(PYO3_CROSS)",
+    "PYO3_CROSS_LIB_DIR": "$(PYO3_CROSS_LIB_DIR)",
+    "PYO3_CROSS_PYTHON_IMPLEMENTATION": "$(PYO3_CROSS_PYTHON_IMPLEMENTATION)",
+    "PYO3_CROSS_PYTHON_VERSION": "$(PYO3_CROSS_PYTHON_VERSION)",
+    "PYO3_NO_PYTHON": "$(PYO3_NO_PYTHON)",
+    "PYO3_PYTHON": "$(PYO3_PYTHON)",
+}
+
 crate.annotation(
-    build_script_data = ["@@rules_rust_pyo3+//:current_pyo3_toolchain"],
-    build_script_env = {
-        "PYO3_CROSS": "$(PYO3_CROSS)",
-        "PYO3_CROSS_LIB_DIR": "$(PYO3_CROSS_LIB_DIR)",
-        "PYO3_CROSS_PYTHON_IMPLEMENTATION": "$(PYO3_CROSS_PYTHON_IMPLEMENTATION)",
-        "PYO3_CROSS_PYTHON_VERSION": "$(PYO3_CROSS_PYTHON_VERSION)",
-        "PYO3_NO_PYTHON": "$(PYO3_NO_PYTHON)",
-        "PYO3_PYTHON": "$(PYO3_PYTHON)",
-    },
-    build_script_toolchains = ["@@rules_rust_pyo3+//:current_pyo3_toolchain"],
+    build_script_data = _PYO3_TOOLCHAIN,
+    build_script_env = _PYO3_BUILD_SCRIPT_ENV,
+    build_script_toolchains = _PYO3_TOOLCHAIN,
     crate = "pyo3-ffi",
 )
 crate.annotation(
-    build_script_data = ["@@rules_rust_pyo3+//:current_pyo3_toolchain"],
-    build_script_env = {
-        "PYO3_CROSS": "$(PYO3_CROSS)",
-        "PYO3_CROSS_LIB_DIR": "$(PYO3_CROSS_LIB_DIR)",
-        "PYO3_CROSS_PYTHON_IMPLEMENTATION": "$(PYO3_CROSS_PYTHON_IMPLEMENTATION)",
-        "PYO3_CROSS_PYTHON_VERSION": "$(PYO3_CROSS_PYTHON_VERSION)",
-        "PYO3_NO_PYTHON": "$(PYO3_NO_PYTHON)",
-        "PYO3_PYTHON": "$(PYO3_PYTHON)",
-    },
-    build_script_toolchains = ["@@rules_rust_pyo3+//:current_pyo3_toolchain"],
+    build_script_data = _PYO3_TOOLCHAIN,
+    build_script_env = _PYO3_BUILD_SCRIPT_ENV,
+    build_script_toolchains = _PYO3_TOOLCHAIN,
     crate = "pyo3-build-config",
 )
 
@@ -262,3 +260,17 @@ crate.annotation(
 # MODULE.bazel.lock's JSON.
 crate.from_specs(cargo_lockfile = "//:Cargo.Bazel.lock")
 use_repo(crate, "crates")
+
+# `rules_rust_pyo3` registers its own toolchains only as a dev dependency (its
+# own module), so nothing satisfies the `pyo3_toolchain` toolchain type here
+# unless a consuming module registers it explicitly. This toolchain feeds
+# Python config (from the rules_python 3.12 toolchain) to the pyo3-ffi /
+# pyo3-build-config build scripts annotated above. Registering only
+# `:toolchain` here, not `:rust_toolchain` (which binds rules_rust_pyo3's
+# bundled PyO3 0.28.2). Our own `rust_pyo3_toolchain` below binds PyO3 0.29
+# from `@crates` instead.
+register_toolchains("@rules_rust_pyo3//toolchains:toolchain")
+
+# Binds PyO3 0.29 from `@crates` (see bazel/pyo3/BUILD.bazel) so the
+# `pyo3_extension` below links the same PyO3 version as //src:ark_resolver_lib.
+register_toolchains("//bazel/pyo3:rust_pyo3_toolchain")

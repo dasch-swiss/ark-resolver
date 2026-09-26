@@ -1,0 +1,23 @@
+# Our own PyO3 toolchain, registered in `//MODULE.bazel` alongside
+# `@rules_rust_pyo3//toolchains:toolchain`. `rust_pyo3_toolchain` tells
+# `pyo3_extension` (and the `pyo3-ffi`/`pyo3-build-config` build scripts)
+# which `pyo3`/`pyo3-introspection` crates to link against; pointing it at
+# `@crates` keeps the extension on PyO3 0.29 instead of the 0.28.2 bundled
+# with rules_rust_pyo3 0.70.0 (0.71+ bundles 0.29 but drags rules_rust off
+# sipi's 0.70.0 pin and builds abi3-py311).
+
+load("@rules_rust_pyo3//:defs.bzl", "rust_pyo3_toolchain")
+
+package(default_visibility = ["//visibility:private"])
+
+rust_pyo3_toolchain(
+    name = "rust_pyo3_toolchain_impl",
+    pyo3 = "@crates//:pyo3",
+    pyo3_introspection = "@crates//:pyo3-introspection",
+)
+
+toolchain(
+    name = "rust_pyo3_toolchain",
+    toolchain = ":rust_pyo3_toolchain_impl",
+    toolchain_type = "@rules_rust_pyo3//:rust_toolchain_type",
+)
