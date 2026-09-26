@@ -1,0 +1,40 @@
+version: 1
+
+defaults:
+  conventions: [CLAUDE.md, CONTEXT.md]
+  commands:
+    test: just test && just pytest
+    lint: just check
+    gate: just check && just test && just pytest
+    # no test_targeted: no recipe takes a file list
+
+overrides:
+  # Rust extension: hexagonal core and PyO3 adapters (ADR-0001).
+  - when: "src/**"
+    reviewers: [eng:review:rust-reviewer, eng:review:dune-reviewer]
+
+  # Python service, resolution logic and the shadow bridge.
+  - when: "ark_resolver/**"
+    reviewers: [eng:review:python-reviewer, eng:review:dune-reviewer]
+  - when: "tests/**/*.py"
+    reviewers: [eng:review:python-reviewer]
+
+  # Public routes and the HMAC-verified /reload webhook.
+  - when: "ark_resolver/ark.py"
+    reviewers: [eng:review:security-reviewer]
+  - when: "ark_resolver/routes/**"
+    reviewers: [eng:review:security-reviewer]
+
+  # Tracing, Sentry and shadow-mismatch reporting.
+  - when: "ark_resolver/tracing.py"
+    reviewers: [eng:review:observability-reviewer]
+  - when: "ark_resolver/parallel_execution.py"
+    reviewers: [eng:review:observability-reviewer]
+
+  # Image, CI and release.
+  - when: "Dockerfile"
+    reviewers: [eng:review:devops-reviewer]
+  - when: ".github/**"
+    reviewers: [eng:review:devops-reviewer]
+  - when: "justfile"
+    reviewers: [eng:review:devops-reviewer]
