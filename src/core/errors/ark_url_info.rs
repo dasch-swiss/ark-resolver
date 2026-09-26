@@ -20,6 +20,9 @@ pub enum ArkUrlInfoError {
     #[error("Project ID is required for resource IRI generation")]
     ProjectIdRequired,
 
+    #[error("Resource ID is required for resource IRI generation")]
+    ResourceIdRequired,
+
     #[error("Configuration template not found: {template_name}")]
     TemplateNotFound { template_name: String },
 
@@ -125,6 +128,15 @@ mod tests {
         assert_eq!(
             error.to_string(),
             "Invalid ARK ID (version 0 not allowed): ark:/12345/0001-abc-def"
+        );
+    }
+
+    #[test]
+    fn test_resource_id_required_error() {
+        let error = ArkUrlInfoError::ResourceIdRequired;
+        assert_eq!(
+            error.to_string(),
+            "Resource ID is required for resource IRI generation"
         );
     }
 

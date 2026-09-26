@@ -90,11 +90,13 @@ def test_converted_ark_id_parity(python_settings, rust_settings, ark_id):
     [
         "ark:/00000/1/ZZZZ/cmfk1DMHRBiR4=_6HXpEFAn",
         "ark:/00000/1/0001/cmfk1DMHRBir4=_6HXpEFAn",
+        "ark:/00000/1/0003",
         "ark:/00000/1",
     ],
     ids=[
         "unknown-project",
         "bad-check-digit",
+        "project-has-no-resource-iri",
         "top-level-has-no-resource-iri",
     ],
 )
@@ -112,15 +114,3 @@ def test_convert_error_parity(python_settings, rust_settings, ark_id):
         rust_error = type(e).__name__
     assert python_error is not None, f"Python converted {ark_id} instead of rejecting it"
     assert rust_error is not None, f"Rust converted {ark_id} instead of rejecting it"
-
-
-@pytest.mark.xfail(
-    strict=True,
-    reason="A project ARK names no resource, yet neither implementation rejects it: Python returns "
-    "http://rdfh.ch/0003/None and Rust http://rdfh.ch/0003/$resource_id, a shadow mismatch on /convert.",
-)
-def test_project_ark_resource_iri_parity(python_settings, rust_settings):
-    ark_id = "ark:/00000/1/0003"
-    python_iri = PythonArkUrlInfo(python_settings, ark_id).to_resource_iri()
-    rust_iri = RustArkUrlInfo(rust_settings, ark_id).to_resource_iri()
-    assert python_iri == rust_iri
