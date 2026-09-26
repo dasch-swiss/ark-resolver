@@ -215,11 +215,11 @@ mod tests {
 
         let wrapper = ConfigWrapper::new(config);
 
-        assert_eq!(wrapper.get_boolean("true_val").unwrap(), true);
-        assert_eq!(wrapper.get_boolean("false_val").unwrap(), false);
-        assert_eq!(wrapper.get_boolean("one_val").unwrap(), true);
-        assert_eq!(wrapper.get_boolean("zero_val").unwrap(), false);
-        assert_eq!(wrapper.get_boolean("missing_val").unwrap(), false);
+        assert!(wrapper.get_boolean("true_val").unwrap());
+        assert!(!wrapper.get_boolean("false_val").unwrap());
+        assert!(wrapper.get_boolean("one_val").unwrap());
+        assert!(!wrapper.get_boolean("zero_val").unwrap());
+        assert!(!wrapper.get_boolean("missing_val").unwrap());
         assert!(wrapper.get_boolean("invalid_val").is_err());
     }
 

@@ -63,9 +63,10 @@ impl ConfigurationProvider for FileSystemConfigurationProvider {
 }
 
 /// File system provider for direct file operations
+// Adapter for the core FileSystemProvider port (src/core/ports/settings.rs); no
+// production wiring constructs it yet, but it is exercised directly by tests.
+#[allow(dead_code)]
 pub struct FileSystemProvider;
-
-impl FileSystemProvider {}
 
 #[async_trait]
 impl FileSystemProviderTrait for FileSystemProvider {
