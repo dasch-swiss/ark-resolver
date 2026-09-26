@@ -82,7 +82,7 @@ The ARK resolver turns DaSCH ARK identifiers (`ark:/72163/...`) into redirects t
   - Sentry events are fingerprinted `["shadow", op, comparison]`, not one issue per ARK. Enforcement: `static-analysis` (`test_sentry_fingerprinting.py`).
 - **Durable state:**
   - The `parallel_executor` module singleton holds per-worker counters, which are not persisted.
-  - Parity coverage: redirect is compared by `test_redirect_parity.py`, and convert step by step by `test_convert_parity.py`. A project ARK is a known convert divergence, held as a strict `xfail`.
+  - Parity coverage: redirect is compared by `test_redirect_parity.py`, and convert step by step by `test_convert_parity.py`.
 
 ### rust-core
 

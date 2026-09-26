@@ -185,6 +185,11 @@ where
             .project_id
             .as_ref()
             .ok_or(ArkUrlInfoError::ProjectIdRequired)?;
+        // BR: A project or top-level ARK names no resource, so it has no resource IRI.
+        let resource_id = ark_info
+            .resource_id
+            .as_ref()
+            .ok_or(ArkUrlInfoError::ResourceIdRequired)?;
         let template = self
             .config
             .get_project_template(project_id, "DSPResourceIri")?;
@@ -197,13 +202,6 @@ where
 
         // Handle version 0 UUID generation
         if ark_info.is_version_0() {
-            let resource_id =
-                ark_info
-                    .resource_id
-                    .as_ref()
-                    .ok_or(ArkUrlInfoError::configuration_error(
-                        "Resource ID required for version 0 ARK URLs",
-                    ))?;
             let uuid_v5 = self.uuid_generator.generate_v5_uuid(resource_id)?;
             template_dict.insert("resource_id".to_string(), uuid_v5);
         }
@@ -441,6 +439,17 @@ mod tests {
 
         assert!(result.is_err());
         assert_eq!(result.unwrap_err(), ArkUrlInfoError::ProjectIdRequired);
+    }
+
+    #[test]
+    fn test_generate_resource_iri_project_level_ark() {
+        let processor =
+            ArkUrlInfoProcessor::new(MockParser, MockConfig, MockTemplate, MockUuidGenerator);
+
+        let ark_info = ArkUrlInfo::new(1, Some("0001".to_string()), None, None, None);
+        let result = processor.generate_resource_iri(&ark_info);
+
+        assert_eq!(result.unwrap_err(), ArkUrlInfoError::ResourceIdRequired);
     }
 
     #[test]
