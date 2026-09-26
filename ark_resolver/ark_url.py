@@ -182,6 +182,9 @@ class ArkUrlInfo:
         """
         if self.project_id is None:
             raise ArkUrlException("Project ID is required for resource IRI generation")
+        # BR: A project or top-level ARK names no resource, so it has no resource IRI.
+        if self.resource_id is None:
+            raise ArkUrlException("Resource ID is required for resource IRI generation")
         project_config = self.settings.config[self.project_id]
         resource_iri_template = Template(project_config["DSPResourceIri"])
 
