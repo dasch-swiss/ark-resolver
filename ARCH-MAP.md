@@ -161,8 +161,8 @@ The ARK resolver turns DaSCH ARK identifiers (`ark:/72163/...`) into redirects t
 ### project-docs
 
 - **Paths:** `README.md`, `CLAUDE.md`, `CONTEXT.md`, `CHANGELOG.md`, `LICENSE`, `ARCH-MAP.md`, `docs/**`
-- **Purpose:** Documentation for users, operators and agents, plus the ADRs, PRDs and learnings.
-- **Key entities:** `ADR-0001`, `PRD-001`, `log-schema`
+- **Purpose:** Documentation for users, operators and agents, plus the ADRs, specs and learnings.
+- **Key entities:** `ADR-0001`, `log-schema`, `docs/specs/`
 - **Public interface:** `README.md` (deployment, env vars, routes), `CLAUDE.md` (agent guidance), `CONTEXT.md` (domain vocabulary), `docs/adr/`
 - **Local-context kit:** `README.md`, `CLAUDE.md`, `docs/adr/0001-adopt-hexagonal-architecture.md`, `docs/learnings/integration-issues/pyo3-rust-python-shadow-execution-parity.md`
 - **Depends on:** none
