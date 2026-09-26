@@ -64,7 +64,7 @@ The ARK resolver turns DaSCH ARK identifiers (`ark:/72163/...`) into redirects t
 
 ### shadow-bridge
 
-- **Paths:** `ark_resolver/ark_url_rust.py`, `ark_resolver/check_digit_rust.py`, `ark_resolver/parallel_execution.py`, `tests/test_ark_url_rust.py`, `tests/test_check_digit_rust.py`, `tests/test_redirect_parity.py`, `tests/test_http_registry_rust.py`, `tests/test_sentry_fingerprinting.py`
+- **Paths:** `ark_resolver/ark_url_rust.py`, `ark_resolver/check_digit_rust.py`, `ark_resolver/parallel_execution.py`, `tests/test_ark_url_rust.py`, `tests/test_check_digit_rust.py`, `tests/test_redirect_parity.py`, `tests/test_convert_parity.py`, `tests/test_http_registry_rust.py`, `tests/test_sentry_fingerprinting.py`
 - **Purpose:**
   - Holds the Python-facing wrappers over the Rust extension.
   - Runs Python and Rust on the same input and compares the results.
@@ -82,7 +82,7 @@ The ARK resolver turns DaSCH ARK identifiers (`ark:/72163/...`) into redirects t
   - Sentry events are fingerprinted `["shadow", op, comparison]`, not one issue per ARK. Enforcement: `static-analysis` (`test_sentry_fingerprinting.py`).
 - **Durable state:**
   - The `parallel_executor` module singleton holds per-worker counters, which are not persisted.
-  - Parity coverage: redirect is compared by `test_redirect_parity.py`. Convert has no parity test; its only check is the runtime shadow.
+  - Parity coverage: redirect is compared by `test_redirect_parity.py`, and convert step by step by `test_convert_parity.py`. A project ARK is a known convert divergence, held as a strict `xfail`.
 
 ### rust-core
 
