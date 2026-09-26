@@ -1,11 +1,55 @@
 """Shared test fixtures.
 
 `ark-registry.ini` is the local-only ARK registry config used by both the
-Rust unit tests (`//src:unit_tests`) and, in a later phase, the Python test
-suite.
+Rust unit tests (`//src:unit_tests`) and the Python test suite.
 """
+
+load("@rules_python//python:py_test.bzl", "py_test")
 
 exports_files(
     ["ark-registry.ini"],
     visibility = ["//src:__pkg__"],
 )
+
+# One test binary per test_*.py module keeps each pytest run's junitxml
+# scoped to a single module, matching the per-file pass counts used to
+# verify parity with `uv run pytest`. Globbing the module list means a new
+# tests/test_foo.py is picked up automatically instead of silently never
+# running under `bazel test //tests/...`.
+_TEST_MODULES = [
+    name[:-len(".py")]
+    for name in glob(
+        ["test_*.py"],
+        exclude = ["pytest_main.py"],
+    )
+]
+
+[
+    py_test(
+        name = module,
+        srcs = [
+            "pytest_main.py",
+            module + ".py",
+        ],
+        main = "pytest_main.py",
+        # Every target shares pytest_main.py as a source; per-target
+        # precompilation would collide on one .pyc output path within the
+        # package, so precompilation is disabled here instead.
+        precompile = "disabled",
+        args = ["$(rootpath %s.py)" % module],
+        data = [
+            "ark-registry.ini",
+            "//:pyproject.toml",
+        ],
+        deps = [
+            "//:ark_resolver",
+            "@pypi//pytest",
+            "@pypi//sanic_testing",
+        ],
+        # test_http_registry_rust reaches raw.githubusercontent.com; "external"
+        # keeps Bazel from caching a result that depends on a remote service.
+        tags = ["requires-network", "external"] if module == "test_http_registry_rust" else [],
+        visibility = ["//visibility:private"],
+    )
+    for module in _TEST_MODULES
+]
