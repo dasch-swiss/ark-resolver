@@ -137,7 +137,7 @@ The ARK resolver turns DaSCH ARK identifiers (`ark:/72163/...`) into redirects t
 
 ### build-and-delivery
 
-- **Paths:** `Dockerfile`, `.dockerignore`, `docker-compose.yml`, `entrypoint.sh`, `justfile`, `Makefile`, `vars.mk`, `pyproject.toml`, `uv.lock`, `Cargo.toml`, `Cargo.lock`, `rust-toolchain.toml`, `.github/**`, `.gitignore`, `.claude/**`, `tests/smoke_test.rs`
+- **Paths:** `Dockerfile`, `.dockerignore`, `docker-compose.yml`, `entrypoint.sh`, `justfile`, `Makefile`, `vars.mk`, `pyproject.toml`, `uv.lock`, `Cargo.toml`, `Cargo.lock`, `rust-toolchain.toml`, `.github/**`, `.gitignore`, `.claude/**`, `eng.yaml`, `tests/smoke_test.rs`
 - **Purpose:**
   - Builds the extension in place with maturin, then the two-stage Alpine image.
   - CI gates.
