@@ -8,12 +8,9 @@ The coding agent MUST first present plan. Only after confirmation, start impleme
 The coding agent MUST ask questions about code coverage and if adding new unit tests or extending existing tests is required.
 
 ## Documentation Synchronization
-When updating configuration or environment variables, ensure all documentation files stay synchronized:
-- **CLAUDE.md** (this file): Comprehensive technical details for coding agents
-- **AGENTS.md**: Agent-specific guidance and architecture overview  
-- **README.md**: User-facing documentation and deployment instructions
-
-Changes to environment variables, configuration options, or architecture details must be reflected across all three files.
+When updating configuration or environment variables, keep both documentation files in sync:
+- **CLAUDE.md** (this file): technical details for coding agents
+- **README.md**: user-facing documentation and deployment instructions
 
 ## Documentation Conventions
 
