@@ -13,7 +13,7 @@ const FAILURE_COMPOSE_PROJECT: &str = "ark-resolver-smoke-failure";
 // docker-compose.yml. Precedence: the real workspace root when run via
 // `bazel run`, else the rootpath Bazel injects for `bazel test`
 // (ARK_SMOKE_COMPOSE_FILE, see tests/BUILD.bazel), else the current
-// directory so plain `cargo test --test smoke_test` keeps working.
+// directory, for running the built test binary directly from the repo root.
 fn compose_file_path() -> PathBuf {
     if let Ok(workspace_dir) = std::env::var("BUILD_WORKSPACE_DIRECTORY") {
         return PathBuf::from(workspace_dir).join("docker-compose.yml");
