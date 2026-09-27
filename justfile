@@ -53,11 +53,12 @@ crates-repin:
 
 # Advisory scan over the checked-in Cargo-format lockfile (`Cargo.Bazel.lock`,
 # materialized from `crate.from_specs` in MODULE.bazel). cargo-audit reads
-# Cargo lock syntax, not MODULE.bazel.lock's JSON. cargo-audit comes from the
-# Nix dev shell.
+# Cargo lock syntax, not MODULE.bazel.lock's JSON. The Nix dev shell ships
+# only the `cargo-audit` binary, not the `cargo` frontend, so invoke it
+# directly rather than as `cargo audit`.
 [doc("Advisory scan over the checked-in Cargo lockfile")]
 audit:
-    cargo audit --file Cargo.Bazel.lock
+    cargo-audit audit --file Cargo.Bazel.lock
 
 # Format all python code
 pyfmt:
@@ -131,6 +132,22 @@ docker-build:
 [doc("Push the stamped release image to Docker Hub")]
 docker-publish:
     bazel run --config=release --stamp //:image_push
+
+# Guards against `//:image_remote_tags` and `docker-image-tag` drifting apart:
+# both derive from tools/workspace_status.sh, but only a stamped build proves
+# the substitution actually lands in the tag file. Never runs //:image_push.
+[doc("Verify the stamped image_remote_tags output matches docker-image-tag")]
+image-tag-check:
+    bazel build --config=release --stamp //:image_remote_tags
+    stamped="$(cat bazel-bin/image_remote_tags.txt | tr -d '[:space:]')"; \
+    expected="$(just docker-image-tag | tr -d '[:space:]')"; \
+    if [ "$stamped" != "$expected" ]; then \
+        echo "FAIL: stamped image_remote_tags does not match docker-image-tag" >&2; \
+        echo "  image_remote_tags.txt: $stamped" >&2; \
+        echo "  docker-image-tag:      $expected" >&2; \
+        exit 1; \
+    fi; \
+    echo "PASS: image_remote_tags.txt matches docker-image-tag ($stamped)"
 
 # Prints the same tag scheme //:image_remote_tags stamps into the pushed image
 # (tools/workspace_status.sh is now the single source for it); consumed by

@@ -21,7 +21,11 @@ updates:
         update-types: ["version-update:semver-major"]
   # Enable version updates for GitHub Actions
   - package-ecosystem: "github-actions"
-    directory: "/"
+    # Composite actions under .github/actions/ (e.g. ci-setup) pin their own
+    # actions and are not covered by scanning "/" alone.
+    directories:
+      - "/"
+      - "/.github/actions/*"
     schedule:
       interval: "weekly"
     commit-message:

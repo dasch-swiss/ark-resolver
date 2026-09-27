@@ -50,6 +50,9 @@ jobs:
         uses: ./.github/actions/ci-setup
       - uses: docker/setup-compose-action@v1
       - run: just smoke-test
+      # //:image_push's stamped remote tag is otherwise first exercised on
+      # merge to main; catch drift here without ever running image_push.
+      - run: just image-tag-check
       - name: Log in to Docker Hub
         if: github.event_name == 'pull_request'
         uses: docker/login-action@v3
