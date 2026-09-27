@@ -31,10 +31,20 @@ overrides:
   - when: "ark_resolver/parallel_execution.py"
     reviewers: [eng:review:observability-reviewer]
 
-  # Image, CI and release.
-  - when: "Dockerfile"
-    reviewers: [eng:review:devops-reviewer]
+  # Image, build, CI and release.
   - when: ".github/**"
     reviewers: [eng:review:devops-reviewer]
   - when: "justfile"
+    reviewers: [eng:review:devops-reviewer]
+  - when: "MODULE.bazel"
+    reviewers: [eng:review:devops-reviewer]
+  - when: "**/BUILD.bazel"
+    reviewers: [eng:review:devops-reviewer]
+  - when: ".bazelrc"
+    reviewers: [eng:review:devops-reviewer]
+  - when: "bazel/**"
+    reviewers: [eng:review:devops-reviewer]
+  - when: "platforms/**"
+    reviewers: [eng:review:devops-reviewer]
+  - when: "tools/**"
     reviewers: [eng:review:devops-reviewer]
