@@ -577,9 +577,8 @@ fn smoke_test() {
     // Step 2: Wait for service to be available
     let health_url = "http://localhost:3336/health";
     let mut success = false;
-    // linux/amd64 under QEMU emulation on arm64 hosts starts noticeably
-    // slower than a native container; ~30s was too tight there, so this
-    // polls for up to ~90s before giving up.
+    // linux/amd64 under QEMU emulation on arm64 hosts is slow to start a
+    // container, so this polls for up to ~90s (30 x 3s) before giving up.
     for _ in 0..30 {
         match reqwest::blocking::get(health_url) {
             Ok(response) if response.status().is_success() => {
