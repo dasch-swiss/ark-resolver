@@ -5,15 +5,18 @@ resources in [DSP](https://dsp.dasch.swiss/) (formerly called Knora) repositorie
 
 ## Project Status
 
-The DSP ARK Resolver is a **hybrid Python/Rust application** currently undergoing migration from Python to Rust in three phases:
+The DSP ARK Resolver is a **hybrid Python/Rust application**, built end to end with Bazel. Logic continues to
+migrate from Python to Rust inside that hybrid, in two phases:
 
-1. **Phase 1 (Current)**: Add functionality to Rust and run in parallel with Python implementation to verify correct behavior in production, while Python behavior remains user-facing. Rust functions are exposed as Python extensions via PyO3/Maturin.
-2. **Phase 2**: Change user-facing behavior to Rust implementation and start removing Python components.
-3. **Phase 3**: Refactor Rust code into a standalone service using Axum, completely removing Python dependencies.
+1. **Phase 1 (Current)**: Add functionality to Rust and run it in parallel with the Python implementation to verify
+   correct behavior in production, while Python behavior remains user-facing. Rust functions are exposed as a
+   Python extension module via PyO3.
+2. **Phase 2**: Change user-facing behavior to the Rust implementation and continue removing Python where the
+   migration is complete.
 
 ### Architecture
 - **Python (Sanic)**: Main HTTP server, routing, and business logic
-- **Rust (PyO3)**: Performance-critical functions exposed as Python extensions
+- **Rust (PyO3)**: Performance-critical functions exposed as a Python extension module
 - **Environment-driven configuration**: Uses environment variables with defaults, registry loaded from `ARK_REGISTRY`
  - **HTTPS via Rustls**: Rust HTTP client uses `rustls` with embedded Mozilla roots, avoiding dependency on system CA bundles
 
@@ -29,13 +32,13 @@ The program `ark.py` has two modes of operation:
 
   To start the ark-resolver as server, type:
   ```bash
-  python ark.py -s
+  bazel run //:ark_resolver_bin -- -s
   ```
 
 - The ark-resolver can also be used as a command-line tool for converting between
   resource IRIs and ARK URLs, using the same configuration file.
 
-For usage information, run `./ark.py --help`. The application is configured entirely through environment variables, with a sample registry file available at `tests/ark-registry.ini` for local testing.
+For usage information, run `bazel run //:ark_resolver_bin -- --help`. The application is configured entirely through environment variables, with a sample registry file available at `tests/ark-registry.ini` for local testing.
 
 ### Environment Variables
 
@@ -71,67 +74,67 @@ human-readable representations provided by a user interface.
 
 ## Requirements / local setup
 
-First, install `uv`, which will automatically handle your Python installations,
-virtual environments, and dependencies:
+The build is Bazel-driven; a Nix dev shell provides `bazelisk` (as `bazel`), `just`, `uv` and
+`cargo-audit` so no host toolchain needs installing separately:
 
 ```bash
-curl -LsSf https://astral.sh/uv/install.sh | sh
+nix develop
+# or, with direnv installed, just: direnv allow
 ```
 
-Then, create the virtual environment and install the dependencies with:
+Then install the Python dependencies (as defined in `pyproject.toml` and `uv.lock`):
 
 ```bash
-uv sync
+just install
 ```
 
 ### Local Development
 
-For local development and testing, set the registry file environment variable:
-
-```bash
-export ARK_REGISTRY="tests/ark-registry.ini"
-```
-
-You can then run the server locally:
-
-```bash
-./ark.py -s
-```
-
-Or use the convenient just command:
+You can run the server locally with the convenient just command, which sets `ARK_REGISTRY` to the
+repository's sample registry file and runs the Bazel-built binary:
 
 ```bash
 just run
 ```
 
+For a manual invocation, `ARK_REGISTRY` needs to be an absolute path, since `bazel run` executes in
+its own runfiles directory:
+
+```bash
+export ARK_REGISTRY="$(pwd)/tests/ark-registry.ini"
+bazel run //:ark_resolver_bin -- -s
+```
+
 
 ## Examples for using the ark-resolver on the command-line
+
+Each example needs `ARK_REGISTRY` set, as shown above.
 
 ### Converting a DSP resource IRI to an ARK URL
 
 ```
-$ ./ark.py -i http://rdfh.ch/0002/70aWaB2kWsuiN6ujYgM0ZQ
+$ bazel run //:ark_resolver_bin -- -i http://rdfh.ch/0002/70aWaB2kWsuiN6ujYgM0ZQ
 https://ark.example.org/ark:/00000/1/0002/70aWaB2kWsuiN6ujYgM0ZQD
 ```
 
 ### Converting a DSP value IRI to an ARK URL with Timestamp
 
 ```
-$ ./ark.py -i http://rdfh.ch/0002/70aWaB2kWsuiN6ujYgM0ZQ -d 20220119T101727886178Z
+$ bazel run //:ark_resolver_bin -- -i http://rdfh.ch/0002/70aWaB2kWsuiN6ujYgM0ZQ -d 20220119T101727886178Z
 https://ark.example.org/ark:/00000/1/0002/70aWaB2kWsuiN6ujYgM0ZQD.20220119T101727886178Z
 ```
 
 ### Converting an ARK URL from a project on salsah.org to a custom resource IRI for import into DSP
 
 ```
-$ ./ark.py -a http://ark.example.org/ark:/00000/0002-751e0b8a-6.2021519 -r
+$ bazel run //:ark_resolver_bin -- -a http://ark.example.org/ark:/00000/0002-751e0b8a-6.2021519 -r
 http://rdfh.ch/0002/70aWaB2kWsuiN6ujYgM0ZQ
 ```
 
 ### Redirecting an ARK URL from a resource created on salsah.org to the location of the resource on DSP
 
 ```
-$ ./ark.py -a http://ark.example.org/ark:/00000/0002-751e0b8a-6.2021519
+$ bazel run //:ark_resolver_bin -- -a http://ark.example.org/ark:/00000/0002-751e0b8a-6.2021519
 http://0.0.0.0:4200/resource/0002/70aWaB2kWsuiN6ujYgM0ZQ
 ```
 
@@ -210,11 +213,14 @@ For staging and production deployments, set the registry file to load from the e
 docker run -p 3336:3336 \
   -e ARK_REGISTRY="https://raw.githubusercontent.com/dasch-swiss/ark-resolver-data/master/data/dasch_ark_registry_staging.ini" \
   daschswiss/ark-resolver
+```
 
-**Note on TLS**: The Rust settings loader fetches the registry over HTTPS using `reqwest` with `rustls`. No `ca-certificates` package is required in the runtime image.
+**Note on TLS**: The Rust settings loader fetches the registry over HTTPS using `reqwest` with `rustls` and its
+embedded Mozilla roots, so it does not depend on the runtime image's own CA bundle.
 
 **Note on SIGTERM Prevention**: The Rust HTTP client includes application-level timeouts (15s default) to prevent container orchestrators from killing the service during slow HTTP requests. Use `ARK_RUST_LOAD_TIMEOUT_MS` to adjust if needed.
 
+```bash
 # Production
 docker run -p 3336:3336 \
   -e ARK_REGISTRY="https://raw.githubusercontent.com/dasch-swiss/ark-resolver-data/master/data/dasch_ark_registry_prod.ini" \
@@ -238,12 +244,18 @@ See `docker-compose.yml` for a complete example configuration.
 
 ### Building Images
 
-Multi-architecture images can be built using the provided just commands:
+Images are linux/amd64 only, built by `rules_oci` from the Bazel graph:
 
 ```bash
-# For linux/amd64
-just docker-build-intel
+# Build the stamped release image and load it into the local Docker daemon
+# as daschswiss/ark-resolver:latest
+just docker-build
 
-# For linux/arm64  
-just docker-build-arm
+# Verify the loaded image's interpreter, imports, certs, tzdata and uid
+just image-check
+
+# Run docker-build, image-check, and the Bazel-driven Docker smoke test
+just smoke-test
 ```
+
+Publishing (`just docker-publish`, pushes the stamped image to Docker Hub) runs in CI only.

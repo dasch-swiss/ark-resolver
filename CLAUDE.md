@@ -126,19 +126,23 @@ ark-resolver specs (PRDs, implementation plans, design docs) live directly in [`
 The DSP ARK Resolver is a hybrid Python/Rust application that resolves ARK URLs referring to resources in
 DSP (DaSCH Service Platform) repository.
 
-The project is in the process of migrating the codebase from Python to Rust. This will happen in three phases:
+The hybrid Python (Sanic) / Rust (PyO3) service is the production architecture, built end to end with
+Bazel (see `docs/adr/0002-build-with-bazel.md`). An earlier plan to rewrite the Rust side into a
+standalone Axum service and remove Python/PyO3 entirely is not being pursued.
 
-1. Add functionality to Rust and run in parallel with the Python implementation to verify correct behavior in production,
-   while the Python behavior is user facing. The convention is, that the same Python code that now uses the Rust library
-   should be duplicated into files that end with `_rust.py`. Important: Always add comparative unit tests between the
-   Python and Rust implementations.
-2. Change user facing behavior to Rust implementation, and start removing Python.
-3. Refactor Rust code into a service using Axum, and removing Python(PyO3/Maturin.
+Logic continues to migrate from Python to Rust inside that hybrid, in two phases:
+
+1. Add functionality to Rust and run it in parallel with the Python implementation to verify correct behavior in
+   production, while the Python behavior is user facing. The convention is that the same Python code that now uses
+   the Rust library is duplicated into files ending in `_rust.py`. Important: Always add comparative unit tests
+   between the Python and Rust implementations.
+2. Change user-facing behavior to the Rust implementation and continue removing Python where the migration is
+   complete.
 
 The core architecture combines:
 
 - **Python (Sanic)**: Main HTTP server, routing, and business logic (`ark_resolver/ark.py`)
-- **Rust (PyO3)**: Phase 1 functions exposed as Python extensions (`src/lib.rs`)
+- **Rust (PyO3)**: Functions exposed as a Python extension module, built as the `//:_rust` Bazel target (`src/lib.rs`)
 - **Configuration-driven**: Uses INI files for ARK registry and server configuration
 
 The resolver operates in two modes:
@@ -149,44 +153,38 @@ The resolver operates in two modes:
 
 ### Setup
 ```bash
-# Install uv dependency manager (if not installed)
-curl -LsSf https://astral.sh/uv/install.sh | sh
+# Enter the dev shell (provides bazelisk/bazel, just, uv, cargo-audit)
+nix develop
+# or, with direnv installed: direnv allow
 
-# Install dependencies
-uv sync --locked --no-install-project
-# or using just
+# Install Python dependencies (as defined in pyproject.toml and uv.lock)
 just install
 ```
 
 ### Build and Development
 ```bash
-# Build Rust extensions with maturin
+# Build the Rust extension (//:_rust) and copy the .so into ark_resolver/,
+# so pyright and IDEs can resolve `ark_resolver._rust`. This is for local
+# tooling only: `uv run` cannot load a Bazel-built .so.
 just build
-# or manually
-uv run maturin develop
 
-# Run the resolver locally
+# Run ark-resolver locally (sets ARK_REGISTRY, then bazel run //:ark_resolver_bin -- -s)
 just run
-# This sets ARK_REGISTRY and runs: uv run ark_resolver/ark.py -s
 
-# Run as command-line tool (examples)
-./ark_resolver/ark.py -i http://rdfh.ch/0002/70aWaB2kWsuiN6ujYgM0ZQ  # IRI to ARK
-./ark_resolver/ark.py -a http://ark.example.org/ark:/00000/0002-751e0b8a-6  # ARK redirect
+# Run as a command-line tool (examples; ARK_REGISTRY must be set)
+bazel run //:ark_resolver_bin -- -i http://rdfh.ch/0002/70aWaB2kWsuiN6ujYgM0ZQ  # IRI to ARK
+bazel run //:ark_resolver_bin -- -a http://ark.example.org/ark:/00000/0002-751e0b8a-6  # ARK redirect
 ```
 
 ### Testing
 ```bash
-# Python tests (requires build first)
-just pytest
-# or
-uv run pytest
-
-# Rust unit tests
+# Rust unit tests (bazel test //src:unit_tests)
 just test
-# or
-cargo test --lib
 
-# Smoke tests (Docker-based)
+# Python tests that require the Rust extension (bazel test //tests/...)
+just pytest
+
+# Docker-based smoke test: docker-build, then image-check, then the Bazel smoke test
 just smoke-test
 ```
 
@@ -199,18 +197,32 @@ just check  # Runs both rustcheck and pycheck
 just pycheck
 # Runs: uv run ruff format --check . && uv run ruff check . && uv run pyright
 
-# Rust checks  
+# Rust checks
 just rustcheck
-# Runs: cargo +nightly fmt --check && cargo clippy -- -D warnings
+# Runs: just --check --fmt, then rustfmt and clippy aspects via `bazel build`
 
 # Format all code
 just fmt  # Runs both rustfmt and pyfmt
+
+# Format only Rust (bazel run @rules_rust//:rustfmt)
+just rustfmt
+
+# Advisory scan over the checked-in Cargo lockfile (cargo audit --file Cargo.Bazel.lock)
+just audit
+
+# Repin Cargo.Bazel.lock after a crate.spec change in MODULE.bazel
+just crates-repin
+
+# (Re)generate rust-project.json so rust-analyzer understands the Bazel crate graph
+just rust-project
 ```
 
 ## Architecture Details
 
 ### Python-Rust Integration
-- Rust code is compiled as a Python extension module (`_rust`) using maturin/PyO3
+- Rust code is built as the `//:_rust` `pyo3_extension` Bazel target (`rules_rust_pyo3`, using our own registered
+  PyO3 toolchain), landing at `ark_resolver/_rust.so`
+- Rust crate dependencies are declared as `crate.spec` entries in `MODULE.bazel` and locked in `Cargo.Bazel.lock`
 - Key Rust functions exposed: `base64url_check_digit`, `load_settings`, `initialize_tracing`, `initialize_debug_tracing`
 - Settings loading and parsing performance optimized in Rust (`src/ark_url_settings.rs`)
 - HTTP configuration fetching with comprehensive error diagnostics and SIGTERM prevention
@@ -241,8 +253,10 @@ Additional environment variables for debugging and timeout control:
 Uses UUID v5 with DaSCH-specific namespace (`cace8b00-717e-50d5-bcb9-486f39d733a2`) to create deterministic resource IRIs from legacy salsah.org ARK URLs, ensuring permanent identifier continuity.
 
 ## Docker Usage
-Images published to `daschswiss/ark-resolver`. Build commands available via just:
+Images published to `daschswiss/ark-resolver` (linux/amd64 only). Build and verify commands via just:
 ```bash
-just docker-build-intel  # linux/amd64
-just docker-build-arm    # linux/arm64  
+just docker-build      # stamped release image (rules_oci, distroless cc-debian13), loaded as daschswiss/ark-resolver:latest
+just image-check       # verify the loaded image's interpreter, imports, pip absence, certs, tzdata, uid
+just docker-image-tag  # print the tag derived from version.txt
 ```
+`just docker-publish` pushes the stamped image to Docker Hub; it runs in CI only.
