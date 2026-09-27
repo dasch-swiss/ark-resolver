@@ -9,7 +9,7 @@ date: 2026-09-26
 
 ## Overview
 
-The ARK resolver turns DaSCH ARK identifiers (`ark:/72163/...`) into redirects to the pages they identify, and converts between ARKs and DSP resource IRIs. It is a Python Sanic service with a Rust extension (`ark_resolver._rust`, built by maturin from the same crate). The Rust side is a reimplementation in progress: every ARK request runs Python and Rust side by side, **the Python result is served**, and the Rust result is only compared and reported (shadow execution). Redirect targets come from an INI registry held in `dasch-swiss/ark-resolver-data`. Rust layering follows `docs/adr/0001-adopt-hexagonal-architecture.md`. Domain vocabulary is in `CONTEXT.md`.
+The ARK resolver turns DaSCH ARK identifiers (`ark:/72163/...`) into redirects to the pages they identify, and converts between ARKs and DSP resource IRIs. It is a Python Sanic service with a Rust extension (`ark_resolver._rust`, built by Bazel's `pyo3_extension` rule from the same crate). The Rust side is a reimplementation in progress: every ARK request runs Python and Rust side by side, **the Python result is served**, and the Rust result is only compared and reported (shadow execution). Redirect targets come from an INI registry held in `dasch-swiss/ark-resolver-data`. Rust layering follows `docs/adr/0001-adopt-hexagonal-architecture.md`. Domain vocabulary is in `CONTEXT.md`.
 
 ## Components
 
@@ -29,7 +29,7 @@ The ARK resolver turns DaSCH ARK identifiers (`ark:/72163/...`) into redirects t
   - Tests use `load_settings()` directly.
 - **Local-context kit:** `ark_resolver/ark.py`, `ark_resolver/routes/redirect.py`, `ark_resolver/routes/convert.py`, `ark_resolver/error_diagnostics.py`, `ark_resolver/parallel_execution.py`, `ark_resolver/ark_url_rust.py`, `tests/test_redirect_head.py`
 - **Depends on:** shadow-bridge, python-resolution, rust-adapters (direct `_rust` import in `ark.py` for `load_settings`, `initialize_debug_tracing`, `log_environment_variables`)
-- **Used by:** build-and-delivery (entrypoint, Dockerfile HEALTHCHECK, smoke test)
+- **Used by:** build-and-delivery (`oci_image` entrypoint, the healthcheck probe in README.md and docker-compose.yml, smoke test)
 - **Boundary rules:**
   - Every ARK route follows one sequence:
     1. A non-`ark:/` path goes to `diagnose_non_ark_path`, with no Sentry report.
@@ -108,7 +108,7 @@ The ARK resolver turns DaSCH ARK identifiers (`ark:/72163/...`) into redirects t
 
 ### rust-adapters
 
-- **Paths:** `src/adapters/**`, `src/lib.rs`, `build.rs`
+- **Paths:** `src/adapters/**`, `src/lib.rs`
 - **Purpose:**
   - The PyO3 module `_rust` and its classes.
   - The infrastructure providers (file system, HTTP registry fetch, environment, INI parsing) that implement the core's ports.
@@ -137,23 +137,24 @@ The ARK resolver turns DaSCH ARK identifiers (`ark:/72163/...`) into redirects t
 
 ### build-and-delivery
 
-- **Paths:** `Dockerfile`, `.dockerignore`, `docker-compose.yml`, `entrypoint.sh`, `justfile`, `Makefile`, `vars.mk`, `pyproject.toml`, `uv.lock`, `Cargo.toml`, `Cargo.lock`, `rust-toolchain.toml`, `.github/**`, `.gitignore`, `.claude/**`, `eng.yaml`, `tests/smoke_test.rs`
+- **Paths:** `MODULE.bazel`, `MODULE.bazel.lock`, `BUILD.bazel`, `src/BUILD.bazel`, `tests/BUILD.bazel`, `.bazelrc`, `.bazelversion`, `.bazelignore`, `bazel/**`, `platforms/**`, `tools/**`, `Cargo.Bazel.lock`, `flake.nix`, `flake.lock`, `.envrc`, `version.txt`, `.python-version`, `docker-compose.yml`, `justfile`, `pyproject.toml`, `uv.lock`, `.github/**`, `.gitignore`, `.claude/**`, `eng.yaml`, `tests/smoke_test.rs`, `tests/interpreter_path_test.py`
 - **Purpose:**
-  - Builds the extension in place with maturin, then the two-stage Alpine image.
+  - Bazel is the only build path: builds the PyO3 extension (`pyo3_extension`), runs the Rust and Python tests, and builds the distroless OCI image with `rules_oci`.
   - CI gates.
-  - release-please versioning from `Cargo.toml`.
+  - release-please versioning from `version.txt` (release-type `simple`).
   - Docker Hub publishing and the Jenkins deploy webhooks.
-- **Key entities:** `just test`, `just pytest`, `just pycheck`, `just smoke-test`, `docker-image-tag`, `check.yml`, `test.yml`, `security.yml`, `publish.yml`, `claude-review.yml`
+- **Key entities:** `//:_rust`, `//:ark_resolver`, `//:ark_resolver_bin`, `//:image`, `//:image_load`, `//:image_push`, `just test`, `just pytest`, `just pycheck`, `just smoke-test`, `just docker-build`, `just image-check`, `docker-image-tag`, `check.yml`, `test.yml`, `security.yml`, `publish.yml`, `claude-review.yml`
 - **Public interface:**
   - The `just` recipes.
-  - The image `daschswiss/ark-resolver:<cargo-version>[-<sha>]`.
-  - `entrypoint.sh`, which runs `python3 -m ark_resolver.ark "$@"` with the default argument `-s`.
-- **Local-context kit:** `justfile`, `Dockerfile`, `pyproject.toml`, `Cargo.toml`, `.github/workflows/test.yml`, `.github/workflows/publish.yml`, `.github/workflows/security.yml`
+  - The image `daschswiss/ark-resolver:<version>-<shortsha>` (or `<version>` alone when `HEAD` sits exactly on a git tag). The version comes from `version.txt`; the scheme is defined once in `tools/workspace_status.sh` and read back by `justfile`'s `docker-image-tag`. `latest` is loaded locally by `just docker-build` but is never pushed to Docker Hub.
+  - `//:image`'s `oci_image` entrypoint: an explicit, hermetic interpreter path (no shell in the distroless base) running `ark_resolver_bin` with the default `cmd` argument `-s`. `tests/interpreter_path_test.py` enforces that README.md, docker-compose.yml and justfile's hand-copied interpreter path all match this entrypoint.
+- **Local-context kit:** `justfile`, `MODULE.bazel`, `BUILD.bazel`, `pyproject.toml`, `.github/workflows/test.yml`, `.github/workflows/publish.yml`, `.github/workflows/security.yml`
 - **Depends on:** http-service (it runs it)
 - **Used by:** none
 - **Boundary rules:**
-  - The version lives in `Cargo.toml` (release-type `rust`). `pyproject.toml` stays at `0.1.0`. Enforcement: `static-analysis` (release-please).
-  - `Makefile` and `vars.mk` are obsolete and reference files that do not exist. The `justfile` is authoritative. Enforcement: `docs-only`.
+  - The version lives in `version.txt` (release-type `simple`). `pyproject.toml` stays at `0.1.0`. Enforcement: `static-analysis` (release-please).
+  - Bazel is the only build path. No `cargo`, `maturin` or `Dockerfile` build files exist in this repo (`cargo audit` in `just audit` is the one sanctioned exception, reading `Cargo.Bazel.lock`). Enforcement: `review`.
+  - The interpreter path in `BUILD.bazel`'s `oci_image` entrypoint is hand-copied into README.md, docker-compose.yml and justfile; all four must agree. Enforcement: `static-analysis` (`tests/interpreter_path_test.py`).
 - **Durable state:**
   - Release state: `.github/release-please/manifest.json` and `CHANGELOG.md`. The only writer is release-please.
   - Deployment is outside this repo, reached through `JENKINS_*` webhooks.
@@ -162,7 +163,7 @@ The ARK resolver turns DaSCH ARK identifiers (`ark:/72163/...`) into redirects t
 
 - **Paths:** `README.md`, `CLAUDE.md`, `CONTEXT.md`, `CHANGELOG.md`, `LICENSE`, `ARCH-MAP.md`, `docs/**`
 - **Purpose:** Documentation for users, operators and agents, plus the ADRs, specs and learnings.
-- **Key entities:** `ADR-0001`, `log-schema`, `docs/specs/`
+- **Key entities:** `ADR-0001`, `ADR-0002`, `log-schema`, `docs/specs/`
 - **Public interface:** `README.md` (deployment, env vars, routes), `CLAUDE.md` (agent guidance), `CONTEXT.md` (domain vocabulary), `docs/adr/`
 - **Local-context kit:** `README.md`, `CLAUDE.md`, `docs/adr/0001-adopt-hexagonal-architecture.md`, `docs/learnings/integration-issues/pyo3-rust-python-shadow-execution-parity.md`
 - **Depends on:** none
