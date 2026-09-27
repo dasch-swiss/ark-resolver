@@ -1,9 +1,8 @@
 # This workflow runs whenever a PR is opened or updated, or a commit is pushed to main. It runs
-# several checks:
-# - fmt: checks that the code is formatted according to rustfmt
-# - clippy: checks that the code does not contain any clippy warnings
-# - ruff checks
-# - ruff checks
+# two Bazel-driven checks:
+# - rustcheck: rustfmt and clippy, via `just rustcheck` (Bazel aspects)
+# - pycheck: ruff format, ruff check, and pyright, via `just pycheck` (builds the Rust
+#   extension with Bazel first)
 
 name: check
 
@@ -25,57 +24,43 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  fmt:
+  # 90 minutes: a cold Linux runner fetches LLVM, Rust and CPython toolchains
+  # on the first Bazel build.
+  rustcheck:
     runs-on: ubuntu-latest
-    name: rust fmt
+    name: rust checks
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: astral-sh/setup-uv@v5
+      - id: setup
+        uses: ./.github/actions/ci-setup
+      - run: just rustcheck
+      - name: Save Bazel repository cache
+        if: ${{ !cancelled() && steps.setup.outputs.repo-cache-hit != 'true' }}
+        uses: actions/cache/save@v4
         with:
-          version: "0.11.28"
-          enable-cache: true
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.13'
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          components: rustfmt
-      - run: cargo fmt --check
-  rust-checks:
-    runs-on: ubuntu-latest
-    name: rust clippy
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - uses: astral-sh/setup-uv@v5
-        with:
-          version: "0.11.28"
-          enable-cache: true
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.13'
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          components: clippy
-      - run: cargo clippy -- -D warnings
-  python-checks:
+          path: ~/.cache/bazel-repo
+          key: ${{ steps.setup.outputs.repo-cache-key }}
+
+  pycheck:
     runs-on: ubuntu-latest
     name: python checks
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: astral-sh/setup-uv@v5
+      - id: setup
+        uses: ./.github/actions/ci-setup
+      - uses: actions/setup-python@v5
         with:
-          version: "0.11.28"
-          enable-cache: true
-      - name: Install just
-        uses: taiki-e/install-action@just
-      - name: Install Python dependencies
-        run: uv sync --all-extras --dev
-        shell: bash
-      - name: pycheck
-        run: just pycheck
+          python-version: '3.12'
+      - run: just pycheck
+      - name: Save Bazel repository cache
+        if: ${{ !cancelled() && steps.setup.outputs.repo-cache-hit != 'true' }}
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.cache/bazel-repo
+          key: ${{ steps.setup.outputs.repo-cache-key }}

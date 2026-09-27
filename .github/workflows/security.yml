@@ -21,11 +21,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-      - name: Install cargo-audit
-        run: cargo install cargo-audit --locked
+      - uses: extractions/setup-just@v3
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-audit
       - name: Run cargo audit
-        run: cargo audit
+        run: just audit
 
   pip-audit:
     name: Python dependency audit
@@ -37,7 +38,7 @@ jobs:
           version: "0.11.28"
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.13'
+          python-version: '3.12'
       - name: Export requirements from uv.lock
         run: uv export --format requirements-txt --no-hashes --no-dev > /tmp/requirements.txt
       - uses: pypa/gh-action-pip-audit@v1.1.0

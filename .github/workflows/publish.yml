@@ -12,14 +12,15 @@ jobs:
     name: Publish to Dockerhub
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' || (github.event_name == 'release' && startsWith(github.ref, 'refs/tags/'))
+    timeout-minutes: 90
     outputs:
       tag: ${{ steps.output_docker_image_tag.outputs.tag }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: extractions/setup-just@v2
-      - uses: docker/setup-buildx-action@v3
+      - id: setup
+        uses: ./.github/actions/ci-setup
       - name: Output docker image tag
         id: output_docker_image_tag
         run: echo "tag=$(just docker-image-tag | tr -d '\n')" >> "$GITHUB_OUTPUT"
@@ -30,8 +31,8 @@ jobs:
           username: ${{ secrets.DOCKER_USER }}
           password: ${{ secrets.DOCKER_HUB_TOKEN }}
       - name: Build and publish image to Dockerhub
-        run: just docker-publish-intel
-      - name: Docker Scout — generate SBOM
+        run: just docker-publish
+      - name: 'Docker Scout: generate SBOM'
         uses: docker/scout-action@v1
         with:
           command: sbom
@@ -43,6 +44,12 @@ jobs:
         with:
           name: sbom
           path: sbom.spdx.json
+      - name: Save Bazel repository cache
+        if: ${{ !cancelled() && steps.setup.outputs.repo-cache-hit != 'true' }}
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.cache/bazel-repo
+          key: ${{ steps.setup.outputs.repo-cache-key }}
 
   trigger-stage-deployment:
     name: Trigger deployment to STAGE
