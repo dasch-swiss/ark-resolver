@@ -15,3 +15,10 @@ services:
       ARK_NAAN: "72163"
       ARK_HTTPS_PROXY: false
       ARK_REGISTRY: "https://raw.githubusercontent.com/dasch-swiss/ark-resolver-data/master/data/dasch_ark_registry_staging.ini"
+    # The image's own healthcheck binary (see README.md "Healthcheck").
+    healthcheck:
+      test: ["CMD", "/app/healthcheck"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
