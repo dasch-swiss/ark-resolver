@@ -1,0 +1,4 @@
+exports_files(
+    ["exclude_pip.awk"],
+    visibility = ["//:__pkg__"],
+)

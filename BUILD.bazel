@@ -1,6 +1,11 @@
+load("@aspect_bazel_lib//lib:transitions.bzl", "platform_transition_filegroup")
+load("@rules_cc//cc:cc_import.bzl", "cc_import")
+load("@rules_oci//oci:defs.bzl", "oci_image", "oci_load")
 load("@rules_python//python:py_binary.bzl", "py_binary")
 load("@rules_python//python:py_library.bzl", "py_library")
 load("@rules_rust_pyo3//:defs.bzl", "pyo3_extension")
+load("@tar.bzl//tar:mtree.bzl", "mtree_mutate", "mtree_spec")
+load("@tar.bzl//tar:tar.bzl", "tar")
 
 # pip.parse's `uv_lock` attribute and crate.from_specs' `cargo_lockfile`
 # attribute both read their file as a label, so the root package needs a
@@ -18,6 +23,18 @@ exports_files(
     visibility = ["//tests:__pkg__"],
 )
 
+# `$(location)` on `@llvm-project//libunwind:libunwind.static` resolves under
+# that target's own config transition, not `_rust_shared`'s, so it would point
+# at a file never staged in the sandbox; `deps` instead routes through
+# rules_rust's CcInfo-linking-context plumbing, which resolves in the
+# consuming target's own configuration.
+cc_import(
+    name = "_libunwind_static",
+    static_library = "@llvm-project//libunwind:libunwind.static",
+    target_compatible_with = ["@platforms//os:linux"],
+    visibility = ["//visibility:private"],
+)
+
 # module_name "ark_resolver._rust" in the ROOT package places the .so at
 # ark_resolver/_rust.so; declared inside //ark_resolver it would land at
 # ark_resolver/ark_resolver/_rust.so.
@@ -29,6 +46,15 @@ pyo3_extension(
     crate_features = ["pyo3"],
     # No "@crates//:pyo3" entry: pyo3_extension injects the registered
     # rust_pyo3_toolchain's pyo3 crate into every extension automatically.
+    proc_macro_deps = ["@crates//:async-trait"],
+    edition = "2021",
+    # The hermetic toolchain forces `--unwindlib=none` on Linux, so clang
+    # never auto-links an unwinder; the cc_toolchain's runtime-lib feature
+    # that would normally supply one only fires for `cc_common` link actions,
+    # never for rustc's own direct linker invocation, leaving `_Unwind_*`
+    # undefined. `:_libunwind_static` links llvm-project's static libunwind
+    # directly instead, keeping `_rust.so` self-contained with no new runtime
+    # dependency on the base image.
     deps = [
         "@crates//:base64",
         "@crates//:config",
@@ -42,9 +68,10 @@ pyo3_extension(
         "@crates//:url",
         "@crates//:urlencoding",
         "@crates//:uuid",
-    ],
-    proc_macro_deps = ["@crates//:async-trait"],
-    edition = "2021",
+    ] + select({
+        "@platforms//os:linux": [":_libunwind_static"],
+        "//conditions:default": [],
+    }),
     module_name = "ark_resolver._rust",
     # Stub generation needs pyo3's experimental-inspect feature, which
     # //src:ark_resolver_lib does not enable.
@@ -80,4 +107,103 @@ py_binary(
     main = "ark_resolver/ark.py",
     deps = [":ark_resolver"],
     visibility = ["//visibility:private"],
+)
+
+# `tar` runs on the untransitioned (host-platform-analyzed) binary: tar.bzl
+# skips srcs without a runfiles manifest, and a filegroup produced by
+# transitioning first has none. The finished tar is transitioned to
+# linux_x86_64 afterwards instead (below), so the Linux runfiles tree is
+# assembled from a target that was actually analyzed for Linux.
+#
+# `:_rust_shared` (the pyo3_extension's underlying cdylib) is listed
+# alongside the binary: `ark_resolver/_rust.so` in the runfiles tree is only
+# a symlink to it, and preserve_symlinks only rewrites a symlink into a
+# working in-tar relative link when its target is itself an mtree entry.
+# Without this, the symlink survives as an absolute bazel-out/execroot path
+# that does not exist in the container.
+mtree_spec(
+    name = "ark_resolver_bin_mtree",
+    srcs = [
+        ":_rust_shared",
+        ":ark_resolver_bin",
+    ],
+    include_runfiles = True,
+)
+
+mtree_mutate(
+    name = "ark_resolver_bin_mtree_app",
+    srcs = [
+        ":_rust_shared",
+        ":ark_resolver_bin",
+    ],
+    mtree = ":ark_resolver_bin_mtree",
+    mtime = "0",
+    package_dir = "app",
+    preserve_symlinks = True,
+    # Drops the interpreter's bundled pip/ensurepip/wheel from the image
+    # layer; see bazel/tar/exclude_pip.awk.
+    includes = ["//bazel/tar:exclude_pip.awk"],
+)
+
+tar(
+    name = "ark_resolver_bin_tar",
+    srcs = [
+        ":_rust_shared",
+        ":ark_resolver_bin",
+    ],
+    compress = "zstd",
+    mtree = ":ark_resolver_bin_mtree_app",
+)
+
+# rules_py#390 is the failure this transition guards against: without it, a
+# host-arch (darwin) interpreter would leak into the Linux image layer.
+platform_transition_filegroup(
+    name = "ark_resolver_bin_tar_linux_amd64",
+    srcs = [":ark_resolver_bin_tar"],
+    target_platform = "//platforms:linux_x86_64",
+)
+
+oci_image(
+    name = "image",
+    base = "@distroless_cc_linux_amd64",
+    cmd = ["-s"],
+    # distroless has no shell, so the entrypoint names the interpreter
+    # directly. The rules_python stub is pure Python and ends in os.execv, so
+    # no shell is needed to hand off to ark.py.
+    entrypoint = [
+        "/app/ark_resolver_bin.runfiles/rules_python++python+python_3_12_x86_64-unknown-linux-gnu/bin/python3",
+        "/app/ark_resolver_bin",
+    ],
+    env = {
+        "PYTHONUNBUFFERED": "1",
+        # Fixes the venv path across container restarts; without it every
+        # start leaves a new /tmp/bazel.* directory (also works with a
+        # read-only rootfs plus a /tmp tmpfs).
+        "RULES_PYTHON_EXTRACT_ROOT": "/tmp/rp",
+    },
+    exposed_ports = ["3336/tcp"],
+    target_compatible_with = ["@platforms//os:linux"],
+    tars = [":ark_resolver_bin_tar_linux_amd64"],
+    user = "65532:65532",
+    workdir = "/app",
+)
+
+# `oci_load` is a `bazel run` target: its runner script executes locally on
+# the host invoking it, using a `tar` bound to whatever platform `:image`
+# itself was analyzed under. Without this second transition, `oci_load`
+# inherits `:image`'s required linux_x86_64 config directly and pastes a
+# Linux `tar` binary into a script meant to run on the (e.g. macOS) host.
+# Wrapping `:image` here keeps that requirement local to the dependency
+# edge, so `oci_load` (and `bazel run //:image_load`) analyze under the
+# invoking host's own platform instead.
+platform_transition_filegroup(
+    name = "image_linux_amd64",
+    srcs = [":image"],
+    target_platform = "//platforms:linux_x86_64",
+)
+
+oci_load(
+    name = "image_load",
+    image = ":image_linux_amd64",
+    repo_tags = ["daschswiss/ark-resolver:latest"],
 )
