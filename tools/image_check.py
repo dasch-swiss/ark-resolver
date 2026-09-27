@@ -23,12 +23,10 @@ def check(name, condition):
         failures.append(name)
 
 
-# The entrypoint's own interpreter path; running this file at all already
-# proves it, but assert the literal path too so a future entrypoint change
-# that silently swaps interpreters is caught here rather than downstream.
-interpreter = "/app/ark_resolver_bin.runfiles/rules_python++python+python_3_12_x86_64-unknown-linux-gnu/bin/python3"
+# The justfile runs this script with the image's own interpreter as
+# `--entrypoint`, and separately compares that path against the image's
+# actual Config.Entrypoint before invoking `docker run`.
 check("entrypoint interpreter exists", os.path.exists(sys.executable))
-check("entrypoint interpreter path matches oci_image", os.path.realpath(sys.executable) == os.path.realpath(interpreter))
 
 # The `py_binary` stub only assembles this sys.path when actually launched via
 # `ark_resolver_bin`; running the bare interpreter needs it set up by hand.
