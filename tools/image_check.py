@@ -54,6 +54,7 @@ check("pip is not importable", importlib.util.find_spec("pip") is None)
 check("wheel is not importable", importlib.util.find_spec("wheel") is None)
 check("ensurepip is not importable", importlib.util.find_spec("ensurepip") is None)
 
+check("healthcheck binary is executable", os.access("/app/healthcheck", os.X_OK))
 check("ca-certificates.crt exists", os.path.exists("/etc/ssl/certs/ca-certificates.crt"))
 check("zoneinfo exists", os.path.isdir("/usr/share/zoneinfo"))
 

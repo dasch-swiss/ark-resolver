@@ -1,0 +1,20 @@
+load("@rules_rust//rust:defs.bzl", "rust_binary", "rust_test")
+
+# Shipped in the image as /app/healthcheck; deployments run it as their
+# container healthcheck because the distroless base has no shell or curl.
+rust_binary(
+    name = "healthcheck",
+    srcs = ["main.rs"],
+    edition = "2021",
+    visibility = ["//:__pkg__"],
+    deps = ["@crates//:serde_json"] + select({
+        # Hermetic LLVM links with --unwindlib=none; see //:_libunwind_static.
+        "@platforms//os:linux": ["//:_libunwind_static"],
+        "//conditions:default": [],
+    }),
+)
+
+rust_test(
+    name = "healthcheck_test",
+    crate = ":healthcheck",
+)

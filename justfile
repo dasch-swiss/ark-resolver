@@ -24,8 +24,8 @@ upgrade:
 [doc("Run all rust fmt and clippy checks")]
 rustcheck:
     just --check --fmt --unstable
-    bazel build //src:ark_resolver_lib //src:unit_tests //:_rust_shared --aspects=@rules_rust//rust:defs.bzl%rustfmt_aspect --output_groups=rustfmt_checks
-    bazel build //src:ark_resolver_lib //src:unit_tests //:_rust_shared --aspects=@rules_rust//rust:defs.bzl%rust_clippy_aspect --output_groups=clippy_checks --@rules_rust//rust/settings:clippy_flags=-Dwarnings
+    bazel build //src:ark_resolver_lib //src:unit_tests //:_rust_shared //tools/healthcheck:healthcheck //tools/healthcheck:healthcheck_test --aspects=@rules_rust//rust:defs.bzl%rustfmt_aspect --output_groups=rustfmt_checks
+    bazel build //src:ark_resolver_lib //src:unit_tests //:_rust_shared //tools/healthcheck:healthcheck //tools/healthcheck:healthcheck_test --aspects=@rules_rust//rust:defs.bzl%rust_clippy_aspect --output_groups=clippy_checks --@rules_rust//rust/settings:clippy_flags=-Dwarnings
 
 # Run all python checks
 pycheck: build
@@ -83,6 +83,12 @@ build: install
 pytest:
     bazel test //tests/...
 
+# Probes a server started with `just run` the way deployments probe the
+# container. Set ARK_INTERNAL_PORT to probe another port.
+[doc("Run the image's healthcheck binary against a local server")]
+healthcheck:
+    bazel run //tools/healthcheck
+
 # Run ark-resolver locally. `bazel run` executes in the runfiles dir, so
 # ARK_REGISTRY needs an absolute path.
 [doc("Run ark-resolver locally")]
@@ -92,7 +98,7 @@ run:
 # ARK_REGISTRY is supplied via //src:unit_tests' `env` attribute, not here.
 [doc("Run Rust unit tests")]
 test:
-    bazel test //src:unit_tests
+    bazel test //src:unit_tests //tools/healthcheck:healthcheck_test
 
 # Run smoke tests that will spinn up a Docker container and call the health endpoint
 smoke-test:

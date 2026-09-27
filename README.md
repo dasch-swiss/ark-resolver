@@ -221,6 +221,17 @@ docker run -p 3336:3336 \
   daschswiss/ark-resolver
 ```
 
+### Healthcheck
+
+The image has no shell, curl or jq, and OCI images have no `HEALTHCHECK` field, so the image ships a small healthcheck binary, `/app/healthcheck` (source: `tools/healthcheck/`). It requests `http://127.0.0.1:${ARK_INTERNAL_PORT:-3336}/health` and exits 0 only when the server answers `{"status": "ok"}`, printing the reason otherwise. Deployments declare:
+
+```yaml
+healthcheck:
+  test: ["CMD", "/app/healthcheck"]
+```
+
+To try it locally, start the server with `just run` and run `just healthcheck` in another shell.
+
 ### Docker Compose
 
 See `docker-compose.yml` for a complete example configuration.

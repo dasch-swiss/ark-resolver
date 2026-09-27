@@ -33,7 +33,7 @@ cc_import(
     name = "_libunwind_static",
     static_library = "@llvm-project//libunwind:libunwind.static",
     target_compatible_with = ["@platforms//os:linux"],
-    visibility = ["//visibility:private"],
+    visibility = ["//tools/healthcheck:__pkg__"],
 )
 
 # module_name "ark_resolver._rust" in the ROOT package places the .so at
@@ -164,6 +164,25 @@ platform_transition_filegroup(
     target_platform = "//platforms:linux_x86_64",
 )
 
+# The healthcheck binary gets its own layer at /app/healthcheck. It has no
+# runfiles, so explicit mtree lines replace the auto spec; like the app layer,
+# the tar is built untransitioned and transitioned to linux_x86_64 as a whole.
+tar(
+    name = "healthcheck_tar",
+    srcs = ["//tools/healthcheck"],
+    compress = "zstd",
+    mtree = [
+        "app uid=0 gid=0 mode=0755 time=0 type=dir",
+        "app/healthcheck uid=0 gid=0 mode=0755 time=0 type=file content=$(execpath //tools/healthcheck)",
+    ],
+)
+
+platform_transition_filegroup(
+    name = "healthcheck_tar_linux_amd64",
+    srcs = [":healthcheck_tar"],
+    target_platform = "//platforms:linux_x86_64",
+)
+
 # ── Image stamping ─────────────────────────────────────────────────────────
 # `created` and the OCI labels are stamped from the `STABLE_*` keys emitted
 # by `tools/workspace_status.sh`. The `STABLE_*` prefix matters: a key in
@@ -229,7 +248,10 @@ oci_image(
     exposed_ports = ["3336/tcp"],
     labels = ":image_labels",
     target_compatible_with = ["@platforms//os:linux"],
-    tars = [":ark_resolver_bin_tar_linux_amd64"],
+    tars = [
+        ":ark_resolver_bin_tar_linux_amd64",
+        ":healthcheck_tar_linux_amd64",
+    ],
     user = "65532:65532",
     workdir = "/app",
 )
