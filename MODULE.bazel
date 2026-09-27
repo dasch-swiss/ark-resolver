@@ -139,6 +139,24 @@ python.toolchain(
     is_default = True,
 )
 
+# rules_python's own manifest only tracks the plain `install_only` archive
+# (python/private/runtimes_manifest_workspace.bzl), where ~194 MiB of the
+# 228 MiB Linux 3.12.13 interpreter is unstripped debug symbols in
+# bin/python3.12 and lib/libpython3.12.so.1.0. python-build-standalone
+# publishes an `install_only_stripped` asset per release with the same
+# contents minus those symbols; this override points only the Linux x86_64
+# toolchain at it, same version (3.12.13) and release (20260414) as the
+# default above so nothing else about the toolchain changes. sha256 verified
+# against the release's SHA256SUMS. macOS is untouched (no override tag for
+# that platform).
+python.single_version_platform_override(
+    python_version = "3.12.13",
+    platform = "x86_64-unknown-linux-gnu",
+    urls = ["https://github.com/astral-sh/python-build-standalone/releases/download/20260414/cpython-3.12.13+20260414-x86_64-unknown-linux-gnu-install_only_stripped.tar.gz"],
+    sha256 = "3c3427e5628648478da2aa227472c350475a68bc58109f1b43849636a4aecb89",
+    strip_prefix = "python",
+)
+
 # `uv.lock` is the single Python lock (dev deps included); a spike confirmed
 # uv_lock resolves the Sanic/uvloop/httptools wheels for both host and Linux
 # targets directly, so pip.parse reads it rather than a separate
@@ -274,3 +292,22 @@ register_toolchains("@rules_rust_pyo3//toolchains:toolchain")
 # Binds PyO3 0.29 from `@crates` (see bazel/pyo3/BUILD.bazel) so the
 # `pyo3_extension` below links the same PyO3 version as //src:ark_resolver_lib.
 register_toolchains("//bazel/pyo3:rust_pyo3_toolchain")
+
+# ── OCI image base ─────────────────────────────────────────────────────────
+# `oci_pull` for the distroless_cc base image used as `:image`'s base layer.
+# Pinned by `digest =`, never `tag =` (reproducibility-critical: tags float;
+# digests don't). Multi-arch index; the digest below was captured 2026-09-27
+# from
+#   curl -sSI https://gcr.io/v2/distroless/cc-debian13/manifests/latest \
+#     -H 'Accept: application/vnd.oci.image.index.v1+json'
+# Bumping it later means re-running the curl and copying the
+# `Docker-Content-Digest` response header. `cc` (not `base`) ships libgcc-s1
+# and libstdc++6, needed by `_rust.so`'s dynamic link to libpython3.12.
+oci = use_extension("@rules_oci//oci:extensions.bzl", "oci")
+oci.pull(
+    name = "distroless_cc",
+    digest = "sha256:4594d59540d1948417f6ca2829ddd9294493a7c68b7528f4dd459de7f203a750",
+    image = "gcr.io/distroless/cc-debian13",
+    platforms = ["linux/amd64"],
+)
+use_repo(oci, "distroless_cc", "distroless_cc_linux_amd64")
