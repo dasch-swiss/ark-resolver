@@ -22,6 +22,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: extractions/setup-just@v3
+      # cargo itself is preinstalled on GitHub-hosted ubuntu runners; only
+      # cargo-audit needs installing here.
       - uses: taiki-e/install-action@v2
         with:
           tool: cargo-audit
@@ -33,6 +35,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      # This job has no Bazel work, so it sets up uv directly instead of via
+      # ci-setup/action.yml. Keep this version pin in sync with the one there.
       - uses: astral-sh/setup-uv@v5
         with:
           version: "0.11.28"
