@@ -150,13 +150,22 @@ docker-publish:
 docker-image-tag:
     @echo {{ IMAGE_TAG }}
 
-# Must match oci_image's `entrypoint` in BUILD.bazel: the distroless base has
+# Must equal oci_image's `entrypoint` in BUILD.bazel: the distroless base has
 # no shell, so every check below runs as a Python snippet inside the image
-# rather than a shell command.
+# rather than a shell command. `just image-check` verifies this value against
+# the loaded image's own Config.Entrypoint before using it.
 IMAGE_PYTHON := "/app/ark_resolver_bin.runfiles/rules_python++python+python_3_12_x86_64-unknown-linux-gnu/bin/python3"
 
 # Asserts against the already-loaded `daschswiss/ark-resolver:latest` (run
 # `just docker-build` first); does not build it itself.
 [doc("Verify the loaded image's interpreter, imports, pip absence, certs, tzdata and uid")]
 image-check:
+    actual_entrypoint="$(docker image inspect --format '{{{{index .Config.Entrypoint 0}}' {{ DOCKER_LATEST }})"; \
+    if [ "$actual_entrypoint" != "{{ IMAGE_PYTHON }}" ]; then \
+        echo "FAIL: entrypoint interpreter path matches oci_image" >&2; \
+        echo "  IMAGE_PYTHON:        {{ IMAGE_PYTHON }}" >&2; \
+        echo "  image entrypoint[0]: $actual_entrypoint" >&2; \
+        exit 1; \
+    fi; \
+    echo "PASS: entrypoint interpreter path matches oci_image"
     docker run --rm -i --platform linux/amd64 --entrypoint {{ IMAGE_PYTHON }} {{ DOCKER_LATEST }} - < tools/image_check.py
