@@ -1,0 +1,46 @@
+name: CI setup
+description: >
+  Provisions the Bazel CI environment: bazelisk, uv, just, and the Bazel
+  repository cache. Consumed by every workflow job that runs a Bazel-driven
+  `just` recipe.
+
+outputs:
+  repo-cache-key:
+    description: >
+      Primary key of the Bazel repository cache restore. Feed it to the
+      caller's end-of-job `actions/cache/save` step.
+    value: ${{ steps.repo-cache.outputs.cache-primary-key }}
+  repo-cache-hit:
+    description: >
+      'true' when the restore hit the primary key exactly; the caller's save
+      step should skip then (saving an existing key is a no-op warning).
+    value: ${{ steps.repo-cache.outputs.cache-hit }}
+
+runs:
+  using: composite
+  steps:
+    # bazelisk honours .bazelversion; setup-bazel's own caches are disabled
+    # below so the explicit repository-cache restore/save pair is the only one.
+    - uses: bazel-contrib/setup-bazel@0.19.0
+      with:
+        bazelisk-cache: false
+        disk-cache: false
+        repository-cache: false
+        external-cache: false
+
+    - uses: extractions/setup-just@v3
+
+    - uses: astral-sh/setup-uv@v5
+      with:
+        version: "0.11.28"
+        enable-cache: true
+
+    # restore-only: the combined actions/cache action saves only when the job
+    # succeeds, so each caller saves at its own end under `!cancelled()`.
+    - name: Restore Bazel repository cache
+      id: repo-cache
+      uses: actions/cache/restore@v4
+      with:
+        path: ~/.cache/bazel-repo
+        key: bazel-repo-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('MODULE.bazel.lock') }}
+        restore-keys: bazel-repo-${{ runner.os }}-${{ runner.arch }}-
