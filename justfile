@@ -153,7 +153,8 @@ docker-image-tag:
 # Must equal oci_image's `entrypoint` in BUILD.bazel: the distroless base has
 # no shell, so every check below runs as a Python snippet inside the image
 # rather than a shell command. `just image-check` verifies this value against
-# the loaded image's own Config.Entrypoint before using it.
+# the loaded image's own Config.Entrypoint before using it; `bazel test
+# //tests:interpreter_path_test` also enforces the match hermetically.
 IMAGE_PYTHON := "/app/ark_resolver_bin.runfiles/rules_python++python+python_3_12_x86_64-unknown-linux-gnu/bin/python3"
 
 # Asserts against the already-loaded `daschswiss/ark-resolver:latest` (run
