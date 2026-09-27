@@ -18,11 +18,11 @@ install:
 upgrade:
     uv lock --upgrade
 
-# Run all rust fmt and clippy checks
 # Aspects run on the command line rather than via `lint_config` on the
 # targets: `lint_config` on a `pyo3_extension` fails analysis before
 # rules_rust PR #4256, which is in no release yet. `//:_rust_shared` is
 # included because it is the only target compiled with the `pyo3` feature.
+[doc("Run all rust fmt and clippy checks")]
 rustcheck:
     just --check --fmt --unstable
     bazel build //src:ark_resolver_lib //src:unit_tests //:_rust_shared --aspects=@rules_rust//rust:defs.bzl%rustfmt_aspect --output_groups=rustfmt_checks
@@ -43,17 +43,19 @@ rustfmt:
 
 # (Re)generate rust-project.json so rust-analyzer understands the Bazel crate
 # graph (cargo can't see the rules_rust targets). The file is git-ignored.
+[doc("(Re)generate rust-project.json for rust-analyzer")]
 rust-project:
     bazel run @rules_rust//tools/rust_analyzer:gen_rust_project
 
 # Repin Cargo.Bazel.lock after a crate.spec change in MODULE.bazel.
 crates-repin:
-    CARGO_BAZEL_REPIN=1 bazel fetch @crates//:all
+    CARGO_BAZEL_REPIN=workspace bazel fetch @crates//:all
 
 # Advisory scan over the checked-in Cargo-format lockfile (`Cargo.Bazel.lock`,
-# materialized from `crate.from_specs` in MODULE.bazel) — cargo-audit reads
+# materialized from `crate.from_specs` in MODULE.bazel). cargo-audit reads
 # Cargo lock syntax, not MODULE.bazel.lock's JSON. cargo-audit comes from the
 # Nix dev shell.
+[doc("Advisory scan over the checked-in Cargo lockfile")]
 audit:
     cargo audit --file Cargo.Bazel.lock
 
@@ -69,20 +71,27 @@ fmt: rustfmt pyfmt
 fix:
     just --fmt --unstable
 
-# Build Rust using maturin
+# Build the Rust extension so pyright and IDEs can resolve `ark_resolver._rust`.
+# Not imported by `uv run`: uv's statically linked python-build-standalone
+# interpreter can't load the Bazel .so, which links libpython3.12 dynamically.
+[doc("Build the Rust extension for pyright and IDEs")]
 build: install
-    uv run maturin develop
+    bazel build //:_rust
+    rm -f ark_resolver/_rust*.so
+    install -m 0644 bazel-bin/ark_resolver/_rust.so ark_resolver/_rust.so
 
 # Run ark-resolver Python unit tests which require Rust code
 pytest:
     bazel test //tests/...
 
-# Run ark-resolver locally
-run: build
-    export ARK_REGISTRY="tests/ark-registry.ini" && uv run ark_resolver/ark.py -s
+# Run ark-resolver locally. `bazel run` executes in the runfiles dir, so
+# ARK_REGISTRY needs an absolute path.
+[doc("Run ark-resolver locally")]
+run:
+    ARK_REGISTRY="{{ justfile_directory() }}/tests/ark-registry.ini" bazel run //:ark_resolver_bin -- -s
 
-# Run Rust unit tests
 # ARK_REGISTRY is supplied via //src:unit_tests' `env` attribute, not here.
+[doc("Run Rust unit tests")]
 test:
     bazel test //src:unit_tests
 
