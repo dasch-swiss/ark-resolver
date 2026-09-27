@@ -25,7 +25,7 @@ The ARK resolver turns DaSCH ARK identifiers (`ark:/72163/...`) into redirects t
     - `GET /health/`.
     - `GET|HEAD /config`: config with the secret stripped.
     - `POST /reload`: GitHub webhook, HMAC-SHA1 via `X-Hub-Signature`.
-  - CLI: `python -m ark_resolver.ark -s | -i | -a`.
+  - CLI: `bazel run //:ark_resolver_bin -- -s | -i | -a` (in the image, the `oci_image` entrypoint runs the same binary).
   - Tests use `load_settings()` directly.
 - **Local-context kit:** `ark_resolver/ark.py`, `ark_resolver/routes/redirect.py`, `ark_resolver/routes/convert.py`, `ark_resolver/error_diagnostics.py`, `ark_resolver/parallel_execution.py`, `ark_resolver/ark_url_rust.py`, `tests/test_redirect_head.py`
 - **Depends on:** shadow-bridge, python-resolution, rust-adapters (direct `_rust` import in `ark.py` for `load_settings`, `initialize_debug_tracing`, `log_environment_variables`)
@@ -98,7 +98,7 @@ The ARK resolver turns DaSCH ARK identifiers (`ark:/72163/...`) into redirects t
 - **Depends on:** none (crates: `regex`, `thiserror`, `async_trait`, `serde_json`, `config`)
 - **Used by:** rust-adapters
 - **Boundary rules:**
-  - `src/core` never imports `crate::adapters`, `pyo3`, `std::fs`, `std::env` or `reqwest`. File, environment and HTTP access go through ports. Enforcement: `docs-only`. It is one crate with a non-optional `pyo3` dependency, so `cargo test --lib --no-default-features` cannot catch a violation.
+  - `src/core` never imports `crate::adapters`, `pyo3`, `std::fs`, `std::env` or `reqwest`. File, environment and HTTP access go through ports. Enforcement: `docs-only`. Core and adapters build as one `rust_library` (`//src:ark_resolver_lib`) with `@crates//:pyo3` as a dep, so neither `just test` nor the build catches a `pyo3` import in core. The enforcement upgrade is splitting `//src:core` into its own target without `pyo3` (already a listed follow-up).
   - Current violations:
     - `pyo3::Python::initialize()` in the tests of `domain/uuid_processing.rs`.
     - `From<std::io::Error | config::ConfigError | std::env::VarError>` on `SettingsError`.

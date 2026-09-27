@@ -22,7 +22,7 @@ migrate from Python to Rust inside that hybrid, in two phases:
 
 ## Modes of operation
 
-The program `ark.py` has two modes of operation:
+The binary `//:ark_resolver_bin` (entry point `ark_resolver/ark.py`) has two modes of operation:
 
 - When run as an HTTP server, it resolves DSP ARK URLs by redirecting
   to the actual location of each resource. Redirect URLs are generated
