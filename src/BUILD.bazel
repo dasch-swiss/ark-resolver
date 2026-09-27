@@ -15,8 +15,8 @@ load("@rules_rust//rust:defs.bzl", "rust_library", "rust_test")
 package(default_visibility = ["//visibility:private"])
 
 # Explicit list (no glob), mirroring sipi's BUILD.bazel convention. Consumed
-# as a filegroup so a later phase's pyo3_extension target can depend on the
-# same source set without duplicating the file list.
+# as a filegroup so the root package's `pyo3_extension` target can depend on
+# the same source set without duplicating the file list.
 filegroup(
     name = "srcs",
     srcs = [
@@ -63,13 +63,13 @@ filegroup(
         "core/use_cases/settings_manager.rs",
         "lib.rs",
     ],
-    # Grant matches the root package's future pyo3_extension consumer.
+    # Grant matches the root package's `pyo3_extension` consumer (//:_rust).
     visibility = ["//:__pkg__"],
 )
 
 # `lib.rs` is also the crate_root for :ark_resolver_lib; exported separately
-# so the future pyo3_extension can name it without depending on the whole
-# :srcs filegroup.
+# so `//:_rust` (the pyo3_extension) can name it without depending on the
+# whole :srcs filegroup.
 exports_files(
     ["lib.rs"],
     visibility = ["//:__pkg__"],

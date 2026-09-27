@@ -150,7 +150,7 @@ image-tag-check:
     echo "PASS: image_remote_tags.txt matches docker-image-tag ($stamped)"
 
 # Prints the same tag scheme //:image_remote_tags stamps into the pushed image
-# (tools/workspace_status.sh is now the single source for it); consumed by
+# (tools/workspace_status.sh is the single source for it); consumed by
 # .github/workflows/publish.yml.
 [doc("Print the image tag derived from version.txt")]
 docker-image-tag:

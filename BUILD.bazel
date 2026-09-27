@@ -95,7 +95,7 @@ py_library(
         "@pypi//sanic",
         "@pypi//sentry_sdk",
         # Sanic's optional uvloop/httptools acceleration is not imported
-        # directly but is required at runtime, matching the Docker image.
+        # directly but is required at runtime in the production image.
         "@pypi//httptools",
         "@pypi//uvloop",
     ],
@@ -279,9 +279,8 @@ oci_load(
 )
 
 # Remote tags for `oci_push`: only the single stamped `STABLE_IMAGE_TAG`
-# (scheme defined in tools/workspace_status.sh). `latest` is deliberately not
-# pushed, matching the existing release flow, which never moves `latest` on
-# Docker Hub; `latest` stays a local tag from `image_load` above.
+# (scheme defined in tools/workspace_status.sh). `latest` is deliberately
+# never pushed to Docker Hub; it stays a local tag from `image_load` above.
 expand_template(
     name = "image_remote_tags",
     out = "image_remote_tags.txt",

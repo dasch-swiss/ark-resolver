@@ -22,8 +22,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: extractions/setup-just@v3
-      # cargo itself is preinstalled on GitHub-hosted ubuntu runners; only
-      # cargo-audit needs installing here.
+      # cargo itself ships preinstalled on GitHub's ubuntu-latest runner image
+      # (see actions/runner-images); only cargo-audit needs installing here.
       - uses: taiki-e/install-action@v2
         with:
           tool: cargo-audit

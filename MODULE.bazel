@@ -15,8 +15,8 @@ bazel_dep(name = "platforms", version = "1.1.0")
 bazel_dep(name = "rules_cc", version = "0.2.19")
 
 # `aspect_bazel_lib` provides `expand_template` with `stamp_substitutions=`,
-# used by a later phase to bake STABLE_* values from tools/workspace_status.sh
-# into build/image metadata.
+# used by `//:image_created` and `//:image_labels` (root BUILD.bazel) to bake
+# STABLE_* values from tools/workspace_status.sh into image metadata.
 bazel_dep(name = "aspect_bazel_lib", version = "2.22.5")
 
 # ── LLVM toolchain (hermetic) ─────────────────────────────────────────────
@@ -32,9 +32,9 @@ bazel_dep(name = "llvm", version = "0.8.18")
 bazel_dep(name = "rules_rust", version = "0.70.0")
 
 # `rules_rust_pyo3` is the extensions/pyo3 sub-module of the rules_rust
-# release train, kept at the same 0.70.0 tag. Its toolchain is wired up (and
-# actually registered) in a later phase, alongside the PyO3 extension target;
-# declared here now so the module graph is stable before that lands.
+# release train, kept at the same 0.70.0 tag. Its toolchain is registered
+# below, alongside our own `//bazel/pyo3:rust_pyo3_toolchain`, and consumed
+# by the `pyo3_extension` target in the root `BUILD.bazel`.
 bazel_dep(name = "rules_rust_pyo3", version = "0.70.0")
 
 # `cargo_build_script` re-invokes the cc_toolchain's compile flags from a build
@@ -53,12 +53,13 @@ single_version_override(
     patches = ["//bazel/patches:rules_rust_cargo_build_script_isysroot.patch"],
 )
 
-bazel_dep(name = "rules_python", version = "2.3.4")  # new to this repo; latest BCR release tested against Bazel 9.x
+bazel_dep(name = "rules_python", version = "2.3.4")  # latest BCR release tested against Bazel 9.x
 
 bazel_dep(name = "rules_oci", version = "2.3.0")
 
 # 0.10.9 (newer than sipi's 0.10.5) fixes `preserve_symlinks` under
-# transitioned configs, needed once a later phase assembles OCI image layers.
+# transitioned configs, needed by `:ark_resolver_bin_mtree_app`'s image layer
+# assembly (root BUILD.bazel).
 bazel_dep(name = "tar.bzl", version = "0.10.9")
 
 # Forces the MVS-resolved version up from whatever a transitive dep (llvm /
@@ -157,10 +158,9 @@ python.single_version_platform_override(
     strip_prefix = "python",
 )
 
-# `uv.lock` is the single Python lock (dev deps included); a spike confirmed
-# uv_lock resolves the Sanic/uvloop/httptools wheels for both host and Linux
-# targets directly, so pip.parse reads it rather than a separate
-# requirements.txt.
+# `uv.lock` is the single Python lock (dev deps included); uv_lock resolves
+# the Sanic/uvloop/httptools wheels for both host and Linux targets directly,
+# so pip.parse reads it rather than a separate requirements.txt.
 pip = use_extension("@rules_python//python/extensions:pip.bzl", "pip")
 pip.parse(
     # rules_python 2.3.4 reserves the hub name "pypi" and warns it will be
@@ -180,8 +180,8 @@ use_repo(pip, pypi = "ark_resolver_pypi")
 
 # ── Rust crates via crate_universe `from_specs` ────────────────────────────
 # One `@crates` hub. These `crate.spec`s are the Rust dependency source of
-# truth (the former Cargo.toml was removed), minus `pyo3/extension-module`
-# (see the pyo3 spec below); `pyo3-build-config` is not listed as a spec
+# truth, minus `pyo3/extension-module` (see the pyo3 spec below);
+# `pyo3-build-config` is not listed as a spec
 # because it only reaches the graph transitively via pyo3 itself, hence its
 # annotation further down.
 #
@@ -200,11 +200,11 @@ crate.spec(package = "config", version = "0.15.8")
 # the embedded unit tests (which call `Python::initialize()` to run an
 # in-process interpreter) and the extension module built from the same
 # sources; the extension links libpython dynamically instead. This spec
-# leaves `default_features` on for parity with the build this replaced,
-# which never disabled pyo3's own defaults either.
+# leaves `default_features` on: nothing here needs pyo3's default feature
+# set trimmed.
 crate.spec(package = "pyo3", version = "0.29")
 
-# Required by the rust_pyo3_toolchain a later phase registers.
+# Required by `//bazel/pyo3:rust_pyo3_toolchain`, registered below.
 crate.spec(package = "pyo3-introspection", version = "0.29")
 crate.spec(package = "regex", version = "1.9")
 
