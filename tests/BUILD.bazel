@@ -55,6 +55,20 @@ _TEST_MODULES = [
     for module in _TEST_MODULES
 ]
 
+# Named outside the test_*.py glob above so it can declare its own `data`
+# (the files whose interpreter-path copies must match BUILD.bazel's
+# oci_image entrypoint) without disturbing every other test target's fixtures.
+py_test(
+    name = "interpreter_path_test",
+    srcs = ["interpreter_path_test.py"],
+    main = "interpreter_path_test.py",
+    data = [
+        "//:BUILD.bazel",
+        "//:justfile",
+    ],
+    visibility = ["//visibility:private"],
+)
+
 # `manual` keeps this out of `bazel test //tests/...` (and thus `just pytest`):
 # it drives a real `docker compose` against the built image, which needs
 # Docker and the network rather than a hermetic sandbox.

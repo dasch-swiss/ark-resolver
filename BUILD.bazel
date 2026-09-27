@@ -20,7 +20,7 @@ exports_files(
 )
 
 exports_files(
-    ["pyproject.toml", "docker-compose.yml"],
+    ["pyproject.toml", "docker-compose.yml", "justfile", "BUILD.bazel"],
     visibility = ["//tests:__pkg__"],
 )
 
@@ -234,6 +234,8 @@ oci_image(
     # distroless has no shell, so the entrypoint names the interpreter
     # directly. The rules_python stub is pure Python and ends in os.execv, so
     # no shell is needed to hand off to ark.py.
+    # //tests:interpreter_path_test enforces that justfile's hand-copied
+    # interpreter path (used by `just image-check`) matches this one.
     entrypoint = [
         "/app/ark_resolver_bin.runfiles/rules_python++python+python_3_12_x86_64-unknown-linux-gnu/bin/python3",
         "/app/ark_resolver_bin",
