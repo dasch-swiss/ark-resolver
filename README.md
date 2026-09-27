@@ -238,6 +238,8 @@ healthcheck:
 
 To try it locally, start the server with `just run` and run `just healthcheck` in another shell.
 
+Production timing (ops-deploy's `deploy_healthcheck` must match): `interval: 60s`, `timeout: 10s`, `retries: 3`, `start_period: 60s`. `docker-compose.yml` uses shorter timings on purpose, for faster local feedback.
+
 ### Docker Compose
 
 See `docker-compose.yml` for a complete example configuration.
