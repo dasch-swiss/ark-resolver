@@ -1,6 +1,6 @@
 services:
   ark-resolver:
-    # build: .  # Use for testing local changes
+    # Local changes are tested via `just docker-build`, which loads this tag.
     image: daschswiss/ark-resolver:latest
     ports:
       - "3336:3336"

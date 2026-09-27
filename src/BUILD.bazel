@@ -2,11 +2,10 @@
 
   //src:ark_resolver_lib   `rust_library` compiling the whole hexagonal
                            crate (`core` + `adapters`), crate-named
-                           `ark_resolver` to match Cargo.toml. No
-                           `crate_features` set here: parity with today's
-                           `cargo nextest run --lib --no-default-features`,
-                           which leaves the `pyo3` feature (gating
-                           `log_environment_variables` and its adapter) off.
+                           `ark_resolver`. No `crate_features` set here: the
+                           `pyo3` feature (gating `log_environment_variables`
+                           and its adapter) stays off for the library and its
+                           unit tests; the extension target turns it on.
   //src:unit_tests         `rust_test` running the crate's embedded
                            `#[cfg(test)]` modules.
 """

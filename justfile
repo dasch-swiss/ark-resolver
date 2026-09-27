@@ -2,7 +2,6 @@ DOCKER_REPO := "daschswiss/ark-resolver"
 # Single source of truth for the tag scheme: tools/workspace_status.sh derives
 # STABLE_IMAGE_TAG from version.txt the same way Bazel's stamped image build does.
 IMAGE_TAG := `tools/workspace_status.sh | awk '$1 == "STABLE_IMAGE_TAG" { print $2 }'`
-DOCKER_IMAGE := DOCKER_REPO + ":" + IMAGE_TAG
 DOCKER_LATEST := DOCKER_REPO + ":latest"
 
 # List all recipes
@@ -36,9 +35,11 @@ pycheck: build
 # Run all checks
 check: rustcheck pycheck
 
-# Format all rust code
+# Format all rust code. Uses the toolchain's stable rustfmt (no cargo, no
+# rustc nightly), matching `rustcheck`'s rustfmt_aspect.
+[doc("Format all rust code")]
 rustfmt:
-    cargo +nightly fmt
+    bazel run @rules_rust//:rustfmt
 
 # (Re)generate rust-project.json so rust-analyzer understands the Bazel crate
 # graph (cargo can't see the rules_rust targets). The file is git-ignored.
@@ -115,19 +116,7 @@ smoke-test: docker-build image-check
 
 # Clean up build artifacts
 clean:
-    cargo clean
-
-# Build linux/amd64 Docker image locally
-docker-build-intel:
-    docker buildx build --platform linux/amd64 -t {{ DOCKER_IMAGE }} -t {{ DOCKER_LATEST }} --load .
-
-# Build linux/arm64 Docker image locally
-docker-build-arm:
-    docker buildx build --platform linux/arm64 -t {{ DOCKER_IMAGE }} -t {{ DOCKER_LATEST }} --load .
-
-# Build and push linux/amd64 and linux/arm64 Docker images to Docker hub
-docker-publish-intel:
-    docker buildx build --platform linux/amd64 -t {{ DOCKER_IMAGE }} --push .
+    bazel clean
 
 # `--platforms=//platforms:linux_x86_64` is omitted: `:image_load` already
 # consumes `:image_linux_amd64` (a `platform_transition_filegroup`) to
