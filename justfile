@@ -134,3 +134,14 @@ docker-publish:
 [doc("Print the image tag derived from version.txt")]
 docker-image-tag:
     @echo {{ IMAGE_TAG }}
+
+# Must match oci_image's `entrypoint` in BUILD.bazel: the distroless base has
+# no shell, so every check below runs as a Python snippet inside the image
+# rather than a shell command.
+IMAGE_PYTHON := "/app/ark_resolver_bin.runfiles/rules_python++python+python_3_12_x86_64-unknown-linux-gnu/bin/python3"
+
+# Asserts against the already-loaded `daschswiss/ark-resolver:latest` (run
+# `just docker-build` first); does not build it itself.
+[doc("Verify the loaded image's interpreter, imports, pip absence, certs, tzdata and uid")]
+image-check:
+    docker run --rm -i --platform linux/amd64 --entrypoint {{ IMAGE_PYTHON }} {{ DOCKER_LATEST }} - < tools/image_check.py
