@@ -20,7 +20,7 @@ exports_files(
 )
 
 exports_files(
-    ["pyproject.toml"],
+    ["pyproject.toml", "docker-compose.yml"],
     visibility = ["//tests:__pkg__"],
 )
 

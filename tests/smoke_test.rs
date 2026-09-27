@@ -1,14 +1,70 @@
 use assert_cmd::Command;
-use std::{thread, time::Duration};
+use std::{path::PathBuf, thread, time::Duration};
+
+// Stable across invocation directories: `docker compose` otherwise derives
+// the project name from the compose file's parent directory name, which
+// under `bazel test` is an unpredictable runfiles path, so `down` (run from
+// a fresh process) could target a different "project" than `up` created.
+const COMPOSE_PROJECT: &str = "ark-resolver-smoke";
+const FAILURE_COMPOSE_PROJECT: &str = "ark-resolver-smoke-failure";
+
+// `bazel test` runs inside the runfiles tree and sets neither
+// BUILD_WORKSPACE_DIRECTORY (only `bazel run` does) nor a cwd containing
+// docker-compose.yml. Precedence: the real workspace root when run via
+// `bazel run`, else the rootpath Bazel injects for `bazel test`
+// (ARK_SMOKE_COMPOSE_FILE, see tests/BUILD.bazel), else the current
+// directory so plain `cargo test --test smoke_test` keeps working.
+fn compose_file_path() -> PathBuf {
+    if let Ok(workspace_dir) = std::env::var("BUILD_WORKSPACE_DIRECTORY") {
+        return PathBuf::from(workspace_dir).join("docker-compose.yml");
+    }
+    if let Ok(rootpath) = std::env::var("ARK_SMOKE_COMPOSE_FILE") {
+        return PathBuf::from(rootpath);
+    }
+    PathBuf::from("docker-compose.yml")
+}
+
+fn compose_file_str() -> String {
+    compose_file_path()
+        .to_str()
+        .expect("compose file path is valid UTF-8")
+        .to_string()
+}
+
+// TEST_TMPDIR is writable and cleaned up by Bazel; writing there under
+// `bazel test` avoids leaving docker-compose-test-failure.yml in the repo.
+fn failure_compose_file_path() -> PathBuf {
+    match std::env::var("TEST_TMPDIR") {
+        Ok(tmpdir) => PathBuf::from(tmpdir).join("docker-compose-test-failure.yml"),
+        Err(_) => PathBuf::from("docker-compose-test-failure.yml"),
+    }
+}
 
 fn cleanup_docker() {
     println!("Cleaning up Docker containers...");
-    let _ = Command::new("docker").args(["compose", "down"]).output();
+    let _ = Command::new("docker")
+        .args([
+            "compose",
+            "-f",
+            &compose_file_str(),
+            "-p",
+            COMPOSE_PROJECT,
+            "down",
+        ])
+        .output();
 }
 
 fn get_container_logs() -> String {
     match Command::new("docker")
-        .args(["compose", "logs", "--no-color"])
+        .args([
+            "compose",
+            "-f",
+            &compose_file_str(),
+            "-p",
+            COMPOSE_PROJECT,
+            "logs",
+            "--no-color",
+        ])
         .output()
     {
         Ok(output) => String::from_utf8_lossy(&output.stdout).to_string(),
@@ -306,21 +362,27 @@ fn test_registry_failure_scenario() {
 "#;
 
     // Write temporary compose file
-    std::fs::write("docker-compose-test-failure.yml", bad_compose_content)
+    let failure_compose_file = failure_compose_file_path();
+    std::fs::write(&failure_compose_file, bad_compose_content)
         .expect("Failed to write test compose file");
+    let failure_compose_file = failure_compose_file
+        .to_str()
+        .expect("failure compose file path is valid UTF-8");
 
     // Try to start it - it should fail or show errors in logs
     let start_result = Command::new("docker")
         .args([
             "compose",
             "-f",
-            "docker-compose-test-failure.yml",
+            failure_compose_file,
+            "-p",
+            FAILURE_COMPOSE_PROJECT,
             "up",
             "-d",
         ])
         .output();
 
-    if let Ok(_) = start_result {
+    if start_result.is_ok() {
         // Give it a moment to try loading the registry and fail
         thread::sleep(Duration::from_secs(2));
 
@@ -329,7 +391,9 @@ fn test_registry_failure_scenario() {
             .args([
                 "compose",
                 "-f",
-                "docker-compose-test-failure.yml",
+                failure_compose_file,
+                "-p",
+                FAILURE_COMPOSE_PROJECT,
                 "logs",
                 "--no-color",
             ])
@@ -363,12 +427,19 @@ fn test_registry_failure_scenario() {
 
         // Clean up the test container
         let _ = Command::new("docker")
-            .args(["compose", "-f", "docker-compose-test-failure.yml", "down"])
+            .args([
+                "compose",
+                "-f",
+                failure_compose_file,
+                "-p",
+                FAILURE_COMPOSE_PROJECT,
+                "down",
+            ])
             .output();
     }
 
     // Clean up temporary file
-    let _ = std::fs::remove_file("docker-compose-test-failure.yml");
+    let _ = std::fs::remove_file(failure_compose_file);
 
     println!("✅ Registry failure scenario test completed");
 }
@@ -491,13 +562,25 @@ fn smoke_test() {
     // Step 1: Start the service using Docker
     println!("Starting service with docker-compose...");
     let mut cmd = Command::new("docker");
-    cmd.args(["compose", "up", "-d"]).assert().success();
+    cmd.args([
+        "compose",
+        "-f",
+        &compose_file_str(),
+        "-p",
+        COMPOSE_PROJECT,
+        "up",
+        "-d",
+    ])
+    .assert()
+    .success();
 
     // Step 2: Wait for service to be available
     let health_url = "http://localhost:3336/health";
     let mut success = false;
-    for _ in 0..10 {
-        // Try for ~30 seconds
+    // linux/amd64 under QEMU emulation on arm64 hosts starts noticeably
+    // slower than a native container; ~30s was too tight there, so this
+    // polls for up to ~90s before giving up.
+    for _ in 0..30 {
         match reqwest::blocking::get(health_url) {
             Ok(response) if response.status().is_success() => {
                 success = true;
@@ -514,6 +597,43 @@ fn smoke_test() {
         cleanup_docker();
         panic!("Service did not become healthy in time!");
     }
+
+    // Step 2b: The image's healthcheck binary, run the way deployments run it.
+    // Port 1 has nothing listening, which proves the binary also reports
+    // failure from inside the real image.
+    println!("Testing /app/healthcheck inside the container...");
+    let healthcheck = |extra_env: &[&str]| {
+        let compose_file = compose_file_str();
+        let mut args = vec![
+            "compose",
+            "-f",
+            &compose_file,
+            "-p",
+            COMPOSE_PROJECT,
+            "exec",
+            "-T",
+        ];
+        args.extend_from_slice(extra_env);
+        args.extend_from_slice(&["ark-resolver", "/app/healthcheck"]);
+        Command::new("docker")
+            .args(&args)
+            .output()
+            .expect("Failed to run docker compose exec")
+    };
+    let healthy = healthcheck(&[]);
+    if !healthy.status.success() {
+        cleanup_docker();
+        panic!(
+            "/app/healthcheck failed against a healthy server: {}",
+            String::from_utf8_lossy(&healthy.stderr)
+        );
+    }
+    let unreachable = healthcheck(&["-e", "ARK_INTERNAL_PORT=1"]);
+    if unreachable.status.success() {
+        cleanup_docker();
+        panic!("/app/healthcheck succeeded with nothing listening on the port");
+    }
+    println!("Healthcheck binary test passed");
 
     // Step 3: Test convert route (Version 0 ARK -> Version 1 ARK)
     // This specifically tests the parallel execution that was failing in staging

@@ -100,9 +100,18 @@ run:
 test:
     bazel test //src:unit_tests //tools/healthcheck:healthcheck_test
 
-# Run smoke tests that will spinn up a Docker container and call the health endpoint
-smoke-test:
-    cargo test --test smoke_test
+# `smoke_test` is tagged "manual" so it never runs under `just pytest`
+# (`bazel test //tests/...`); PATH and HOME need to reach into the client
+# env for `docker`/the `docker compose` plugin and Docker Desktop's
+# ~/.docker context under --incompatible_strict_action_env. DOCKER_HOST and
+# DOCKER_CONFIG pass through the same way when the client env sets them, and
+# are silently skipped otherwise.
+[doc("Run docker-build, image-check, and the Bazel-driven Docker smoke test")]
+smoke-test: docker-build image-check
+    bazel test --test_output=streamed \
+        --test_env=PATH --test_env=HOME \
+        --test_env=DOCKER_HOST --test_env=DOCKER_CONFIG \
+        //tests:smoke_test
 
 # Clean up build artifacts
 clean:

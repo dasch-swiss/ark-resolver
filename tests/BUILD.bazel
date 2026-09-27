@@ -5,6 +5,7 @@ Rust unit tests (`//src:unit_tests`) and the Python test suite.
 """
 
 load("@rules_python//python:py_test.bzl", "py_test")
+load("@rules_rust//rust:defs.bzl", "rust_test")
 
 exports_files(
     ["ark-registry.ini"],
@@ -53,3 +54,31 @@ _TEST_MODULES = [
     )
     for module in _TEST_MODULES
 ]
+
+# `manual` keeps this out of `bazel test //tests/...` (and thus `just pytest`):
+# it drives a real `docker compose` against the built image, which needs
+# Docker and the network rather than a hermetic sandbox.
+rust_test(
+    name = "smoke_test",
+    srcs = ["smoke_test.rs"],
+    edition = "2021",
+    data = ["//:docker-compose.yml"],
+    env = {
+        # `bazel test` runs in the runfiles tree with neither
+        # BUILD_WORKSPACE_DIRECTORY nor a cwd containing docker-compose.yml;
+        # this rootpath is smoke_test.rs's fallback for locating the file.
+        "ARK_SMOKE_COMPOSE_FILE": "$(rootpath //:docker-compose.yml)",
+    },
+    tags = [
+        "manual",
+        "no-sandbox",
+        "external",
+        "requires-network",
+        "requires-docker",
+    ],
+    deps = [
+        "@crates//:assert_cmd",
+        "@crates//:reqwest",
+    ],
+    visibility = ["//visibility:private"],
+)
