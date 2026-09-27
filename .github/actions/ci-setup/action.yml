@@ -30,6 +30,9 @@ runs:
 
     - uses: extractions/setup-just@v3
 
+    # Keep this version pin in sync with the separate one in
+    # .github/workflows/security.yml's pip-audit job (it has no Bazel work,
+    # so it does not use this action).
     - uses: astral-sh/setup-uv@v5
       with:
         version: "0.11.28"
@@ -37,6 +40,10 @@ runs:
 
     # restore-only: the combined actions/cache action saves only when the job
     # succeeds, so each caller saves at its own end under `!cancelled()`.
+    # A save step also can't live here: composite actions have no post step,
+    # so it would run before the calling job's Bazel work finishes, saving a
+    # stale cache. Callers with a matching "Save Bazel repository cache" step:
+    # check.yml (x2), test.yml (x2), publish.yml (x1).
     - name: Restore Bazel repository cache
       id: repo-cache
       uses: actions/cache/restore@v4
