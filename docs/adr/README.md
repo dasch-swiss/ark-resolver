@@ -26,7 +26,7 @@ Where `NNNN` is a zero-padded sequential number (e.g., `0001`, `0002`).
 | ADR | Status | Title |
 |-----|--------|-------|
 | [0001](0001-adopt-hexagonal-architecture.md) | Accepted | Adopt Hexagonal Architecture for Python-to-Rust Migration |
-| [0002](0002-build-with-bazel.md) | Proposed | Build, test and ship ark-resolver with Bazel |
+| [0002](0002-build-with-bazel.md) | Accepted | Build, test and ship ark-resolver with Bazel |
 
 ## Creating New ADRs
 
