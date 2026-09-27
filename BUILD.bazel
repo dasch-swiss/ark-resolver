@@ -1,6 +1,7 @@
+load("@aspect_bazel_lib//lib:expand_template.bzl", "expand_template")
 load("@aspect_bazel_lib//lib:transitions.bzl", "platform_transition_filegroup")
 load("@rules_cc//cc:cc_import.bzl", "cc_import")
-load("@rules_oci//oci:defs.bzl", "oci_image", "oci_load")
+load("@rules_oci//oci:defs.bzl", "oci_image", "oci_load", "oci_push")
 load("@rules_python//python:py_binary.bzl", "py_binary")
 load("@rules_python//python:py_library.bzl", "py_library")
 load("@rules_rust_pyo3//:defs.bzl", "pyo3_extension")
@@ -163,10 +164,54 @@ platform_transition_filegroup(
     target_platform = "//platforms:linux_x86_64",
 )
 
+# ── Image stamping ─────────────────────────────────────────────────────────
+# `created` and the OCI labels are stamped from the `STABLE_*` keys emitted
+# by `tools/workspace_status.sh`. The `STABLE_*` prefix matters: a key in
+# `volatile-status.txt` (where non-`STABLE_*` keys land) invalidates the
+# action on every build (rules_oci#269), which would defeat reproducible-
+# tarball goals. `stamp_substitutions` only fires under `--stamp`; plain
+# `bazel build` keeps the `substitutions` fallback, producing a deterministic
+# unstamped image.
+
+# Consumed by oci_image's `created` attribute, which expects a label
+# producing a single-line file with an RFC 3339 timestamp.
+expand_template(
+    name = "image_created",
+    out = "image_created.txt",
+    stamp_substitutions = {
+        "1970-01-01T00:00:00Z": "{{STABLE_IMAGE_CREATED}}",
+    },
+    template = ["1970-01-01T00:00:00Z"],
+)
+
+# Labels file in `KEY=VALUE` form for oci_image's `labels` attribute.
+expand_template(
+    name = "image_labels",
+    out = "image_labels.txt",
+    stamp_substitutions = {
+        # Fallback placeholders must not be substrings of one another: the
+        # vendored expand_template tool applies all replacements over the
+        # same content in Go map (random) iteration order, so a substring
+        # key can consume part of another placeholder before that
+        # placeholder gets its own turn.
+        "0.0.0-unstamped": "{{STABLE_ARK_VERSION}}",
+        "0000000000000000000000000000000000000000": "{{STABLE_GIT_COMMIT}}",
+        "1970-01-01T00:00:00Z": "{{STABLE_IMAGE_CREATED}}",
+    },
+    template = [
+        "org.opencontainers.image.version=0.0.0-unstamped",
+        "org.opencontainers.image.revision=0000000000000000000000000000000000000000",
+        "org.opencontainers.image.created=1970-01-01T00:00:00Z",
+        "org.opencontainers.image.source=https://github.com/dasch-swiss/ark-resolver",
+        "org.opencontainers.image.title=ark-resolver",
+    ],
+)
+
 oci_image(
     name = "image",
     base = "@distroless_cc_linux_amd64",
     cmd = ["-s"],
+    created = ":image_created",
     # distroless has no shell, so the entrypoint names the interpreter
     # directly. The rules_python stub is pure Python and ends in os.execv, so
     # no shell is needed to hand off to ark.py.
@@ -182,6 +227,7 @@ oci_image(
         "RULES_PYTHON_EXTRACT_ROOT": "/tmp/rp",
     },
     exposed_ports = ["3336/tcp"],
+    labels = ":image_labels",
     target_compatible_with = ["@platforms//os:linux"],
     tars = [":ark_resolver_bin_tar_linux_amd64"],
     user = "65532:65532",
@@ -206,4 +252,28 @@ oci_load(
     name = "image_load",
     image = ":image_linux_amd64",
     repo_tags = ["daschswiss/ark-resolver:latest"],
+)
+
+# Remote tags for `oci_push`: only the single stamped `STABLE_IMAGE_TAG`
+# (scheme defined in tools/workspace_status.sh). `latest` is deliberately not
+# pushed, matching the existing release flow, which never moves `latest` on
+# Docker Hub; `latest` stays a local tag from `image_load` above.
+expand_template(
+    name = "image_remote_tags",
+    out = "image_remote_tags.txt",
+    stamp_substitutions = {
+        "0.0.0-unstamped": "{{STABLE_IMAGE_TAG}}",
+    },
+    template = [
+        "0.0.0-unstamped",
+    ],
+)
+
+# Pushes `:image_linux_amd64` for the same host-runner reason as `image_load` above.
+oci_push(
+    name = "image_push",
+    image = ":image_linux_amd64",
+    remote_tags = ":image_remote_tags",
+    repository = "docker.io/daschswiss/ark-resolver",
+    visibility = ["//visibility:private"],
 )

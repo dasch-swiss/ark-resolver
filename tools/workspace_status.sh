@@ -34,3 +34,13 @@ echo "STABLE_ARK_VERSION $version"
 # two builds of the same source from the same lockfile produce byte-identical
 # OCI image tarballs. `%cI` is the committer date.
 echo "STABLE_IMAGE_CREATED $(git log -1 --format=%cI 2>/dev/null || echo 1970-01-01T00:00:00Z)"
+
+# Image tag, defined only here: `<version>` when HEAD sits exactly on a git
+# tag, else `<version>-<shortsha>`; both git calls fall back gracefully so a
+# tarball build without `.git` still stamps something.
+short_sha="$(git log --pretty=format:'%h' -n 1 2>/dev/null || echo unknown)"
+if git describe --tags --exact-match >/dev/null 2>&1; then
+    echo "STABLE_IMAGE_TAG $version"
+else
+    echo "STABLE_IMAGE_TAG ${version}-${short_sha}"
+fi

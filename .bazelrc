@@ -34,6 +34,12 @@ common --@rules_python//python/config_settings:current_config=fail
 # 'thiserror_impl'`); this restores unstripped exec tools on that platform.
 build:macos --@rules_rust//rust/settings:extra_exec_rustc_flag=-Cstrip=none
 
+# ── Release (production) build config ────────────────────────────────────────
+# `--config=release` is what `just docker-build`/`docker-publish` use to build
+# the production image. `//:_rust` sets `compilation_mode = "current"`, so it
+# follows this into an opt build rather than needing its own flag.
+build:release --compilation_mode=opt
+
 # ── Test ─────────────────────────────────────────────────────────────────────
 # Surface test stderr immediately on failure rather than collecting it into
 # bazel-testlogs. Useful for inner-loop iteration.

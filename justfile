@@ -1,8 +1,7 @@
 DOCKER_REPO := "daschswiss/ark-resolver"
-CARGO_VERSION := `cargo metadata --format-version=1 --no-deps | jq --raw-output '.packages[].version'`
-COMMIT_HASH := `git log --pretty=format:'%h' -n 1`
-GIT_TAG := `git describe --tags --exact-match 2>/dev/null || true`
-IMAGE_TAG := if GIT_TAG == "" { CARGO_VERSION + "-" + COMMIT_HASH } else { CARGO_VERSION }
+# Single source of truth for the tag scheme: tools/workspace_status.sh derives
+# STABLE_IMAGE_TAG from version.txt the same way Bazel's stamped image build does.
+IMAGE_TAG := `tools/workspace_status.sh | awk '$1 == "STABLE_IMAGE_TAG" { print $2 }'`
 DOCKER_IMAGE := DOCKER_REPO + ":" + IMAGE_TAG
 DOCKER_LATEST := DOCKER_REPO + ":latest"
 
@@ -115,6 +114,23 @@ docker-build-arm:
 docker-publish-intel:
     docker buildx build --platform linux/amd64 -t {{ DOCKER_IMAGE }} --push .
 
-# Output the BUILD_TAG
+# `--platforms=//platforms:linux_x86_64` is omitted: `:image_load` already
+# consumes `:image_linux_amd64` (a `platform_transition_filegroup`) to
+# transition itself, so passing it here would also transition `oci_load`'s
+# runner script, pasting a Linux `tar` into a script the macOS host executes.
+[doc("Build the stamped release image and load it into the local Docker daemon")]
+docker-build:
+    bazel run --config=release --stamp //:image_load
+
+# No tag arguments: the pushed tag comes from the stamped `//:image_remote_tags`
+# (STABLE_IMAGE_TAG only, no `latest`). Same --platforms omission as docker-build.
+[doc("Push the stamped release image to Docker Hub")]
+docker-publish:
+    bazel run --config=release --stamp //:image_push
+
+# Prints the same tag scheme //:image_remote_tags stamps into the pushed image
+# (tools/workspace_status.sh is now the single source for it); consumed by
+# .github/workflows/publish.yml.
+[doc("Print the image tag derived from version.txt")]
 docker-image-tag:
     @echo {{ IMAGE_TAG }}
