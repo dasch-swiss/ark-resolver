@@ -1,5 +1,5 @@
 {
-  "release-type": "rust",
+  "release-type": "simple",
   "draft-pull-request": true,
   "changelog-sections": [
     {
@@ -49,7 +49,7 @@
   "packages": {
     ".": {
       "changelog-path": "CHANGELOG.md",
-      "release-type": "rust",
+      "release-type": "simple",
       "include-component-in-tag": false
     }
   },
