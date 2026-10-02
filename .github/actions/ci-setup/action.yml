@@ -28,12 +28,12 @@ runs:
         repository-cache: false
         external-cache: false
 
-    - uses: extractions/setup-just@v3
+    - uses: extractions/setup-just@v4
 
     # Keep this version pin in sync with the separate one in
     # .github/workflows/security.yml's pip-audit job (it has no Bazel work,
     # so it does not use this action).
-    - uses: astral-sh/setup-uv@v5
+    - uses: astral-sh/setup-uv@v7
       with:
         version: "0.11.28"
         enable-cache: true
@@ -46,7 +46,7 @@ runs:
     # check.yml (x2), test.yml (x2), publish.yml (x1).
     - name: Restore Bazel repository cache
       id: repo-cache
-      uses: actions/cache/restore@v4
+      uses: actions/cache/restore@v6
       with:
         path: ~/.cache/bazel-repo
         key: bazel-repo-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('MODULE.bazel.lock') }}
