@@ -1,5 +1,75 @@
 # Changelog
 
+## [1.15.0](https://github.com/dasch-swiss/ark-resolver/compare/v1.14.1...v1.15.0) (2026-10-02)
+
+
+### Maintenances
+
+* **bazel:** Add the Bazel module with hermetic LLVM, Rust and Python toolchains, the pip hub and crate_universe ([b594507](https://github.com/dasch-swiss/ark-resolver/commit/b594507d522fb14e971880cb714ad6cf529c3758))
+* **bazel:** Build and test the Python app under Bazel ([8daf46f](https://github.com/dasch-swiss/ark-resolver/commit/8daf46f70409922aa0e18957d11c9fe353b55b08))
+* **bazel:** Build the distroless linux/amd64 image with a slim interpreter layer ([53acce8](https://github.com/dasch-swiss/ark-resolver/commit/53acce86ca22ce811c24f059a6c4072994f732f0))
+* **bazel:** Build the Rust crate, its unit tests and the PyO3 extension ([200d01d](https://github.com/dasch-swiss/ark-resolver/commit/200d01d43bb01b91ed47f5ee56136fb5b5f93306))
+* **bazel:** Stamp, load and push the image through just recipes ([bb5c1c3](https://github.com/dasch-swiss/ark-resolver/commit/bb5c1c36f6fee27cc9c5e1e532aedc47c7b1eeec))
+* Bind eng conventions, commands and reviewers in eng.yaml ([fdf7cc5](https://github.com/dasch-swiss/ark-resolver/commit/fdf7cc556c2127004be073af5119c78c80062894))
+* **ci:** Drop actions: read from the review job ([2894888](https://github.com/dasch-swiss/ark-resolver/commit/28948883e9324c4b0eaf637898221940470af6d5))
+* **ci:** Split out a review job with the benchmarked gate, model, effort and tools ([d7eb745](https://github.com/dasch-swiss/ark-resolver/commit/d7eb745169df03d46820cf9d2a6cc27d0fd0dcec))
+* **deps:** Let Dependabot track uv.lock and drop cargo and docker ([29abace](https://github.com/dasch-swiss/ark-resolver/commit/29abace0fbe5156cacf7621b2861fd661980dd60))
+* **eng:** Route Bazel build files to the devops reviewer ([2ec1550](https://github.com/dasch-swiss/ark-resolver/commit/2ec1550bd1a42cb0520a93088dce5c89487f4a5c))
+* **just:** Run Rust tests, lints and audit through Bazel ([d71375a](https://github.com/dasch-swiss/ark-resolver/commit/d71375af15b9f7c99275d6d8690bbdfd42a0d392))
+* **just:** Run the dev loop through Bazel ([8058717](https://github.com/dasch-swiss/ark-resolver/commit/8058717d047a88c8ed5b1793d373cf37832af9ae))
+* **nix:** Add dev shell with bazelisk, just, uv and cargo-audit ([bb83dd1](https://github.com/dasch-swiss/ark-resolver/commit/bb83dd1024002e6a6b4f7f599894e6e0fc5c09e3))
+* **release:** Bump version.txt with the simple release-please strategy ([d10c8aa](https://github.com/dasch-swiss/ark-resolver/commit/d10c8aa121d2b90141ab6b474d9eb3bc7bb3466d))
+* Remove the cargo, maturin and Dockerfile build paths ([579f0d4](https://github.com/dasch-swiss/ark-resolver/commit/579f0d4b52424f304bcb2ff2308e4ad5bd1e14c0))
+
+
+### Documentation
+
+* Add ARCH-MAP.md with components, boundary rules and conventions ([eb2d24a](https://github.com/dasch-swiss/ark-resolver/commit/eb2d24aa093968158ce0889c05102ac1f96e8425))
+* Add CONTEXT.md with the ARK resolution vocabulary ([e25e78a](https://github.com/dasch-swiss/ark-resolver/commit/e25e78af5c051e9f4bffa736ff2d6ebc240bb217))
+* Add docs/specs and move ark-resolver specs into the repo ([006e1c9](https://github.com/dasch-swiss/ark-resolver/commit/006e1c94f0b9048035f97b3a27a03edf39b48dd4))
+* **adr:** Accept ADR-0002 with the full Bazel migration record ([d7f39b1](https://github.com/dasch-swiss/ark-resolver/commit/d7f39b1c4bba8c92405c0c64042ef1bb7c3d275b))
+* **adr:** Record the PyO3 extension build decision in ADR-0002 ([da2d19e](https://github.com/dasch-swiss/ark-resolver/commit/da2d19e73765bacb90060f4869a7d78df498a537))
+* **arch-map:** Record Bazel as the only build path ([ac694da](https://github.com/dasch-swiss/ark-resolver/commit/ac694dabad85aac159fb30a6847bfee07d8c1c1e))
+* **arch-map:** Refresh the map for the Bazel build and migrate to schema 2 ([2289c69](https://github.com/dasch-swiss/ark-resolver/commit/2289c691686203137815567e7f97b97b656fda00))
+* **ci:** State the phase-1 model evidence precisely ([a70d1e1](https://github.com/dasch-swiss/ark-resolver/commit/a70d1e1f4b7b505f6f8d9e0f3316cb16c40ffe5d))
+* Consolidate agent guidance into CLAUDE.md and remove AGENTS.md ([342b7e2](https://github.com/dasch-swiss/ark-resolver/commit/342b7e2671b9d1349436f1c19aa07ae56e5e28fc))
+* Describe the Bazel build in CLAUDE.md and README ([a16faca](https://github.com/dasch-swiss/ark-resolver/commit/a16faca9e2b7031347d9a2f28b5b6bdf8a646a10))
+* **specs:** Add the Bazel build plan as executed and its journal ([e2927b5](https://github.com/dasch-swiss/ark-resolver/commit/e2927b5894add62e588a010b46c54a9c88c19000))
+* **specs:** Record decision D20 in the migration-completion PRD ([d083e6e](https://github.com/dasch-swiss/ark-resolver/commit/d083e6eb2b875ff801d975d9c68378376537e3f1))
+* Tidy Bazel build comments ([c2ff087](https://github.com/dasch-swiss/ark-resolver/commit/c2ff087b941c6a48866b00b62f1bcab77251a1e2))
+
+
+### Enhancements
+
+* **image:** Ship a healthcheck binary for the shell-less image ([04b236a](https://github.com/dasch-swiss/ark-resolver/commit/04b236acf3e15c255e8cfb8438fab2d424b8ed13))
+
+
+### Bug Fixes
+
+* **ci:** Gate the Claude workflow to org members (DEV-6884) ([d5d14cd](https://github.com/dasch-swiss/ark-resolver/commit/d5d14cd78f51281aa3e302f4631bfa5266619af8))
+* **convert:** Reject project and top-level ARKs instead of emitting a broken IRI ([45e8a6f](https://github.com/dasch-swiss/ark-resolver/commit/45e8a6f0f7d340080ce1acce2b15c33ede7f5e3b))
+* **deps:** Drop sanic-cors and set the CORS header directly (PYSEC-2026-3539) ([415a041](https://github.com/dasch-swiss/ark-resolver/commit/415a041bf7ed5a374b121d2cf447400b025a1865))
+* **deps:** Upgrade dependencies to resolve security advisories ([2c75c39](https://github.com/dasch-swiss/ark-resolver/commit/2c75c39a78645702b1eb39888cb028af7286390a))
+* **deps:** Upgrade rustls to 0.23.45 (RUSTSEC-2026-0285) ([a1d6d6c](https://github.com/dasch-swiss/ark-resolver/commit/a1d6d6c033b7f25bce957cdc5d057a7d40ddc627))
+* **deps:** Upgrade urllib3 to 2.8.0 (PYSEC-2026-4175, PYSEC-2026-4176, PYSEC-2026-4177) ([577d55d](https://github.com/dasch-swiss/ark-resolver/commit/577d55dd379c53584bd768472e8ede4fa724bc1a))
+* **deps:** Upgrade virtualenv to 21.14.3 (GHSA-p58f-9548-mpm2, GHSA-x78j-v8h9-3j2q, GHSA-94p9-xgh2-xp45, GHSA-9h9j-4vrj-gf7g) ([6dc1da1](https://github.com/dasch-swiss/ark-resolver/commit/6dc1da1619d59d1a4aae07d0f8a9c65a5e3a912b))
+* **redirect:** Answer HEAD on an ARK exactly as GET ([05994bb](https://github.com/dasch-swiss/ark-resolver/commit/05994bbd8408292fc8ab024401fe7c38e9ef163a))
+* Repair malformed .claude/settings.json ([6401bea](https://github.com/dasch-swiss/ark-resolver/commit/6401beaed6f6f3011225eae0a3274240c497f85f))
+
+
+### Tests
+
+* **convert:** Assert Python and Rust parity for each convert step ([d90501c](https://github.com/dasch-swiss/ark-resolver/commit/d90501c8ad3722e38c0a3ea1597c6ea18b981ad7))
+* **image:** Add just image-check assertions for the loaded image ([31b92cd](https://github.com/dasch-swiss/ark-resolver/commit/31b92cdf5269eeff1a7065c673e88887e418a5c0))
+* **image:** Check the loaded image's real entrypoint in image-check ([f99407f](https://github.com/dasch-swiss/ark-resolver/commit/f99407f36b9e51f2fe2bc596eeb6eca6248bcaab))
+* **image:** Fail when a hand-copied interpreter path drifts from the entrypoint ([4b0572c](https://github.com/dasch-swiss/ark-resolver/commit/4b0572c0a8e5d611264afb7f087e8665da0d191f))
+* **smoke:** Run the Docker smoke test through Bazel against the Bazel image ([408a749](https://github.com/dasch-swiss/ark-resolver/commit/408a749aa6878beebad90f0860d2d227ae0d07c6))
+
+
+### Styles
+
+* **rust:** Resolve clippy findings in test code and an unused adapter ([4ecc5ee](https://github.com/dasch-swiss/ark-resolver/commit/4ecc5eeb9584df58b580df1e284ae38d020ce9e4))
+
 ## [1.14.1](https://github.com/dasch-swiss/ark-resolver/compare/v1.14.0...v1.14.1) (2026-02-26)
 
 
