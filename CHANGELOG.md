@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.15.1](https://github.com/dasch-swiss/ark-resolver/compare/v1.15.0...v1.15.1) (2026-10-22)
+
+
+### Bug Fixes
+
+* **deps:** Upgrade vulnerable Python and Rust dependencies ([2e68f80](https://github.com/dasch-swiss/ark-resolver/commit/2e68f80d927fb95f83612a7c5ecee0f9992a83b7))
+
 ## [1.15.0](https://github.com/dasch-swiss/ark-resolver/compare/v1.14.1...v1.15.0) (2026-10-02)
 
 
