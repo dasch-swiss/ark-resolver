@@ -20,8 +20,8 @@ jobs:
     name: Rust dependency audit
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: extractions/setup-just@v3
+      - uses: actions/checkout@v7
+      - uses: extractions/setup-just@v4
       # cargo itself ships preinstalled on GitHub's ubuntu-latest runner image
       # (see actions/runner-images); only cargo-audit needs installing here.
       - uses: taiki-e/install-action@v2
@@ -34,13 +34,13 @@ jobs:
     name: Python dependency audit
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       # This job has no Bazel work, so it sets up uv directly instead of via
       # ci-setup/action.yml. Keep this version pin in sync with the one there.
-      - uses: astral-sh/setup-uv@v5
+      - uses: astral-sh/setup-uv@v7
         with:
           version: "0.11.28"
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.12'
       - name: Export requirements from uv.lock
@@ -57,7 +57,7 @@ jobs:
       contents: read
       pull-requests: write
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/dependency-review-action@v4
+      - uses: actions/checkout@v7
+      - uses: actions/dependency-review-action@v5
         with:
           fail-on-severity: high
