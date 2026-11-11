@@ -113,6 +113,7 @@ jobs:
             - Correct use of the `BR: ` prefix for business-rule comments (CONVENTIONS.md)
             - Check-digit validation logic
             - Comparative test coverage between the Python and Rust implementations
+            - The checks and skip list in REVIEW.md
 
             Report issues **only in lines this PR changed** — but read whatever you need to
             decide whether an issue is real: the changed files in full (diff hunks alone give
