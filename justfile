@@ -12,6 +12,10 @@ default:
 install:
     uv sync --locked --no-install-project
 
+# Configure this clone: git blame skips the commits in .git-blame-ignore-revs
+setup:
+    git config blame.ignoreRevsFile .git-blame-ignore-revs
+
 # Upgrade python packages (uv.lock)
 upgrade:
     uv lock --upgrade
