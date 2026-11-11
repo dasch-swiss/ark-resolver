@@ -103,19 +103,17 @@ The ARK resolver turns DaSCH ARK identifiers (`ark:/72163/...`) into redirects t
   - Use cases and port traits: `ConfigurationProvider`, `EnvironmentProvider`, `RegexProvider`, `FileSystemProvider`, `ArkUrlParsingPort`, `ConfigurationPort`, `TemplatePort`, `UuidGenerationPort`, `ArkUrlFormatterPort`.
   - Errors.
   - The domain types that ports return.
+  - Built as the crate `ark_resolver_core` (`//src:core`, root `src/core/lib.rs`); adapters reach it as `ark_resolver_core::…`.
   - Everything is `pub`; nothing is `pub(crate)`.
-- **Local-context kit:** `src/core/use_cases/settings_manager.rs`, `src/core/ports/settings.rs`, `src/core/domain/settings.rs`, `src/core/errors/settings.rs`, `src/core/use_cases/ark_url_info_processor.rs`, `src/adapters/pyo3/settings.rs`, `docs/adr/0001-adopt-hexagonal-architecture.md`
-- **Depends on:** none (crates: `regex`, `thiserror`, `async_trait`, `serde_json`, `config`)
+- **Local-context kit:** `src/core/use_cases/settings_manager.rs`, `src/core/ports/settings.rs`, `src/core/domain/settings.rs`, `src/core/errors/settings.rs`, `src/core/use_cases/ark_url_info_processor.rs`, `src/BUILD.bazel`, `docs/adr/0001-adopt-hexagonal-architecture.md`
+- **Depends on:** none (crates: the `deps` of `//src:core`)
 - **Used by:** rust-adapters
 - **Boundary rules:**
-  - `src/core` never imports `crate::adapters`, `pyo3`, `std::fs`, `std::env` or `reqwest`. File, environment and HTTP access go through ports. Enforcement: `docs-only`. Core and adapters build as one `rust_library` (`//src:ark_resolver_lib`) with `@crates//:pyo3` as a dep, so neither `just test` nor the build catches a `pyo3` import in core. The enforcement upgrade is splitting `//src:core` into its own target without `pyo3` (already a listed follow-up).
-  - Current violations:
-    - `pyo3::Python::initialize()` in the tests of `domain/uuid_processing.rs`.
-    - `From<std::io::Error | config::ConfigError | std::env::VarError>` on `SettingsError`.
-    - `regex` inside the domain, although ADR-0001 says the domain uses std only.
+  - `src/core` never imports `crate::adapters`, `pyo3`, `reqwest` or any crate outside the `deps` of `//src:core`. Enforcement: `structure` (the core is its own crate, so such an import fails `bazel build //src:core`).
+  - `src/core` never uses `std::fs` or `std::env`; file, environment and HTTP access go through ports. Enforcement: `review` (`REVIEW.md`; a `deps` list cannot ban parts of std).
   - One capability per file name across `domain/`, `errors/`, `ports/` and `use_cases/`. Enforcement: `docs-only`.
 - **Durable state:** None. `SettingsWithRegexes` is built only by `SettingsManager::load_settings`, `load_minimal_settings` and `reload_settings`. `SettingsRepository` has no implementation.
-- **Fingerprint:** `4be9c5c0c854`
+- **Fingerprint:** `28a4851b3430`
 
 ### rust-adapters
 
@@ -143,11 +141,12 @@ The ARK resolver turns DaSCH ARK identifiers (`ark:/72163/...`) into redirects t
   - Adapter-to-adapter coupling:
     - `file_system` delegates to `http` for `http(s)` registries.
     - `pyo3/settings` composes `environment` and `file_system`.
+  - The core's test mocks (`ports::settings::tests`) are `#[cfg(test)]` in `ark_resolver_core` and not visible to adapter tests. Enforcement: `structure`.
   - `FileSystemProvider` in `file_system/settings.rs` has no production wiring; only its tests construct it (`#[allow(dead_code)]`). Enforcement: `docs-only`.
 - **Durable state:**
   - The only static is `TRACING_INITIALIZED` (`std::sync::Once`).
   - Each `ArkUrlSettings::new()` builds its own tokio runtime and fetches the registry itself, independently of the Python fetch. That means two fetches per load or reload.
-- **Fingerprint:** `b302d9a3fc0b`
+- **Fingerprint:** `64e590d048b1`
 
 ### build-and-delivery
 
@@ -157,7 +156,7 @@ The ARK resolver turns DaSCH ARK identifiers (`ark:/72163/...`) into redirects t
   - PR gates: `check.yml` (rustfmt and clippy, ruff and pyright, and commitlint-rs over every commit of the PR), `test.yml` (with the Docker Scout compare and CVE scan, skipped on Dependabot PRs), `security.yml` (`cargo-audit`, `pip-audit`, dependency review), `readiness.yml` (the dasch-specs readiness regression check) and `claude-review.yml` (on-demand `@claude review`).
   - release-please versioning from `version.txt` (release-type `simple`).
   - Docker Hub publishing, the Jenkins deploy webhooks, the Docker Scout SBOM and environment records, and Sentry release finalization (`publish.yml`).
-- **Key entities:** `//:_rust`, `//:ark_resolver`, `//:ark_resolver_bin`, `//:image`, `//:image_load`, `//:image_push`, `//tools/healthcheck`, `just test`, `just pytest`, `just pycheck`, `just smoke-test`, `just docker-build`, `just image-check`, `just image-tag-check`, `just audit`, `just crates-repin`, `just healthcheck`, `just commit-lint`, `just setup`, `docker-image-tag`, `tools/workspace_status.sh`, `check.yml`, `test.yml`, `security.yml`, `publish.yml`, `readiness.yml`, `claude-review.yml`
+- **Key entities:** `//:_rust`, `//src:core`, `//src:core_unit_tests`, `//:ark_resolver`, `//:ark_resolver_bin`, `//:image`, `//:image_load`, `//:image_push`, `//tools/healthcheck`, `just test`, `just pytest`, `just pycheck`, `just smoke-test`, `just docker-build`, `just image-check`, `just image-tag-check`, `just audit`, `just crates-repin`, `just healthcheck`, `just commit-lint`, `just setup`, `docker-image-tag`, `tools/workspace_status.sh`, `check.yml`, `test.yml`, `security.yml`, `publish.yml`, `readiness.yml`, `claude-review.yml`
 - **Public interface:**
   - The `just` recipes.
   - The image `daschswiss/ark-resolver:<version>-<shortsha>` (or `<version>` alone when `HEAD` sits exactly on a git tag). The version comes from `version.txt`; the scheme is defined once in `tools/workspace_status.sh` and read back by `justfile`'s `docker-image-tag`. `latest` is loaded locally by `just docker-build` but is never pushed to Docker Hub.
@@ -171,7 +170,7 @@ The ARK resolver turns DaSCH ARK identifiers (`ark:/72163/...`) into redirects t
 - **Used by:** none
 - **Boundary rules:**
   - The version lives in `version.txt` (release-type `simple`). `pyproject.toml` stays at `0.1.0`. Enforcement: `review` (release-please writes `version.txt`; nothing checks that `pyproject.toml` is left alone).
-  - A new Rust source file is added to the explicit `//src:srcs` list in `src/BUILD.bazel`; Python modules and `tests/test_*.py` are globbed. Enforcement: `structure` (the build fails on an unlisted module).
+  - A new Rust source file is added to the explicit `//src:core_srcs` (under `src/core/`) or `//src:srcs` (adapters and `src/lib.rs`) list in `src/BUILD.bazel`; Python modules and `tests/test_*.py` are globbed. Enforcement: `structure` (the build fails on an unlisted module).
   - Bazel is the only build path. No `cargo`, `maturin` or `Dockerfile` build files exist in this repo (`just audit` runs `cargo-audit` over `Cargo.Bazel.lock`, the one sanctioned exception). Enforcement: `review`.
   - The interpreter path in `BUILD.bazel`'s `oci_image` entrypoint is hand-copied into justfile (`IMAGE_PYTHON`); both must agree. Enforcement: `static-analysis` (`tests/interpreter_path_test.py`).
   - Every commit is a Conventional Commit with a type from `.commitlintrc.yml`, the enforced list; `CONVENTIONS.md` repeats it with each type's meaning, and both change together. Enforcement: `static-analysis` for the commits (`check.yml` commit-lint), `review` for keeping the two lists in step.
@@ -180,7 +179,7 @@ The ARK resolver turns DaSCH ARK identifiers (`ark:/72163/...`) into redirects t
 - **Durable state:**
   - Release state: `version.txt`, `.github/release-please/manifest.json` and `CHANGELOG.md`. The only writer is release-please.
   - Deployment is outside this repo, reached through `JENKINS_*` webhooks.
-- **Fingerprint:** `3289bfa9637a`
+- **Fingerprint:** `a4d154046a61`
 
 ### project-docs
 
@@ -200,7 +199,7 @@ The ARK resolver turns DaSCH ARK identifiers (`ark:/72163/...`) into redirects t
   - `CHANGELOG.md`, written only by release-please.
   - `docs/adr/README.md`, the ADR index, updated by hand with each new ADR (copied from `docs/adr/template.md`). Enforcement: `docs-only`.
   - `ARCH-MAP.md` belongs to no component; only `/dune:dune-map` writes it.
-- **Fingerprint:** `6c1eff47ccfd`
+- **Fingerprint:** `b060f2d931c7`
 
 ## Cross-cutting concerns
 
@@ -216,7 +215,7 @@ The ARK resolver turns DaSCH ARK identifiers (`ark:/72163/...`) into redirects t
 
 - **Local-context kit budget:** ≤7 files per component. Enforcement: `docs-only`.
 - **Dependency direction (Python):** `http-service → shadow-bridge → {python-resolution, rust-adapters}`. `python-resolution` never imports `_rust`. Enforcement: `docs-only`. ruff `TID` is enabled with no `banned-api`, so this could be promoted to `static-analysis`.
-- **Dependency direction (Rust):** `rust-adapters → rust-core`. The core never imports adapters or `pyo3` (ADR-0001). Enforcement: `docs-only`. Splitting the core into its own crate without `pyo3` would make this `structure`.
+- **Dependency direction (Rust):** `rust-adapters → rust-core`. The core never imports adapters or `pyo3` (ADR-0001). Enforcement: `structure` (`//src:core` is its own crate and its `deps` hold neither).
 - **Python is authoritative until migration phase 2 (`CONVENTIONS.md`: Rust becomes user-facing):**
   - New resolution behaviour is implemented in `python-resolution` and in `rust-core` plus `rust-adapters`.
   - It is wrapped in a `*_rust.py` module and run through `execute_parallel`.
@@ -238,4 +237,5 @@ The ARK resolver turns DaSCH ARK identifiers (`ark:/72163/...`) into redirects t
 | Serving the Rust result from a route | It bypasses the shadow contract, so a Rust divergence reaches users unnoticed | Keep `execute_parallel`, which returns the Python result; Phase 2 changes it in one place | `structure` |
 | `import ark_resolver._rust` in a route or in `python-resolution` | Couples authoritative code to the shadow implementation and breaks the independent comparison | Import from `ark_url_rust.py` or `check_digit_rust.py` | `docs-only` |
 | Assigning `app.config.settings` or `rust_settings` outside `server()` or `reload_config()` | A second writer means Python and Rust settings can diverge silently | Call `reload_config()` | `docs-only` |
-| `pyo3`, `std::env` or `std::fs` in `src/core` | Violates ADR-0001; the core can no longer be tested or reused without Python | Add a port in `src/core/ports` and implement it in `src/adapters` | `docs-only` |
+| `pyo3` (or another crate outside `//src:core`'s `deps`) in `src/core` | Violates ADR-0001; the core can no longer be tested or reused without Python | Add a port in `src/core/ports` and implement it in `src/adapters` | `structure` |
+| `std::env` or `std::fs` in `src/core` | Violates ADR-0001; hidden I/O makes the core untestable without the environment | Add a port in `src/core/ports` and implement it in `src/adapters` | `review` |
