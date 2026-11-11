@@ -2,9 +2,11 @@
 //! This adapter provides a Python-compatible interface that maintains exact API compatibility.
 #![allow(clippy::useless_conversion)]
 use crate::adapters::pyo3::settings::ArkUrlSettings;
-use crate::core::errors::ark_url_formatter::ArkUrlFormatterError;
-use crate::core::ports::ark_url_formatter::ArkUrlFormatterPort;
-use crate::core::use_cases::ark_url_formatter::{ArkUrlFormatterConfig, ArkUrlFormatterService};
+use ark_resolver_core::errors::ark_url_formatter::ArkUrlFormatterError;
+use ark_resolver_core::ports::ark_url_formatter::ArkUrlFormatterPort;
+use ark_resolver_core::use_cases::ark_url_formatter::{
+    ArkUrlFormatterConfig, ArkUrlFormatterService,
+};
 use pyo3::{exceptions::PyValueError, pyclass, pymethods, PyResult};
 
 /// Convert domain errors to PyO3 errors

@@ -1,8 +1,8 @@
 use config::{Config, File, FileFormat};
 use std::collections::HashMap;
 
-use crate::core::domain::settings::{ProjectConfig, SettingsRegistry};
-use crate::core::errors::settings::{SettingsError, SettingsResult};
+use ark_resolver_core::domain::settings::{ProjectConfig, SettingsRegistry};
+use ark_resolver_core::errors::settings::{SettingsError, SettingsResult};
 
 /// Common INI processing utilities for both HTTP and file system adapters
 /// BR: Configuration processing logic is centralized to ensure consistent behavior across adapters

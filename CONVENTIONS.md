@@ -52,7 +52,7 @@ A business rule embedded in code carries a `BR: ` comment that states the rule, 
 
 ## Testing Conventions
 
-- Rust unit tests live in the module under `#[cfg(test)]` and run with `just test` (`//src:unit_tests`).
+- Rust unit tests live in the module under `#[cfg(test)]` and run with `just test` (`//src:core_unit_tests` for the core, `//src:unit_tests` for the adapters).
 - Python tests are `tests/test_*.py` with pytest. `tests/BUILD.bazel` globs each module into its own `py_test`, so a new file runs without a BUILD edit. Run them with `just pytest`.
 - Tested means the behaviour is pinned in the implementation that changed and in a comparative test that feeds both implementations the same input (`test_redirect_parity.py`, `test_convert_parity.py`, `test_check_digit_rust.py`).
 - Test data comes from `tests/ark-registry.ini`. A test that reaches the network is tagged `requires-network` and `external` in `tests/BUILD.bazel`, as `test_http_registry_rust` is.

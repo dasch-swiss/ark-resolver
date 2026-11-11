@@ -4,8 +4,8 @@
 //! Port definitions for ARK URL information processing.
 //! These traits define the abstract interfaces for the hexagonal architecture.
 
-use crate::core::domain::ark_url_info::ArkUrlInfo;
-use crate::core::errors::ark_url_info::ArkUrlInfoResult;
+use crate::domain::ark_url_info::ArkUrlInfo;
+use crate::errors::ark_url_info::ArkUrlInfoResult;
 use std::collections::HashMap;
 
 /// Port for ARK URL information processing operations.
@@ -113,7 +113,7 @@ mod tests {
     // Test that the error types work correctly
     #[test]
     fn test_error_types() {
-        use crate::core::errors::ark_url_info::ArkUrlInfoError;
+        use crate::errors::ark_url_info::ArkUrlInfoError;
         let error = ArkUrlInfoError::invalid_ark_id("test");
         assert!(error.to_string().contains("test"));
     }

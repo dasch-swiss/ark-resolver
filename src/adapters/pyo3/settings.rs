@@ -4,9 +4,9 @@ use std::sync::Arc;
 
 use crate::adapters::environment::settings::{DefaultRegexProvider, EnvironmentVariableProvider};
 use crate::adapters::file_system::settings::FileSystemConfigurationProvider;
-use crate::core::domain::settings::SettingsWithRegexes;
-use crate::core::errors::settings::SettingsError;
-use crate::core::use_cases::settings_manager::{
+use ark_resolver_core::domain::settings::SettingsWithRegexes;
+use ark_resolver_core::errors::settings::SettingsError;
+use ark_resolver_core::use_cases::settings_manager::{
     DefaultSettingsTransformer, DefaultSettingsValidator, SettingsManager,
 };
 

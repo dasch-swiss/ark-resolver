@@ -8,12 +8,12 @@
 #![allow(clippy::useless_conversion)]
 
 use crate::adapters::pyo3::settings::ArkUrlSettings;
-use crate::core::domain::ark_url_info::ArkUrlInfo as RustArkUrlInfo;
-use crate::core::errors::ark_url_info::ArkUrlInfoError;
-use crate::core::ports::ark_url_info::{
+use ark_resolver_core::domain::ark_url_info::ArkUrlInfo as RustArkUrlInfo;
+use ark_resolver_core::errors::ark_url_info::ArkUrlInfoError;
+use ark_resolver_core::ports::ark_url_info::{
     ArkUrlParsingPort, ConfigurationPort, TemplatePort, UuidGenerationPort,
 };
-use crate::core::use_cases::ark_url_info_processor::ArkUrlInfoProcessor;
+use ark_resolver_core::use_cases::ark_url_info_processor::ArkUrlInfoProcessor;
 use base64::prelude::*;
 use pyo3::prelude::*;
 use std::collections::HashMap;

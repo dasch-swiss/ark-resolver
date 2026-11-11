@@ -1,6 +1,6 @@
 /// Pure domain logic for ARK URL formatting operations.
 /// This module contains formatting functions without any external dependencies.
-use crate::core::errors::ark_url_formatter::ArkUrlFormatterError;
+use crate::errors::ark_url_formatter::ArkUrlFormatterError;
 
 /// Validates and extracts components from a DSP resource IRI.
 ///

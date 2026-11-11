@@ -1,6 +1,6 @@
 /// Port (trait interface) for check digit operations.
 /// This defines the abstract contract that adapters must implement.
-use crate::core::errors::check_digit::CheckDigitError;
+use crate::errors::check_digit::CheckDigitError;
 
 /// Port trait defining the interface for check digit operations
 ///

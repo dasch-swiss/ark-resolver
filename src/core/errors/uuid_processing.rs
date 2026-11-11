@@ -1,4 +1,4 @@
-use crate::core::errors::check_digit::CheckDigitError;
+use crate::errors::check_digit::CheckDigitError;
 use thiserror::Error;
 
 /// Domain-specific errors for UUID processing operations

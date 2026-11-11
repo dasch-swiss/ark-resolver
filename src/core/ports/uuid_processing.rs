@@ -1,6 +1,6 @@
 /// Port (trait interface) for UUID processing operations.
 /// This defines the abstract contract that adapters must implement.
-use crate::core::errors::uuid_processing::UuidProcessingError;
+use crate::errors::uuid_processing::UuidProcessingError;
 
 /// Port trait defining the interface for UUID processing operations
 ///

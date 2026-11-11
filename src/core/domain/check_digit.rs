@@ -1,6 +1,6 @@
 /// Pure domain logic for check digit operations.
 /// This module contains mathematical functions without any external dependencies.
-use crate::core::errors::check_digit::CheckDigitError;
+use crate::errors::check_digit::CheckDigitError;
 
 /// The base64url alphabet (without padding) from RFC 4648, Table 2.
 const BASE64URL_ALPHABET: &str = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";

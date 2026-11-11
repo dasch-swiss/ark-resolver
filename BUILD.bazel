@@ -33,7 +33,10 @@ cc_import(
     name = "_libunwind_static",
     static_library = "@llvm-project//libunwind:libunwind.static",
     target_compatible_with = ["@platforms//os:linux"],
-    visibility = ["//tools/healthcheck:__pkg__"],
+    visibility = [
+        "//src:__pkg__",
+        "//tools/healthcheck:__pkg__",
+    ],
 )
 
 # module_name "ark_resolver._rust" in the ROOT package places the .so at
@@ -57,6 +60,7 @@ pyo3_extension(
     # directly instead, keeping `_rust.so` self-contained with no new runtime
     # dependency on the base image.
     deps = [
+        "//src:core",
         "@crates//:base64",
         "@crates//:config",
         "@crates//:regex",
