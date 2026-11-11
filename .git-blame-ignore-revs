@@ -1,0 +1,5 @@
+# Commits that only reformat code. `just setup` points `blame.ignoreRevsFile` here,
+# so `git blame` skips them. List a commit only if it changes nothing but formatting.
+
+# refactor: reformat
+09c6cf63b9edd4a01296a068d70df3d6cf65f1ec

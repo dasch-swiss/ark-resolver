@@ -38,7 +38,7 @@ It is a Python (Sanic) service with a Rust extension, `ark_resolver._rust`, buil
 
 ## Development Commands
 
-`nix develop` (or `direnv allow`) enters the dev shell with bazel, just, uv and cargo-audit; `just install` installs the Python dependencies. `just --list` shows every recipe with its description.
+`nix develop` (or `direnv allow`) enters the dev shell with bazel, just, uv and cargo-audit; `just install` installs the Python dependencies; `just setup`, once per clone, sets `blame.ignoreRevsFile` so `git blame` skips the reformat commits listed in `.git-blame-ignore-revs`. `just --list` shows every recipe with its description.
 
 ```bash
 just check        # ruff format check, ruff, pyright; rustfmt and clippy with -Dwarnings
