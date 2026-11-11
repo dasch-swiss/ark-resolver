@@ -54,30 +54,6 @@ impl fmt::Display for SettingsError {
 
 impl std::error::Error for SettingsError {}
 
-impl From<regex::Error> for SettingsError {
-    fn from(err: regex::Error) -> Self {
-        SettingsError::RegexError(err.to_string())
-    }
-}
-
-impl From<std::io::Error> for SettingsError {
-    fn from(err: std::io::Error) -> Self {
-        SettingsError::FileSystemError(err.to_string())
-    }
-}
-
-impl From<config::ConfigError> for SettingsError {
-    fn from(err: config::ConfigError) -> Self {
-        SettingsError::ParseError(err.to_string())
-    }
-}
-
-impl From<std::env::VarError> for SettingsError {
-    fn from(err: std::env::VarError) -> Self {
-        SettingsError::EnvironmentError(err.to_string())
-    }
-}
-
 /// Result type for settings operations
 pub type SettingsResult<T> = Result<T, SettingsError>;
 
@@ -142,27 +118,5 @@ mod tests {
 
         assert_eq!(error1, error2);
         assert_ne!(error1, error3);
-    }
-
-    #[test]
-    fn test_settings_error_from_regex_error() {
-        let regex_err = regex::Error::Syntax("Invalid regex".to_string());
-        let settings_err = SettingsError::from(regex_err);
-
-        match settings_err {
-            SettingsError::RegexError(msg) => assert!(msg.contains("Invalid regex")),
-            _ => panic!("Expected RegexError"),
-        }
-    }
-
-    #[test]
-    fn test_settings_error_from_env_error() {
-        let env_err = std::env::VarError::NotPresent;
-        let settings_err = SettingsError::from(env_err);
-
-        match settings_err {
-            SettingsError::EnvironmentError(_) => (),
-            _ => panic!("Expected EnvironmentError"),
-        }
     }
 }
