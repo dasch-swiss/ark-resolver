@@ -202,7 +202,7 @@ just fmt  # Runs both rustfmt and pyfmt
 # Format only Rust (bazel run @rules_rust//:rustfmt)
 just rustfmt
 
-# Advisory scan over the checked-in Cargo lockfile (cargo audit --file Cargo.Bazel.lock)
+# Advisory scan over the checked-in Cargo lockfile (cargo-audit audit --file Cargo.Bazel.lock)
 just audit
 
 # Repin Cargo.Bazel.lock after a crate.spec change in MODULE.bazel
