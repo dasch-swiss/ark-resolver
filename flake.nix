@@ -36,6 +36,8 @@
               just
               uv
               cargo-audit
+              # `just commit-lint`; CI installs the same version with cargo (COMMITLINT_VERSION in check.yml).
+              commitlint-rs
               cacert
             ];
 

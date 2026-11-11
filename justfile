@@ -16,6 +16,28 @@ install:
 setup:
     git config blame.ignoreRevsFile .git-blame-ignore-revs
 
+# Feeds one message at a time on stdin: commitlint-rs reads stdin whenever stdin is not a
+# TTY (always under `just` and in CI), so its --from/--to range mode is unreachable here.
+# Merge commits are skipped; GitHub's synthetic PR merge commit is one.
+[doc("Lint every commit in <from>..HEAD against .commitlintrc.yml, as CI does")]
+commit-lint from="origin/main":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    base="$(git merge-base "{{ from }}" HEAD)"
+    commits="$(git rev-list --no-merges --reverse "$base..HEAD")"
+    fail=0
+    for sha in $commits; do
+        if ! git log -1 --format=%B "$sha" | commitlint; then
+            echo "  ↳ offending commit: $(git log -1 --format='%h %s' "$sha")" >&2
+            fail=1
+        fi
+    done
+    if [ "$fail" -ne 0 ]; then
+        echo "commit-lint: one or more commits break the convention (see above)" >&2
+        exit 1
+    fi
+    echo "commit-lint: all commits in $base..HEAD OK"
+
 # Upgrade python packages (uv.lock)
 upgrade:
     uv lock --upgrade

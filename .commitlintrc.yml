@@ -1,0 +1,31 @@
+# commitlint-rs config, enforced by the `commit-lint` job in check.yml and by `just commit-lint`.
+# Human-facing rules: CONVENTIONS.md, Commit Conventions.
+#
+# The repo rebase-merges, so every commit lands on main and release-please reads each one.
+# This `type` allowlist is the enforced list; CONVENTIONS.md repeats it with each type's meaning,
+# so change both. A type added here also needs a changelog section in
+# .github/release-please/config.json unless it stays out of the changelog, as `ci` does.
+# release-please's `data` section is left out on purpose: no commit has used it.
+# The scope is optional: CONVENTIONS.md does not require one.
+rules:
+  type:
+    level: error
+    options:
+      - feat
+      - fix
+      - perf
+      - refactor
+      - docs
+      - test
+      - build
+      - ci
+      - chore
+      - style
+  type-empty:
+    level: error
+  # `subject` is the whole header line, `description` the text after the colon, so
+  # `subject-empty` alone lets `fix(redirect):` through.
+  subject-empty:
+    level: error
+  description-empty:
+    level: error
