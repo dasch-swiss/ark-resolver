@@ -42,28 +42,7 @@ For usage information, run `bazel run //:ark_resolver_bin -- --help`. The applic
 
 ### Environment Variables
 
-The application can be configured using the following environment variables:
-
-- `ARK_EXTERNAL_HOST`: External hostname used in ARK URLs (default: `ark.example.org`)
-- `ARK_INTERNAL_HOST`: Internal hostname for the server (default: `0.0.0.0`)
-- `ARK_INTERNAL_PORT`: Port for the server to bind to (default: `3336`)
-- `ARK_NAAN`: Name Assigning Authority Number (default: `00000`)
-- `ARK_HTTPS_PROXY`: Whether behind HTTPS proxy (default: `true`)
-- `ARK_REGISTRY`: Path or URL to the project registry file (**required**)
-- `ARK_GITHUB_SECRET`: Secret for GitHub webhook authentication
-
-### Rust HTTP Client Configuration (Advanced)
-
-Additional environment variables for debugging and timeout control in containerized environments:
-
-- `ARK_RUST_LOAD_TIMEOUT_MS`: Application-level timeout for settings loading (default: `15000`) - prevents container SIGTERM
-- `ARK_RUST_HTTP_TIMEOUT_MS`: HTTP request total timeout in milliseconds (default: `10000`) 
-- `ARK_RUST_HTTP_CONNECT_TIMEOUT_MS`: HTTP connection timeout in milliseconds (default: `5000`)
-- `ARK_RUST_FORCE_IPV4`: Force IPv4-only connections, disable IPv6 (default: `false`) - fixes container IPv6 connectivity issues
-- `RUST_LOG`: Controls tracing verbosity (e.g., `RUST_LOG=ark_resolver=debug,reqwest=debug,hyper=debug`)
-- `ARK_SENTRY_DEBUG`: Enable Sentry debug mode (default: `false`) - accepts "true"/"1"/"yes"/"on" for true
-
-The Rust HTTP client also supports standard proxy environment variables (`HTTPS_PROXY`, `HTTP_PROXY`, `ALL_PROXY`).
+[`.env.example`](.env.example) lists every variable the application reads, with its default and purpose. Only `ARK_REGISTRY` is required.
 
 For production deployments, `ARK_REGISTRY` should point to the appropriate registry file from the [ark-resolver-data](https://github.com/dasch-swiss/ark-resolver-data) repository.
 
