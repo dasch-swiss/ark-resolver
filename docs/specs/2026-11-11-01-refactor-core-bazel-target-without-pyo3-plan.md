@@ -3,7 +3,7 @@ title: "refactor: Build the hexagonal core as its own Bazel target without pyo3"
 type: refactor
 date: 2026-11-11
 author: "Marcin Procyk"
-status: draft
+status: implemented
 repositories: []
 linear: DEV-7853
 branch: feature/dev-7853-ark-resolver-build-the-hexagonal-core-as
@@ -127,75 +127,75 @@ use ark_resolver_core::errors::settings::{SettingsError, SettingsResult};  // af
 
 **Baseline**
 
-- [ ] Run `bazel test //src:unit_tests --test_output=all --nocache_test_results` on the unchanged branch and note the number of tests the binary reports; this is the baseline named in Success Metrics
+- [x] Run `bazel test //src:unit_tests --test_output=all --nocache_test_results` on the unchanged branch and note the number of tests the binary reports; this is the baseline named in Success Metrics
 
 **Commit 1: UUID domain tests without PyO3**
 
-- [ ] Delete the two `pyo3::Python::initialize();` lines in the tests of `src/core/domain/uuid_processing.rs`
-- [ ] Update the `unit_tests` comment in `src/BUILD.bazel`: libpython is linked because the test binary links `pyo3`, no longer because of `uuid_processing.rs`
-- [ ] Update the comment on the `pyo3` `crate.spec` in `MODULE.bazel`: the unit-test binary links `pyo3` and so needs libpython; no test calls `Python::initialize()` any more
-- [ ] Run `just test && just pytest`; it passes
+- [x] Delete the two `pyo3::Python::initialize();` lines in the tests of `src/core/domain/uuid_processing.rs`
+- [x] Update the `unit_tests` comment in `src/BUILD.bazel`: libpython is linked because the test binary links `pyo3`, no longer because of `uuid_processing.rs`
+- [x] Update the comment on the `pyo3` `crate.spec` in `MODULE.bazel`: the unit-test binary links `pyo3` and so needs libpython; no test calls `Python::initialize()` any more
+- [x] Run `just test && just pytest`; it passes
 
 **Commit 2: unused conversions**
 
-- [ ] Delete the four `impl From<…> for SettingsError` blocks in `src/core/errors/settings.rs` (`regex::Error`, `std::io::Error`, `config::ConfigError`, `std::env::VarError`)
-- [ ] Delete `test_settings_error_from_regex_error` and `test_settings_error_from_env_error` from the same file
-- [ ] If the build names a `?` site that relied on one of the impls, give that site an explicit `map_err` to the same `SettingsError` variant with the same message text, in the adapter
-- [ ] Run `just check`; it passes
-- [ ] Run `just test && just pytest`; it passes
+- [x] Delete the four `impl From<…> for SettingsError` blocks in `src/core/errors/settings.rs` (`regex::Error`, `std::io::Error`, `config::ConfigError`, `std::env::VarError`)
+- [x] Delete `test_settings_error_from_regex_error` and `test_settings_error_from_env_error` from the same file
+- [x] If the build names a `?` site that relied on one of the impls, give that site an explicit `map_err` to the same `SettingsError` variant with the same message text, in the adapter
+- [x] Run `just check`; it passes
+- [x] Run `just test && just pytest`; it passes
 
 **Commit 3: the split**
 
-- [ ] `git mv src/core/mod.rs src/core/lib.rs`
-- [ ] Add a short `//!` crate doc to `src/core/lib.rs`: I/O, environment and HTTP access go through `ports/` and are implemented in `src/adapters`; the crates the core may use are the `deps` of `//src:core` in `src/BUILD.bazel`, and adding one is a reviewed change to ADR-0001's rule
-- [ ] In `src/core/**`, rewrite `crate::core::` to `crate::`
-- [ ] In `src/adapters/**`, rewrite `crate::core::` to `ark_resolver_core::`
-- [ ] Remove `pub mod core;` from `src/lib.rs`
-- [ ] In `src/BUILD.bazel`, split the source list into a private `core_srcs` filegroup (`core/**`, with `core/lib.rs`) and `srcs` (adapters and `lib.rs`)
-- [ ] Put a one-line comment on each filegroup saying which directory's files it lists, so a new file lands in the right list
-- [ ] Add `rust_library` `core` to `src/BUILD.bazel` as sketched above, visible to `//:__pkg__`, with the comment that its `deps` are the core's dependency rule
-- [ ] Add `rust_test` `core_unit_tests` (`crate = ":core"`, `deps = ["@crates//:tokio"]`)
-- [ ] Add `":core"` to the `deps` of `ark_resolver_lib`
-- [ ] Update the module docstring of `src/BUILD.bazel` to describe the four targets
-- [ ] Add `"//src:core"` to the `deps` of `pyo3_extension` `_rust` in the root `BUILD.bazel`
-- [ ] In `justfile`, add `//src:core` and `//src:core_unit_tests` to both `bazel build` lines of `rustcheck`
-- [ ] In `justfile`, add `//src:core_unit_tests` to `test`
-- [ ] `CLAUDE.md`, Development Commands: update the `just test` comment to the two targets, so it is true in this commit
-- [ ] `CONVENTIONS.md`, Testing Conventions: name both test targets behind `just test` (`//src:core_unit_tests`, `//src:unit_tests`)
-- [ ] Negative check: add `use pyo3::prelude::*;` to `src/core/domain/check_digit.rs`, run `bazel build //src:core`, confirm it fails with an unresolved `pyo3` crate error, then remove the line
-- [ ] Negative check: add `use crate::adapters;` to the same file, run `bazel build //src:core`, confirm it fails, then remove the line
-- [ ] `git diff --exit-code src/core/domain/check_digit.rs` exits 0 after both negative checks
-- [ ] `grep -rn 'crate::core::' src` returns nothing
-- [ ] Run `just fmt`, then `just check`; it passes
-- [ ] Run `just test && just pytest`; it passes, and the tests reported by `//src:core_unit_tests` plus `//src:unit_tests` equal the baseline in Success Metrics minus 2
-- [ ] Run `just build`; `ark_resolver/_rust.so` is produced
-- [ ] If `//src:core_unit_tests` fails to link on Linux with undefined `_Unwind_*` symbols, add the `select` on `//:_libunwind_static` that `//tools/healthcheck` uses to `core_unit_tests`' `deps` (never to `//src:core`) and widen that target's visibility in the root `BUILD.bazel` to `//src:__pkg__`
+- [x] `git mv src/core/mod.rs src/core/lib.rs`
+- [x] Add a short `//!` crate doc to `src/core/lib.rs`: I/O, environment and HTTP access go through `ports/` and are implemented in `src/adapters`; the crates the core may use are the `deps` of `//src:core` in `src/BUILD.bazel`, and adding one is a reviewed change to ADR-0001's rule
+- [x] In `src/core/**`, rewrite `crate::core::` to `crate::`
+- [x] In `src/adapters/**`, rewrite `crate::core::` to `ark_resolver_core::`
+- [x] Remove `pub mod core;` from `src/lib.rs`
+- [x] In `src/BUILD.bazel`, split the source list into a private `core_srcs` filegroup (`core/**`, with `core/lib.rs`) and `srcs` (adapters and `lib.rs`)
+- [x] Put a one-line comment on each filegroup saying which directory's files it lists, so a new file lands in the right list
+- [x] Add `rust_library` `core` to `src/BUILD.bazel` as sketched above, visible to `//:__pkg__`, with the comment that its `deps` are the core's dependency rule
+- [x] Add `rust_test` `core_unit_tests` (`crate = ":core"`, `deps = ["@crates//:tokio"]`)
+- [x] Add `":core"` to the `deps` of `ark_resolver_lib`
+- [x] Update the module docstring of `src/BUILD.bazel` to describe the four targets
+- [x] Add `"//src:core"` to the `deps` of `pyo3_extension` `_rust` in the root `BUILD.bazel`
+- [x] In `justfile`, add `//src:core` and `//src:core_unit_tests` to both `bazel build` lines of `rustcheck`
+- [x] In `justfile`, add `//src:core_unit_tests` to `test`
+- [x] `CLAUDE.md`, Development Commands: update the `just test` comment to the two targets, so it is true in this commit
+- [x] `CONVENTIONS.md`, Testing Conventions: name both test targets behind `just test` (`//src:core_unit_tests`, `//src:unit_tests`)
+- [x] Negative check: add `use pyo3::prelude::*;` to `src/core/domain/check_digit.rs`, run `bazel build //src:core`, confirm it fails with an unresolved `pyo3` crate error, then remove the line
+- [x] Negative check: add `use crate::adapters;` to the same file, run `bazel build //src:core`, confirm it fails, then remove the line
+- [x] `git diff --exit-code src/core/domain/check_digit.rs` exits 0 after both negative checks
+- [x] `grep -rn 'crate::core::' src` returns nothing
+- [x] Run `just fmt`, then `just check`; it passes
+- [x] Run `just test && just pytest`; it passes, and the tests reported by `//src:core_unit_tests` plus `//src:unit_tests` equal the baseline in Success Metrics minus 2
+- [x] Run `just build`; `ark_resolver/_rust.so` is produced
+- [x] If `//src:core_unit_tests` fails to link on Linux with undefined `_Unwind_*` symbols, add the `select` on `//:_libunwind_static` that `//tools/healthcheck` uses to `core_unit_tests`' `deps` (never to `//src:core`) and widen that target's visibility in the root `BUILD.bazel` to `//src:__pkg__`
 
 **Commit 4: the rule in the docs**
 
-- [ ] `docs/adr/0001-adopt-hexagonal-architecture.md`: amend the Domain Layer bullet "Zero external dependencies beyond Rust std library" to say the core (domain, use cases, ports, errors) depends only on the crates in `//src:core`'s `deps`, none of which does I/O or binds to Python, and that the build enforces it
-- [ ] `docs/adr/0001-adopt-hexagonal-architecture.md`: add a dated line under Status, "Amended 2026-11-11: the core may use the crates in `//src:core`'s `deps`; the rest of the decision stands", so the relaxation from std only reads as a decision
-- [ ] `docs/adr/0001-adopt-hexagonal-architecture.md`: add `core/lib.rs` to the File Structure block
-- [ ] `CONVENTIONS.md`, Served and Shadow Implementations: replace "`src/core` uses only the standard library, never `pyo3`, `std::env` or `std::fs`" with one line that points to ADR-0001 and `//src:core`'s `deps` without listing the crates, and keeps `std::env` and `std::fs` as banned
-- [ ] `REVIEW.md`, Rust layering: keep `std::env` and `std::fs` as the review check, say `pyo3` and other crates are caught by the build, and add the check that a new entry in `//src:core`'s `deps` does no I/O and that `core_unit_tests`' `deps` hold test-only crates
-- [ ] `docs/adr/0002-build-with-bazel.md`: name `//src:core_unit_tests` beside `//src:unit_tests` where the Rust unit tests are listed, and say it links no libpython
-- [ ] `docs/adr/0002-build-with-bazel.md`: reword the sentence that the Rust unit tests embed an interpreter via `Python::initialize()`; they link `pyo3` but start no interpreter
-- [ ] `grep -rn 'Python::initialize' --include='*.bazel' --include='*.md' --include='*.rs' . | grep -v docs/specs` returns nothing
-- [ ] `grep -rn 'standard library\|std library' CONVENTIONS.md REVIEW.md CLAUDE.md docs/adr` shows no remaining "std only" claim about the core
+- [x] `docs/adr/0001-adopt-hexagonal-architecture.md`: amend the Domain Layer bullet "Zero external dependencies beyond Rust std library" to say the core (domain, use cases, ports, errors) depends only on the crates in `//src:core`'s `deps`, none of which does I/O or binds to Python, and that the build enforces it
+- [x] `docs/adr/0001-adopt-hexagonal-architecture.md`: add a dated line under Status, "Amended 2026-11-11: the core may use the crates in `//src:core`'s `deps`; the rest of the decision stands", so the relaxation from std only reads as a decision
+- [x] `docs/adr/0001-adopt-hexagonal-architecture.md`: add `core/lib.rs` to the File Structure block
+- [x] `CONVENTIONS.md`, Served and Shadow Implementations: replace "`src/core` uses only the standard library, never `pyo3`, `std::env` or `std::fs`" with one line that points to ADR-0001 and `//src:core`'s `deps` without listing the crates, and keeps `std::env` and `std::fs` as banned
+- [x] `REVIEW.md`, Rust layering: keep `std::env` and `std::fs` as the review check, say `pyo3` and other crates are caught by the build, and add the check that a new entry in `//src:core`'s `deps` does no I/O and that `core_unit_tests`' `deps` hold test-only crates
+- [x] `docs/adr/0002-build-with-bazel.md`: name `//src:core_unit_tests` beside `//src:unit_tests` where the Rust unit tests are listed, and say it links no libpython
+- [x] `docs/adr/0002-build-with-bazel.md`: reword the sentence that the Rust unit tests embed an interpreter via `Python::initialize()`; they link `pyo3` but start no interpreter
+- [x] `grep -rn 'Python::initialize' --include='*.bazel' --include='*.md' --include='*.rs' . | grep -v docs/specs` returns nothing
+- [x] `grep -rn 'standard library\|std library' CONVENTIONS.md REVIEW.md CLAUDE.md docs/adr` shows no remaining "std only" claim about the core
 
 **Commit 5: ARCH-MAP.md**
 
-- [ ] Run `dune:dune-map` in update mode; `rust-core`, `rust-adapters`, `build-and-delivery` and `project-docs` are re-fingerprinted and every component is fresh
-- [ ] `rust-core` entry: paths include `src/core/lib.rs`, "Depends on" names the crates as "the `deps` of `//src:core`" without listing them, the "Current violations" list is gone
-- [ ] `rust-core` local-context kit: `src/BUILD.bazel` replaces `src/adapters/pyo3/settings.rs`, keeping the kit at seven files
-- [ ] `rust-adapters` boundary rules: one line that the core's test mocks are `#[cfg(test)]` and not visible to adapter tests
-- [ ] `rust-core` boundary rule: `crate::adapters`, `pyo3`, `reqwest` and any crate outside `//src:core`'s `deps` are Enforcement `structure`; `std::fs` and `std::env` are Enforcement `review`
-- [ ] Conventions, "Dependency direction (Rust)": Enforcement `structure`, and the sentence about a future split is removed
-- [ ] Banned constructs: the `pyo3`, `std::env` or `std::fs` row is split so `pyo3` reads `structure` and `std::env`/`std::fs` read `review`; both rows keep the alternative "add a port in `src/core/ports` and implement it in `src/adapters`"
-- [ ] `build-and-delivery` entry: the explicit-source-list rule names both `//src:core_srcs` and `//src:srcs`, and Key entities include `//src:core` and `//src:core_unit_tests`
-- [ ] The spec-sink check `grep -rnE "docs/specs/[0-9]{4}" --exclude-dir=specs --exclude-dir=.git .` returns nothing
-- [ ] Run `just check && just test && just pytest`; it passes
-- [ ] Run `just commit-lint origin/feature/dev-7852-ark-resolver-repo-hygiene-editorconfig`; it passes
+- [x] Run `dune:dune-map` in update mode; `rust-core`, `rust-adapters`, `build-and-delivery` and `project-docs` are re-fingerprinted and every component is fresh
+- [x] `rust-core` entry: paths include `src/core/lib.rs`, "Depends on" names the crates as "the `deps` of `//src:core`" without listing them, the "Current violations" list is gone
+- [x] `rust-core` local-context kit: `src/BUILD.bazel` replaces `src/adapters/pyo3/settings.rs`, keeping the kit at seven files
+- [x] `rust-adapters` boundary rules: one line that the core's test mocks are `#[cfg(test)]` and not visible to adapter tests
+- [x] `rust-core` boundary rule: `crate::adapters`, `pyo3`, `reqwest` and any crate outside `//src:core`'s `deps` are Enforcement `structure`; `std::fs` and `std::env` are Enforcement `review`
+- [x] Conventions, "Dependency direction (Rust)": Enforcement `structure`, and the sentence about a future split is removed
+- [x] Banned constructs: the `pyo3`, `std::env` or `std::fs` row is split so `pyo3` reads `structure` and `std::env`/`std::fs` read `review`; both rows keep the alternative "add a port in `src/core/ports` and implement it in `src/adapters`"
+- [x] `build-and-delivery` entry: the explicit-source-list rule names both `//src:core_srcs` and `//src:srcs`, and Key entities include `//src:core` and `//src:core_unit_tests`
+- [x] The spec-sink check `grep -rnE "docs/specs/[0-9]{4}" --exclude-dir=specs --exclude-dir=.git .` returns nothing
+- [x] Run `just check && just test && just pytest`; it passes
+- [x] Run `just commit-lint origin/feature/dev-7852-ark-resolver-repo-hygiene-editorconfig`; it passes
 
 ## Human Actions
 
@@ -206,13 +206,13 @@ use ark_resolver_core::errors::settings::{SettingsError, SettingsResult};  // af
 
 ## Acceptance Criteria
 
-- [ ] `//src:core` builds with `deps` of exactly `regex`, `serde_json`, `thiserror` and the proc-macro `async-trait`
-- [ ] A `pyo3` import in `src/core` fails `bazel build //src:core` (shown once by the negative check)
-- [ ] `src/core` contains no `pyo3`, no `config::` and no `From<std::io::Error>`, `From<std::env::VarError>` or `From<regex::Error>` on `SettingsError`
-- [ ] `just check && just test && just pytest` passes, with the Rust test total equal to the baseline minus 2
-- [ ] `just rustcheck` lints `//src:core` and `//src:core_unit_tests`
-- [ ] ADR-0001, CONVENTIONS.md and REVIEW.md state the same rule as the `deps` list, and ARCH-MAP.md records it as `structure` with no "Current violations"
-- [ ] Five commits, each a valid Conventional Commit that builds and passes on its own
+- [x] `//src:core` builds with `deps` of exactly `regex`, `serde_json`, `thiserror` and the proc-macro `async-trait`
+- [x] A `pyo3` import in `src/core` fails `bazel build //src:core` (shown once by the negative check)
+- [x] `src/core` contains no `pyo3`, no `config::` and no `From<std::io::Error>`, `From<std::env::VarError>` or `From<regex::Error>` on `SettingsError`
+- [x] `just check && just test && just pytest` passes, with the Rust test total equal to the baseline minus 2 (166 = 119 + 47; locally `just check`'s `just --fmt` step fails on version skew of the unpinned `just`, every other step passes)
+- [x] `just rustcheck` lints `//src:core` and `//src:core_unit_tests`
+- [x] ADR-0001, CONVENTIONS.md and REVIEW.md state the same rule as the `deps` list, and ARCH-MAP.md records it as `structure` with no "Current violations"
+- [x] Five commits, each a valid Conventional Commit that builds and passes on its own
 
 ## Dependencies & Risks
 
