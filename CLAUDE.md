@@ -1,11 +1,19 @@
 # CLAUDE.md
 
-This file provides guidance to coding agents when working with code in this repository.
-
+Orientation for coding agents in this repository. The rules live in the files listed under Start Here; this file routes to them.
 
 ## Notes
 The coding agent MUST first present plan. Only after confirmation, start implementing plan and changing code.
 The coding agent MUST ask questions about code coverage and if adding new unit tests or extending existing tests is required.
+
+## Start Here
+
+- [`ARCH-MAP.md`](ARCH-MAP.md): components, their paths and local-context kits, dependency direction, banned constructs. Read the entry for the component you change.
+- [`CONTEXT.md`](CONTEXT.md): domain vocabulary (ARK parts, Served and Shadow implementation). Use its terms.
+- [`CONVENTIONS.md`](CONVENTIONS.md): how to write code here, imported below.
+- [`REVIEW.md`](REVIEW.md): what a review checks and skips.
+- [`docs/adr/`](docs/adr/) for decisions, [`docs/learnings/`](docs/learnings/) for solved problems.
+- [`.env.example`](.env.example): every environment variable with its default.
 
 ## Conventions
 
@@ -24,124 +32,29 @@ ark-resolver specs (PRDs, implementation plans, design docs) live directly in [`
 
 ## Project Overview
 
-The DSP ARK Resolver is a hybrid Python/Rust application that resolves ARK URLs referring to resources in
-DSP (DaSCH Service Platform) repository.
+The DSP ARK Resolver resolves ARK URLs that refer to resources in DSP (DaSCH Service Platform) repositories. As an HTTP server it redirects an ARK to the resource's location; as a command-line tool it converts between resource IRIs and ARK URLs. Redirect targets come from an INI registry named by `ARK_REGISTRY` (`tests/ark-registry.ini` locally).
 
-The hybrid Python (Sanic) / Rust (PyO3) service is the production architecture, built end to end with
-Bazel (see `docs/adr/0002-build-with-bazel.md`). An earlier plan to rewrite the Rust side into a
-standalone Axum service and remove Python/PyO3 entirely is not being pursued.
-
-Logic continues to migrate from Python to Rust inside that hybrid; the migration phases and the rules for the
-served and shadow implementations are in CONVENTIONS.md.
-
-The core architecture combines:
-
-- **Python (Sanic)**: Main HTTP server, routing, and business logic (`ark_resolver/ark.py`)
-- **Rust (PyO3)**: Functions exposed as a Python extension module, built as the `//:_rust` Bazel target (`src/lib.rs`)
-- **Configuration-driven**: Uses INI files for ARK registry and server configuration
-
-The resolver operates in two modes:
-1. HTTP server that redirects ARK URLs to actual resource locations
-2. Command-line tool for converting between resource IRIs and ARK URLs
+It is a Python (Sanic) service with a Rust extension, `ark_resolver._rust`, built by Bazel's `pyo3_extension` rule (`//:_rust`, `src/lib.rs`) as described in `docs/adr/0002-build-with-bazel.md`. An earlier plan to rewrite the Rust side into a standalone Axum service and remove Python/PyO3 entirely is not being pursued. Logic continues to migrate from Python to Rust inside that hybrid; the migration phases and the rules for the served and shadow implementations are in CONVENTIONS.md, the module layout in ARCH-MAP.md.
 
 ## Development Commands
 
-### Setup
-```bash
-# Enter the dev shell (provides bazelisk/bazel, just, uv, cargo-audit)
-nix develop
-# or, with direnv installed: direnv allow
+`nix develop` (or `direnv allow`) enters the dev shell with bazel, just, uv and cargo-audit; `just install` installs the Python dependencies. `just --list` shows every recipe with its description.
 
-# Install Python dependencies (as defined in pyproject.toml and uv.lock)
-just install
+```bash
+just check        # ruff format check, ruff, pyright; rustfmt and clippy with -Dwarnings
+just test         # Rust unit tests (//src:unit_tests)
+just pytest       # Python tests against the Bazel-built extension (//tests/...)
+just fmt          # format Python and Rust
+just run          # serve locally with tests/ark-registry.ini
+just build        # copy the Bazel-built _rust.so into ark_resolver/ for pyright and IDEs; `uv run` cannot load it
+just smoke-test   # build the image, verify it, run the Bazel smoke test
 ```
 
-### Build and Development
+The command-line modes need `ARK_REGISTRY` set to an absolute path:
+
 ```bash
-# Build the Rust extension (//:_rust) and copy the .so into ark_resolver/,
-# so pyright and IDEs can resolve `ark_resolver._rust`. This is for local
-# tooling only: `uv run` cannot load a Bazel-built .so.
-just build
-
-# Run ark-resolver locally (sets ARK_REGISTRY, then bazel run //:ark_resolver_bin -- -s)
-just run
-
-# Run as a command-line tool (examples; ARK_REGISTRY must be set)
 bazel run //:ark_resolver_bin -- -i http://rdfh.ch/0002/70aWaB2kWsuiN6ujYgM0ZQ  # IRI to ARK
 bazel run //:ark_resolver_bin -- -a http://ark.example.org/ark:/00000/0002-751e0b8a-6  # ARK redirect
 ```
 
-### Testing
-```bash
-# Rust unit tests (bazel test //src:unit_tests)
-just test
-
-# Python tests that require the Rust extension (bazel test //tests/...)
-just pytest
-
-# Docker-based smoke test: docker-build, then image-check, then the Bazel smoke test
-just smoke-test
-```
-
-### Code Quality
-```bash
-# Check all code
-just check  # Runs both rustcheck and pycheck
-
-# Python checks
-just pycheck
-# Runs: uv run ruff format --check . && uv run ruff check . && uv run pyright
-
-# Rust checks
-just rustcheck
-# Runs: just --check --fmt, then rustfmt and clippy aspects via `bazel build`
-
-# Format all code
-just fmt  # Runs both rustfmt and pyfmt
-
-# Format only Rust (bazel run @rules_rust//:rustfmt)
-just rustfmt
-
-# Advisory scan over the checked-in Cargo lockfile (cargo-audit audit --file Cargo.Bazel.lock)
-just audit
-
-# Repin Cargo.Bazel.lock after a crate.spec change in MODULE.bazel
-just crates-repin
-
-# (Re)generate rust-project.json so rust-analyzer understands the Bazel crate graph
-just rust-project
-```
-
-## Architecture Details
-
-### Python-Rust Integration
-- Rust code is built as the `//:_rust` `pyo3_extension` Bazel target (`rules_rust_pyo3`, using our own registered
-  PyO3 toolchain), landing at `ark_resolver/_rust.so`
-- Rust crate dependencies are declared as `crate.spec` entries in `MODULE.bazel` and locked in `Cargo.Bazel.lock`
-- Key Rust functions exposed: `base64url_check_digit`, `load_settings`, `initialize_tracing`, `initialize_debug_tracing`
-- Settings loading and parsing performance optimized in Rust (`src/ark_url_settings.rs`)
-- HTTP configuration fetching with comprehensive error diagnostics and SIGTERM prevention
-- Debug tracing integration for HTTP request troubleshooting in containerized environments
-
-### Configuration System
-- All configuration is done via environment variables; [`.env.example`](.env.example) lists every one with its default
-- `tests/ark-registry.ini`: Project-specific ARK URL templates and redirect targets (for local testing only)
-- Settings are loaded via Rust for performance (`ArkUrlSettings` class)
-
-### Key Python Modules
-- `ark_resolver/ark.py`: Main server and CLI entry point
-- `ark_resolver/ark_url.py`: ARK URL parsing and formatting logic
-- `ark_resolver/routes/`: Sanic route handlers (health, redirect, convert). Both redirect and convert routes use `ParallelExecutor` for shadow Rust execution.
-- `ark_resolver/check_digit.py`: ARK check digit validation
-
-### UUID Generation for Legacy Migration
-Uses UUID v5 with DaSCH-specific namespace (`cace8b00-717e-50d5-bcb9-486f39d733a2`) to create deterministic resource IRIs from legacy salsah.org ARK URLs, ensuring permanent identifier continuity.
-
-## Docker Usage
-Images published to `daschswiss/ark-resolver` (linux/amd64 only). Build and verify commands via just:
-```bash
-just docker-build      # stamped release image (rules_oci, distroless cc-debian13), loaded as daschswiss/ark-resolver:latest
-just image-check       # verify the loaded image's interpreter, imports, pip absence, certs, tzdata, uid
-just docker-image-tag  # print the tag derived from version.txt
-```
-`just docker-publish` pushes the stamped image to Docker Hub; it runs in CI only.
+Images go to `daschswiss/ark-resolver` (linux/amd64) from CI only (`just docker-publish`); `just docker-build` and `just image-check` build and verify one locally.
