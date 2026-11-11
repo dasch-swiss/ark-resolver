@@ -7,8 +7,8 @@
 Parallel execution framework for running Python and Rust implementations in production.
 
 This module provides infrastructure for executing both Python and Rust implementations
-of ARK URL processing functions in parallel, using Python as the primary implementation
-and Rust as a shadow for validation and performance measurement.
+of ARK URL processing functions in parallel, with Python as the served implementation
+and Rust as the shadow implementation for validation and performance measurement.
 """
 
 import logging
@@ -58,7 +58,7 @@ class ParallelExecutor:
 
     This class provides a framework for running both implementations, comparing results,
     and collecting performance metrics while ensuring that Rust errors don't affect
-    the user experience (Python remains primary).
+    the user experience (the Python result is always the one served).
     """
 
     def __init__(self, logger: logging.Logger = logger):
@@ -91,7 +91,7 @@ class ParallelExecutor:
         """
         self.metrics["total_executions"] += 1
 
-        # Execute Python implementation (primary)
+        # Execute Python implementation (served)
         python_start = time.perf_counter()
         python_result = None
         python_error = None
