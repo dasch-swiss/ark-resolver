@@ -51,9 +51,10 @@ backstop:
   kept in sync by hand.
 
 `Cargo.Bazel.lock` (Cargo lock file format, not MODULE.bazel.lock's JSON) is the checked-in
-lockfile, materialized by `crate.from_specs(cargo_lockfile = "//:Cargo.Bazel.lock")`. `cargo audit`
-remains, pointed at that file directly (`cargo audit --file Cargo.Bazel.lock`, run via `just
-audit`); cargo's only remaining role is as an audit tool, it is never invoked to build or test.
+lockfile, materialized by `crate.from_specs(cargo_lockfile = "//:Cargo.Bazel.lock")`. `cargo-audit`
+remains, pointed at that file directly (`cargo-audit audit --file Cargo.Bazel.lock`, run via `just
+audit`; the dev shell ships the `cargo-audit` binary, not the `cargo` frontend); its only role is
+auditing, nothing cargo-based builds or tests.
 
 ### PyO3 extension
 
@@ -181,7 +182,7 @@ release flow that never moved `latest` on Docker Hub either.
 Bazel is the only build path. `Cargo.toml`, `Cargo.lock`, `build.rs`, `rust-toolchain.toml`, the
 Alpine `Dockerfile`, `.dockerignore`, `entrypoint.sh`, `Makefile` and `vars.mk` were deleted, and
 `maturin` was removed from `pyproject.toml` and `uv.lock`. Cargo itself is retained only as the
-input to `cargo audit` (see Rust dependencies above), never to build or test.
+input to `cargo-audit` (see Rust dependencies above), never to build or test.
 
 ## Consequences
 
@@ -208,7 +209,7 @@ input to `cargo audit` (see Rust dependencies above), never to build or test.
   `DT_RPATH`.
 - Dependabot cannot open PRs against `crate.from_specs` entries in `MODULE.bazel` the way it could
   against `Cargo.toml`/`Cargo.lock`, so Rust dependency bumps are manual: `just crates-repin`
-  (re-resolve and re-pin `@crates`) followed by `just audit` (`cargo audit --file
+  (re-resolve and re-pin `@crates`) followed by `just audit` (`cargo-audit audit --file
   Cargo.Bazel.lock`). `.github/dependabot.yml` dropped the `cargo` and `docker` ecosystems; it now
   tracks only `uv` (Python, via `uv.lock`) and `github-actions`.
 
