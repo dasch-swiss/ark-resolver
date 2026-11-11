@@ -1,8 +1,8 @@
 /// Use case layer for ARK URL formatting operations.
 /// This layer orchestrates domain functions and provides business logic coordination.
-use crate::core::domain::ark_url_formatter;
-use crate::core::errors::ark_url_formatter::{ArkUrlFormatterError, ArkUrlFormatterResult};
-use crate::core::use_cases::ark_uuid_processor::ArkUuidProcessor;
+use crate::domain::ark_url_formatter;
+use crate::errors::ark_url_formatter::{ArkUrlFormatterError, ArkUrlFormatterResult};
+use crate::use_cases::ark_uuid_processor::ArkUuidProcessor;
 
 /// Configuration interface for ARK URL formatting operations.
 /// This allows the use case to work with different configuration sources.

@@ -4,9 +4,9 @@
 //! Use case layer for ARK URL information processing.
 //! Orchestrates business logic using domain objects and external services.
 
-use crate::core::domain::ark_url_info::ArkUrlInfo;
-use crate::core::errors::ark_url_info::{ArkUrlInfoError, ArkUrlInfoResult};
-use crate::core::ports::ark_url_info::{
+use crate::domain::ark_url_info::ArkUrlInfo;
+use crate::errors::ark_url_info::{ArkUrlInfoError, ArkUrlInfoResult};
+use crate::ports::ark_url_info::{
     ArkUrlInfoPort, ArkUrlParsingPort, ConfigurationPort, TemplatePort, UuidGenerationPort,
 };
 use std::collections::HashMap;
@@ -286,7 +286,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::core::errors::ark_url_info::ArkUrlInfoError;
+    use crate::errors::ark_url_info::ArkUrlInfoError;
 
     // Mock implementations for testing
     struct MockParser;

@@ -5,9 +5,9 @@ use tokio::fs;
 
 use crate::adapters::common::IniProcessor;
 use crate::adapters::http::HttpConfigurationProvider;
-use crate::core::domain::settings::SettingsRegistry;
-use crate::core::errors::settings::{SettingsError, SettingsResult};
-use crate::core::ports::settings::{
+use ark_resolver_core::domain::settings::SettingsRegistry;
+use ark_resolver_core::errors::settings::{SettingsError, SettingsResult};
+use ark_resolver_core::ports::settings::{
     ConfigurationProvider, FileSystemProvider as FileSystemProviderTrait,
 };
 

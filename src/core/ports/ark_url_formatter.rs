@@ -1,6 +1,6 @@
 /// Port layer for ARK URL formatting operations.
 /// This layer defines abstract interfaces for ARK URL formatting capabilities.
-use crate::core::errors::ark_url_formatter::ArkUrlFormatterResult;
+use crate::errors::ark_url_formatter::ArkUrlFormatterResult;
 
 /// Port trait defining the interface for ARK URL formatting operations.
 ///
@@ -108,7 +108,7 @@ impl<T: ArkUrlFormatterPort> ArkUrlFormatterPortExt for T {}
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::core::errors::ark_url_formatter::ArkUrlFormatterError;
+    use crate::errors::ark_url_formatter::ArkUrlFormatterError;
 
     // Mock implementation for testing
     struct MockArkUrlFormatter;

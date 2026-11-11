@@ -2,8 +2,8 @@ use async_trait::async_trait;
 use regex::Regex;
 use std::collections::HashMap;
 
-use crate::core::domain::settings::{ArkConfig, ProjectConfig, SettingsRegistry};
-use crate::core::errors::settings::SettingsResult;
+use crate::domain::settings::{ArkConfig, ProjectConfig, SettingsRegistry};
+use crate::errors::settings::SettingsResult;
 
 /// Abstract trait for loading configuration data from various sources
 #[async_trait]
@@ -47,14 +47,14 @@ pub trait SettingsRepository: Send + Sync {
     async fn cache_settings(
         &self,
         key: &str,
-        settings: &crate::core::domain::settings::SettingsWithRegexes,
+        settings: &crate::domain::settings::SettingsWithRegexes,
     ) -> SettingsResult<()>;
 
     /// Retrieve cached settings
     async fn get_cached_settings(
         &self,
         key: &str,
-    ) -> SettingsResult<Option<crate::core::domain::settings::SettingsWithRegexes>>;
+    ) -> SettingsResult<Option<crate::domain::settings::SettingsWithRegexes>>;
 
     /// Clear settings cache
     async fn clear_cache(&self) -> SettingsResult<()>;

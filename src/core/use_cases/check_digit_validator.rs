@@ -1,7 +1,7 @@
 /// Use case layer for check digit validation operations.
 /// This layer orchestrates domain functions and provides business logic coordination.
-use crate::core::domain::check_digit;
-use crate::core::errors::check_digit::CheckDigitError;
+use crate::domain::check_digit;
+use crate::errors::check_digit::CheckDigitError;
 
 /// Use case orchestrator for check digit operations
 pub struct CheckDigitValidator;

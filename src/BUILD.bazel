@@ -1,12 +1,18 @@
-"""ARK Resolver Rust library.
+"""ARK Resolver Rust libraries.
 
-  //src:ark_resolver_lib   `rust_library` compiling the whole hexagonal
-                           crate (`core` + `adapters`), crate-named
-                           `ark_resolver`. No `crate_features` set here: the
+  //src:core                `rust_library` for the hexagonal core (`src/core`),
+                           crate-named `ark_resolver_core`. Its `deps` hold no
+                           pyo3 and no I/O crate, which is how the build keeps
+                           the core free of them.
+  //src:core_unit_tests     `rust_test` running the core's embedded
+                           `#[cfg(test)]` modules; links no libpython.
+  //src:ark_resolver_lib    `rust_library` compiling the adapters and the
+                           PyO3 module, crate-named `ark_resolver`, on top of
+                           `//src:core`. No `crate_features` set here: the
                            `pyo3` feature (gating `log_environment_variables`
                            and its adapter) stays off for the library and its
                            unit tests; the extension target turns it on.
-  //src:unit_tests         `rust_test` running the crate's embedded
+  //src:unit_tests          `rust_test` running the adapters' embedded
                            `#[cfg(test)]` modules.
 """
 
@@ -14,9 +20,45 @@ load("@rules_rust//rust:defs.bzl", "rust_library", "rust_test")
 
 package(default_visibility = ["//visibility:private"])
 
-# Explicit list (no glob), mirroring sipi's BUILD.bazel convention. Consumed
-# as a filegroup so the root package's `pyo3_extension` target can depend on
-# the same source set without duplicating the file list.
+# Explicit lists (no glob), mirroring sipi's BUILD.bazel convention. `srcs` is
+# a filegroup so the root package's `pyo3_extension` target can depend on the
+# same source set without duplicating the file list.
+
+# Lists every file under src/core/, and nothing else.
+filegroup(
+    name = "core_srcs",
+    srcs = [
+        "core/domain/ark_url_formatter.rs",
+        "core/domain/ark_url_info.rs",
+        "core/domain/check_digit.rs",
+        "core/domain/mod.rs",
+        "core/domain/parsing.rs",
+        "core/domain/settings.rs",
+        "core/domain/uuid_processing.rs",
+        "core/errors/ark_url_formatter.rs",
+        "core/errors/ark_url_info.rs",
+        "core/errors/check_digit.rs",
+        "core/errors/mod.rs",
+        "core/errors/settings.rs",
+        "core/errors/uuid_processing.rs",
+        "core/lib.rs",
+        "core/ports/ark_url_formatter.rs",
+        "core/ports/ark_url_info.rs",
+        "core/ports/check_digit.rs",
+        "core/ports/mod.rs",
+        "core/ports/settings.rs",
+        "core/ports/uuid_processing.rs",
+        "core/use_cases/ark_url_formatter.rs",
+        "core/use_cases/ark_url_info_processor.rs",
+        "core/use_cases/ark_uuid_processor.rs",
+        "core/use_cases/check_digit_validator.rs",
+        "core/use_cases/mod.rs",
+        "core/use_cases/settings_manager.rs",
+    ],
+    visibility = ["//visibility:private"],
+)
+
+# Lists the files under src/adapters/ plus src/lib.rs, and nothing under src/core/.
 filegroup(
     name = "srcs",
     srcs = [
@@ -35,32 +77,6 @@ filegroup(
         "adapters/pyo3/mod.rs",
         "adapters/pyo3/settings.rs",
         "adapters/pyo3/uuid_processing.rs",
-        "core/domain/ark_url_formatter.rs",
-        "core/domain/ark_url_info.rs",
-        "core/domain/check_digit.rs",
-        "core/domain/mod.rs",
-        "core/domain/parsing.rs",
-        "core/domain/settings.rs",
-        "core/domain/uuid_processing.rs",
-        "core/errors/ark_url_formatter.rs",
-        "core/errors/ark_url_info.rs",
-        "core/errors/check_digit.rs",
-        "core/errors/mod.rs",
-        "core/errors/settings.rs",
-        "core/errors/uuid_processing.rs",
-        "core/mod.rs",
-        "core/ports/ark_url_formatter.rs",
-        "core/ports/ark_url_info.rs",
-        "core/ports/check_digit.rs",
-        "core/ports/mod.rs",
-        "core/ports/settings.rs",
-        "core/ports/uuid_processing.rs",
-        "core/use_cases/ark_url_formatter.rs",
-        "core/use_cases/ark_url_info_processor.rs",
-        "core/use_cases/ark_uuid_processor.rs",
-        "core/use_cases/check_digit_validator.rs",
-        "core/use_cases/mod.rs",
-        "core/use_cases/settings_manager.rs",
         "lib.rs",
     ],
     # Grant matches the root package's `pyo3_extension` consumer (//:_rust).
@@ -75,6 +91,37 @@ exports_files(
     visibility = ["//:__pkg__"],
 )
 
+# The deps of `core` are the dependency rule for the core (ADR-0001): no pyo3
+# and no I/O crate. Never add one to get I/O; add a port and implement it in
+# src/adapters.
+rust_library(
+    name = "core",
+    srcs = [":core_srcs"],
+    crate_name = "ark_resolver_core",
+    crate_root = "core/lib.rs",
+    edition = "2021",
+    proc_macro_deps = [
+        "@crates//:async-trait",
+    ],
+    deps = [
+        "@crates//:regex",
+        "@crates//:serde_json",
+        "@crates//:thiserror",
+    ],
+    visibility = ["//:__pkg__"],
+)
+
+rust_test(
+    name = "core_unit_tests",
+    crate = ":core",
+    deps = ["@crates//:tokio"] + select({
+        # Hermetic LLVM links with --unwindlib=none, and this binary links no
+        # libpython; see //:_libunwind_static. Never add it to //src:core.
+        "@platforms//os:linux": ["//:_libunwind_static"],
+        "//conditions:default": [],
+    }),
+)
+
 rust_library(
     name = "ark_resolver_lib",
     srcs = [":srcs"],
@@ -85,6 +132,7 @@ rust_library(
         "@crates//:async-trait",
     ],
     deps = [
+        ":core",
         "@crates//:base64",
         "@crates//:config",
         "@crates//:pyo3",

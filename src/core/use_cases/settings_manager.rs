@@ -1,11 +1,11 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use crate::core::domain::settings::{
+use crate::domain::settings::{
     ArkConfig, CompiledRegexes, ProjectConfig, Settings, SettingsRegistry, SettingsWithRegexes,
 };
-use crate::core::errors::settings::{SettingsError, SettingsResult};
-use crate::core::ports::settings::{
+use crate::errors::settings::{SettingsError, SettingsResult};
+use crate::ports::settings::{
     ConfigurationProvider, EnvironmentProvider, RegexProvider, SettingsRepository,
     SettingsTransformer, SettingsValidator,
 };
@@ -55,7 +55,7 @@ impl SettingsManager {
             .get_env_var("ARK_REGISTRY")
             .await?
             .ok_or_else(|| {
-                crate::core::errors::settings::SettingsError::EnvironmentError(
+                crate::errors::settings::SettingsError::EnvironmentError(
                     "ARK_REGISTRY environment variable is required".to_string(),
                 )
             })?;
@@ -110,7 +110,7 @@ impl SettingsManager {
             .get_env_var("ARK_REGISTRY")
             .await?
             .ok_or_else(|| {
-                crate::core::errors::settings::SettingsError::EnvironmentError(
+                crate::errors::settings::SettingsError::EnvironmentError(
                     "ARK_REGISTRY environment variable is required".to_string(),
                 )
             })?;
@@ -289,7 +289,7 @@ impl SettingsValidator for DefaultSettingsValidator {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::core::ports::settings::tests::{
+    use crate::ports::settings::tests::{
         MockConfigurationProvider, MockEnvironmentProvider, MockRegexProvider,
     };
     use std::collections::HashMap;

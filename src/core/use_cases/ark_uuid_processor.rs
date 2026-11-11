@@ -1,7 +1,7 @@
 /// Use case layer for ARK UUID processing operations.
 /// This layer orchestrates domain functions and provides business logic coordination.
-use crate::core::domain::uuid_processing;
-use crate::core::errors::uuid_processing::UuidProcessingError;
+use crate::domain::uuid_processing;
+use crate::errors::uuid_processing::UuidProcessingError;
 
 /// Use case orchestrator for ARK UUID processing operations
 pub struct ArkUuidProcessor;

@@ -14,7 +14,6 @@ use pyo3::prelude::*;
 use pyo3::types::PyModule;
 
 mod adapters;
-pub mod core;
 
 #[pyfunction]
 pub fn initialize_debug_tracing() -> PyResult<()> {

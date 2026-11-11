@@ -49,8 +49,8 @@ upgrade:
 [doc("Run all rust fmt and clippy checks")]
 rustcheck:
     just --check --fmt --unstable
-    bazel build //src:ark_resolver_lib //src:unit_tests //:_rust_shared //tools/healthcheck:healthcheck //tools/healthcheck:healthcheck_test --aspects=@rules_rust//rust:defs.bzl%rustfmt_aspect --output_groups=rustfmt_checks
-    bazel build //src:ark_resolver_lib //src:unit_tests //:_rust_shared //tools/healthcheck:healthcheck //tools/healthcheck:healthcheck_test --aspects=@rules_rust//rust:defs.bzl%rust_clippy_aspect --output_groups=clippy_checks --@rules_rust//rust/settings:clippy_flags=-Dwarnings
+    bazel build //src:core //src:core_unit_tests //src:ark_resolver_lib //src:unit_tests //:_rust_shared //tools/healthcheck:healthcheck //tools/healthcheck:healthcheck_test --aspects=@rules_rust//rust:defs.bzl%rustfmt_aspect --output_groups=rustfmt_checks
+    bazel build //src:core //src:core_unit_tests //src:ark_resolver_lib //src:unit_tests //:_rust_shared //tools/healthcheck:healthcheck //tools/healthcheck:healthcheck_test --aspects=@rules_rust//rust:defs.bzl%rust_clippy_aspect --output_groups=clippy_checks --@rules_rust//rust/settings:clippy_flags=-Dwarnings
 
 # Run all python checks
 pycheck: build
@@ -126,7 +126,7 @@ run:
 # ARK_REGISTRY is supplied via //src:unit_tests' `env` attribute, not here.
 [doc("Run Rust unit tests")]
 test:
-    bazel test //src:unit_tests //tools/healthcheck:healthcheck_test
+    bazel test //src:core_unit_tests //src:unit_tests //tools/healthcheck:healthcheck_test
 
 # `smoke_test` is tagged "manual" so it never runs under `just pytest`
 # (`bazel test //tests/...`); PATH and HOME need to reach into the client

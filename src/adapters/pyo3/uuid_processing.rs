@@ -1,8 +1,8 @@
 //! PyO3 adapter for UUID processing operations.
 //! This adapter provides PyO3-compatible functions that maintain exact API compatibility.
 #![allow(clippy::useless_conversion)]
-use crate::core::errors::uuid_processing::UuidProcessingError;
-use crate::core::use_cases::ark_uuid_processor::ArkUuidProcessor;
+use ark_resolver_core::errors::uuid_processing::UuidProcessingError;
+use ark_resolver_core::use_cases::ark_uuid_processor::ArkUuidProcessor;
 use pyo3::{exceptions::PyValueError, pyfunction, PyResult};
 
 /// Convert domain errors to PyO3 errors

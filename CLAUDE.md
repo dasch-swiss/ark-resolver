@@ -42,7 +42,7 @@ It is a Python (Sanic) service with a Rust extension, `ark_resolver._rust`, buil
 
 ```bash
 just check        # ruff format check, ruff, pyright; rustfmt and clippy with -Dwarnings
-just test         # Rust unit tests (//src:unit_tests)
+just test         # Rust unit tests (//src:core_unit_tests, //src:unit_tests)
 just pytest       # Python tests against the Bazel-built extension (//tests/...)
 just fmt          # format Python and Rust
 just run          # serve locally with tests/ark-registry.ini

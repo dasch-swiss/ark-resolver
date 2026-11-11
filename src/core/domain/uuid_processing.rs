@@ -1,7 +1,7 @@
 /// Pure domain logic for UUID processing operations.
 /// This module contains UUID transformation functions without any external dependencies.
-use crate::core::domain::check_digit;
-use crate::core::errors::uuid_processing::UuidProcessingError;
+use crate::domain::check_digit;
+use crate::errors::uuid_processing::UuidProcessingError;
 
 /// Add a check digit to a UUID and escape hyphens for ARK URL compatibility.
 ///
