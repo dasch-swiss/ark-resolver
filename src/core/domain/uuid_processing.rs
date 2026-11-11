@@ -107,8 +107,6 @@ mod tests {
 
     #[test]
     fn test_unescape_and_validate_uuid_invalid_check_digit() {
-        pyo3::Python::initialize();
-
         // Create an invalid UUID (modify the check digit)
         let escaped_uuid = "0001=12345678=abcd=ef12=3456=789012345678X"; // Invalid check digit
 
@@ -124,8 +122,6 @@ mod tests {
 
     #[test]
     fn test_unescape_and_validate_uuid_empty_input() {
-        pyo3::Python::initialize();
-
         let result = unescape_and_validate_uuid("ark:/test", "");
 
         // Should return an error for empty input
