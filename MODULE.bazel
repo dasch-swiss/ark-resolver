@@ -197,8 +197,8 @@ crate.spec(package = "base64", version = "0.22.1")
 crate.spec(package = "config", version = "0.15.8")
 
 # No `extension-module` feature: a single `@crates//:pyo3` target serves both
-# the embedded unit tests (which call `Python::initialize()` to run an
-# in-process interpreter) and the extension module built from the same
+# the unit-test binary (which links `pyo3` and so needs libpython, although no
+# test starts an interpreter) and the extension module built from the same
 # sources; the extension links libpython dynamically instead. This spec
 # leaves `default_features` on: nothing here needs pyo3's default feature
 # set trimmed.

@@ -105,9 +105,8 @@ rust_library(
 rust_test(
     name = "unit_tests",
     crate = ":ark_resolver_lib",
-    # `Python::initialize()` (called from src/core/domain/uuid_processing.rs
-    # tests) needs libpython linked into the test binary; the hermetic
-    # Python toolchain's cc libs provide that.
+    # The test binary links `pyo3`, which needs libpython at link time; the
+    # hermetic Python toolchain's cc libs provide it.
     deps = [
         "@crates//:serial_test",
         "@crates//:tempfile",
