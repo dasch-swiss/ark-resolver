@@ -61,6 +61,7 @@ A business rule embedded in code carries a `BR: ` comment that states the rule, 
 
 - Conventional Commits. The repo merges by rebase, so every commit lands on `main` and release-please turns each one into a CHANGELOG line (sections in `.github/release-please/config.json`; `ci` is not listed and stays out of the changelog). Write each subject as a changelog entry, one logical change per commit.
 - Types in use: `feat`, `fix`, `perf`, `refactor`, `docs`, `test`, `build` (Bazel, just, Nix, image), `ci`, `chore`, `style`. The scope names the area: `fix(redirect)`, `fix(deps)`, `build(bazel)`, `docs(adr)`.
+- `.commitlintrc.yml` holds the enforced type list; change it with the list above. The `commit-lint` CI job checks every commit of a PR against it; run `just commit-lint` before pushing (on a stacked branch, `just commit-lint <parent-branch>`). A type outside the list fails, such as `revert` or git's default `Revert "…"` message, and so do `fixup!` and `squash!` commits until the branch is autosquashed.
 - The version lives in `version.txt` and only release-please changes it and `CHANGELOG.md`.
 
 ## Reviewers & Git History

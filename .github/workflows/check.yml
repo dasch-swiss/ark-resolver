@@ -1,8 +1,11 @@
 # This workflow runs whenever a PR is opened or updated, or a commit is pushed to main. It runs
-# two Bazel-driven checks:
+# two Bazel-driven checks and, on pull requests, the commit-message check:
 # - rustcheck: rustfmt and clippy, via `just rustcheck` (Bazel aspects)
 # - pycheck: ruff format, ruff check, and pyright, via `just pycheck` (builds the Rust
 #   extension with Bazel first)
+# - commit-lint: every commit of the PR against .commitlintrc.yml, via `just commit-lint`;
+#   on main it only installs commitlint-rs, so the cached binary lives on the default branch,
+#   the only scope whose cache every PR can read
 
 name: check
 
@@ -64,3 +67,32 @@ jobs:
         with:
           path: ~/.cache/bazel-repo
           key: ${{ steps.setup.outputs.repo-cache-key }}
+
+  # The repo rebase-merges, so each PR commit lands on main and release-please reads it:
+  # every commit is checked, not only the PR title.
+  commit-lint:
+    runs-on: ubuntu-latest
+    name: commit messages
+    timeout-minutes: 15
+    env:
+      # Keep equal to commitlint-rs in the flake.lock-pinned nixpkgs, which `just commit-lint` uses locally.
+      COMMITLINT_VERSION: "0.2.4"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: extractions/setup-just@v3
+      - name: Cache commitlint-rs
+        id: cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/bin/commitlint
+          key: commitlint-rs-${{ runner.os }}-${{ env.COMMITLINT_VERSION }}
+      - name: Install commitlint-rs
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: cargo install commitlint-rs --version "$COMMITLINT_VERSION" --locked
+      - name: Lint commit messages
+        if: github.event_name == 'pull_request'
+        env:
+          BASE_REF: ${{ github.event.pull_request.base.sha }}
+        run: just commit-lint "$BASE_REF"
