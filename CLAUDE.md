@@ -7,11 +7,6 @@ This file provides guidance to coding agents when working with code in this repo
 The coding agent MUST first present plan. Only after confirmation, start implementing plan and changing code.
 The coding agent MUST ask questions about code coverage and if adding new unit tests or extending existing tests is required.
 
-## Documentation Synchronization
-When updating configuration or environment variables, keep both documentation files in sync:
-- **CLAUDE.md** (this file): technical details for coding agents
-- **README.md**: user-facing documentation and deployment instructions
-
 ## Documentation Conventions
 
 ### Business Rules Documentation
@@ -229,19 +224,9 @@ just rust-project
 - Debug tracing integration for HTTP request troubleshooting in containerized environments
 
 ### Configuration System
-- All configuration is done via environment variables (host, port, GitHub webhook secret, registry file)
+- All configuration is done via environment variables; [`.env.example`](.env.example) lists every one with its default
 - `tests/ark-registry.ini`: Project-specific ARK URL templates and redirect targets (for local testing only)
 - Settings are loaded via Rust for performance (`ArkUrlSettings` class)
-
-### Rust HTTP Client Configuration
-Additional environment variables for debugging and timeout control:
-- `ARK_RUST_LOAD_TIMEOUT_MS`: Application-level timeout for settings loading (default: 15000ms) - prevents SIGTERM
-- `ARK_RUST_HTTP_TIMEOUT_MS`: HTTP request total timeout (default: 10000ms) - matches Python behavior
-- `ARK_RUST_HTTP_CONNECT_TIMEOUT_MS`: HTTP connection timeout (default: 5000ms)
-- `ARK_RUST_FORCE_IPV4`: Force IPv4-only connections, disable IPv6 (default: false) - fixes container IPv6 connectivity issues
-- `RUST_LOG`: Controls tracing verbosity (e.g., `RUST_LOG=ark_resolver=debug,reqwest=debug,hyper=debug`)
-- `ARK_SENTRY_DEBUG`: Enable Sentry debug mode (default: false) - accepts "true"/"1"/"yes"/"on" for true
-- Proxy support via standard environment variables (`HTTPS_PROXY`, `HTTP_PROXY`, `ALL_PROXY`)
 
 ### Key Python Modules
 - `ark_resolver/ark.py`: Main server and CLI entry point
