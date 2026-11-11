@@ -1,7 +1,7 @@
 version: 1
 
 defaults:
-  conventions: [CLAUDE.md, CONTEXT.md]
+  conventions: [CLAUDE.md, CONVENTIONS.md, CONTEXT.md]
   commands:
     test: just test && just pytest
     lint: just check
