@@ -32,7 +32,7 @@ versions the previous Cargo/Docker setup used (Rust 1.97.0 in the Docker image, 
 now-deleted `rust-toolchain.toml`). The pin is raised from here if a crate needs a newer compiler.
 
 One bzlmod graph now builds the PyO3 extension (`//:_rust`), runs the Rust unit tests
-(`//src:unit_tests`) and the Python tests (`//tests/...`, one `py_test` per module via a pytest
+(`//src:core_unit_tests`, `//src:unit_tests`) and the Python tests (`//tests/...`, one `py_test` per module via a pytest
 shim), and builds and pushes the OCI image. Bazel is the only build path; see Retired build below
 for what this replaced.
 
@@ -80,15 +80,16 @@ auditing, nothing cargo-based builds or tests.
   0.70.0 gets PyO3 0.29 without moving either of those two things.
 - The Cargo `extension-module` feature is deprecated in PyO3 0.29; its replacement is read from an
   environment variable at build-script time, so a single `@crates//:pyo3` cannot serve both the
-  extension build and the Rust unit tests, which embed an interpreter via `Python::initialize()`.
+  extension build and the adapters' Rust unit tests, which link `pyo3` but start no interpreter.
   We build `pyo3` without extension-module mode; the extension then links libpython dynamically,
   which the previous maturin build did not do (see Libpython below).
 - The Cargo `build.rs` that called `add_extension_module_link_args()` was deleted: it only emitted
   `-undefined dynamic_lookup` on macOS, which `pyo3_extension` adds itself (together with
   `-Wl,-no_fixup_chains`) via a `select`.
-- Rust unit tests (`//src:unit_tests`) link `@rules_python//python/cc:current_py_cc_libs`; on
-  macOS no `PYTHONHOME` or library-path environment variable is needed because the resulting
-  binary carries an `@loader_path` rpath. This has not been proven hermetic under remote
+- The adapters' Rust unit tests (`//src:unit_tests`) link
+  `@rules_python//python/cc:current_py_cc_libs`; the core's (`//src:core_unit_tests`) link no
+  libpython. On macOS no `PYTHONHOME` or library-path environment variable is needed because the
+  resulting binary carries an `@loader_path` rpath. This has not been proven hermetic under remote
   execution; the fallback if it breaks there is an `sh_test` wrapper that sets `PYTHONHOME`
   explicitly. All 168 Rust unit tests pass under Bazel, matching the count under cargo-nextest.
 

@@ -24,7 +24,7 @@ Python 3.12 with Sanic serves HTTP and the user-facing resolution logic. Rust (e
 - New resolution behaviour is implemented twice: in Python, and in Rust core plus adapters. It is exposed to Python through the feature's `*_rust.py` wrapper, run through `execute_parallel`, and lands with a comparative parity test.
 - A change to one implementation changes the other in the same PR, or the PR says why both still agree and names the input that would show a divergence.
 - Migration phases: in phase 1 (now) Rust runs in shadow while Python is user-facing; in phase 2 the served implementation switches to Rust and Python is removed where the migration is complete.
-- Rust layering follows ADR-0001: `src/core` uses only the standard library, never `pyo3`, `std::env` or `std::fs`. I/O goes behind a trait in `src/core/ports` implemented in `src/adapters`.
+- Rust layering follows ADR-0001: `src/core` uses only the crates in `//src:core`'s `deps`, and never `std::env` or `std::fs`. I/O goes behind a trait in `src/core/ports` implemented in `src/adapters`.
 - A new Python-visible Rust function or class is registered in `fn _rust` (`src/lib.rs`) and re-exported from the feature's `*_rust.py` wrapper. Routes and `python-resolution` modules never import `ark_resolver._rust` directly.
 - A new route is a Blueprint module in `ark_resolver/routes/`, registered in `ark.py` before `redirect_bp`, which catches every path.
 
