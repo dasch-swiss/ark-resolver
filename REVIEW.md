@@ -24,7 +24,8 @@ Agent reference card for the **review phase**. Pair with `CONVENTIONS.md` (work 
 
 ### Rust layering
 
-- `src/core` stays free of `pyo3`, `std::env` and `std::fs`; new I/O goes through a port in `src/core/ports` (ADR-0001).
+- `src/core` stays free of `std::env` and `std::fs`; new I/O goes through a port in `src/core/ports` (ADR-0001). `pyo3` and any other crate outside `//src:core`'s `deps` fail the build, so they need no review check.
+- A new entry in `//src:core`'s `deps` does no I/O and binds to no runtime; a new entry in `//src:core_unit_tests`' `deps` is a test-only crate.
 
 ### Configuration and build
 

@@ -4,6 +4,8 @@
 
 **Accepted** - 2025-01-15
 
+Amended 2026-11-11: the core may use the crates in `//src:core`'s `deps`; the rest of the decision stands.
+
 ## Context
 
 The DSP ARK Resolver is currently in Phase 1 of a Python-to-Rust migration. The existing Rust code is tightly coupled to PyO3 throughout, which creates several problems:
@@ -33,7 +35,7 @@ We will refactor the codebase using **Hexagonal Architecture** (Ports & Adapters
 
 1. **Domain Layer** (`src/core/domain/`)
    - Pure business logic and mathematical operations
-   - Zero external dependencies beyond Rust std library
+   - The core (domain, use cases, ports, errors) depends only on the crates in `//src:core`'s `deps` (`src/BUILD.bazel`), none of which does I/O or binds to Python; the build enforces the list, and review checks that a new entry qualifies
    - Contains core algorithms and business rules
 
 2. **Use Cases Layer** (`src/core/use_cases/`)
@@ -98,6 +100,7 @@ We will refactor the codebase using **Hexagonal Architecture** (Ports & Adapters
 ```
 src/
 ├── core/
+│   ├── lib.rs           # Crate root of //src:core (ark_resolver_core)
 │   ├── domain/          # Pure business logic
 │   ├── use_cases/       # Application orchestration
 │   ├── ports/           # Abstract interfaces
