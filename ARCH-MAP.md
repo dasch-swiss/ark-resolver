@@ -1,7 +1,7 @@
 ---
 dune_map: true
 schema_version: 2
-date: 2026-09-28
+date: 2026-11-11
 ---
 
 # ARCH-MAP.md
@@ -50,21 +50,23 @@ The ARK resolver turns DaSCH ARK identifiers (`ark:/72163/...`) into redirects t
 
 ### python-resolution
 
-- **Paths:** `ark_resolver/ark_url.py`, `ark_resolver/check_digit.py`, `tests/test_ark_url.py`, `tests/test_ckeck_digit.py`, `tests/ark-registry.ini`, `tests/__init__.py`
+- **Paths:** `ark_resolver/ark_url.py`, `ark_resolver/check_digit.py`, `tests/test_ark_url.py`, `tests/test_check_digit.py`, `tests/ark-registry.ini`, `tests/__init__.py`
 - **Purpose:** The authoritative ARK logic, whose result users actually receive. It covers parsing, check digits, redirect-URL templating, and conversion between ARKs and IRIs.
 - **Key entities:** `ArkUrlSettings`, `ArkUrlInfo`, `ArkUrlFormatter`, `ArkUrlException`, `VersionMismatchException`, `VersionZeroNotAllowedException`, `add_check_digit_and_escape`, `unescape_and_validate_uuid`, `CheckDigitException`, `calculate_check_digit`
 - **Public interface:**
+  - `ArkUrlSettings(config)`, built by `ark.load_settings()`; `ark.py` also reads its `.config` and `.top_config` for `/config`, `/reload` and the server address.
   - `ArkUrlInfo(settings, ark_id)` with `.to_redirect_url()`, `.to_resource_iri()` and `.get_timestamp()`. `.to_resource_iri()` raises `ArkUrlException` for a project or top-level ARK, which names no resource.
-  - `ArkUrlFormatter(settings)` with `.resource_iri_to_ark_id()` and `.format_ark_url()`.
-  - The exception types. The routes' error classification depends on them.
-- **Local-context kit:** `ark_resolver/ark_url.py`, `ark_resolver/check_digit.py`, `ark_resolver/ark_url_rust.py`, `tests/test_ark_url.py`, `tests/test_redirect_parity.py`, `tests/ark-registry.ini`
+  - `ArkUrlFormatter(settings)` with `.resource_iri_to_ark_id()` (`/convert`) and `.resource_iri_to_ark_url()` (CLI); `.format_ark_url()` is internal.
+  - `check_digit.is_valid()` and `check_digit.calculate_check_digit()`.
+  - The exception types, plus a bare `KeyError` for a project missing from the registry. The routes' error classification depends on them.
+- **Local-context kit:** `ark_resolver/ark_url.py`, `ark_resolver/check_digit.py`, `tests/test_ark_url.py`, `tests/test_check_digit.py`, `tests/test_redirect_parity.py`, `tests/test_convert_parity.py`, `tests/ark-registry.ini`
 - **Depends on:** none (stdlib only)
-- **Used by:** http-service, shadow-bridge (`ark_url_rust.py` reuses `ArkUrlException`)
+- **Used by:** http-service (`ark.py`, `routes/`, `error_diagnostics.py`), shadow-bridge (`ark_url_rust.py` reuses `ArkUrlException`; the parity tests call both implementations)
 - **Boundary rules:**
   - It never imports `ark_resolver._rust`. Keeping this rule is what keeps the shadow comparison independent. Enforcement: `docs-only`.
-  - A project or top-level ARK is rejected by `/convert` rather than turned into an IRI with a missing resource ID; Rust mirrors this with `ArkUrlInfoError::ResourceIdRequired`. Enforcement: `static-analysis` (`tests/test_convert_parity.py`).
+  - A project or top-level ARK is rejected by `ArkUrlInfo.to_resource_iri()`, so neither `/convert` nor the CLI turns it into an IRI with a missing resource ID; Rust mirrors this with `ArkUrlInfoError::ResourceIdRequired`. Enforcement: `static-analysis` (`tests/test_convert_parity.py`, which checks that both sides raise, not the exception type).
 - **Durable state:** None. Settings are parsed from the registry by `ark.load_settings()` (http-service).
-- **Fingerprint:** `606f19ffb4db`
+- **Fingerprint:** `1fee798decef`
 
 ### shadow-bridge
 
@@ -73,13 +75,15 @@ The ARK resolver turns DaSCH ARK identifiers (`ark:/72163/...`) into redirects t
   - Holds the Python-facing wrappers over the Rust extension.
   - Runs Python and Rust on the same input and compares the results.
   - Reports mismatches to OTel spans and Sentry without ever changing the response.
-- **Key entities:** `ParallelExecutor`, `parallel_executor`, `execute_parallel`, `ComparisonResult`, `ParallelExecutionResult`, `add_to_span`, `track_with_sentry`, `ArkUrlInfoRust`, `ArkUrlFormatterRust`
+- **Key entities:** `ParallelExecutor`, `parallel_executor`, `execute_parallel`, `ComparisonResult`, `ParallelExecutionResult`, `add_to_span`, `track_with_sentry`, `ark_url_rust`, `check_digit_rust`
 - **Public interface:**
   - `parallel_executor.execute_parallel(op, python_fn, rust_fn)`, followed by `add_to_span` and `track_with_sentry`.
   - Re-exported Rust `ArkUrlInfo`, `ArkUrlFormatter`, `ArkUrlSettings` and the two UUID functions. Only `unescape_and_validate_uuid` maps a Rust `ValueError` to `ArkUrlException`; `add_check_digit_and_escape` passes errors through.
+  - Exception types differ from the served module: Rust `ArkUrlInfo` raises `ArkUrlException`, Rust `ArkUrlFormatter` raises `ValueError`, and `check_digit_rust.py` defines its own `CheckDigitException`. The parity tests compare whether each side raised, not the type.
+  - `check_digit_rust.py` exposes the six check-digit functions; only its tests call it.
 - **Local-context kit:** `ark_resolver/parallel_execution.py`, `ark_resolver/ark_url_rust.py`, `ark_resolver/check_digit_rust.py`, `src/lib.rs`, `tests/test_redirect_parity.py`, `tests/BUILD.bazel`, `docs/learnings/integration-issues/pyo3-rust-python-shadow-execution-parity.md`
 - **Depends on:** python-resolution, rust-adapters
-- **Used by:** http-service
+- **Used by:** http-service (`routes/redirect.py` and `routes/convert.py` only)
 - **Boundary rules:**
   - `execute_parallel` returns the Python result and re-raises a Python exception. A Rust error or mismatch never reaches a user. Enforcement: `structure`.
   - It catches `BaseException` around the Rust call, because PyO3's `PanicException` is not an `Exception`, and re-raises `KeyboardInterrupt` and `SystemExit`. Enforcement: `review`.
@@ -88,7 +92,7 @@ The ARK resolver turns DaSCH ARK identifiers (`ark:/72163/...`) into redirects t
   - The `parallel_executor` module singleton holds per-worker counters, which are not persisted.
   - Parity coverage: redirect is compared by `test_redirect_parity.py`, and convert step by step, including the rejected project and top-level ARKs, by `test_convert_parity.py`.
   - Each `tests/test_*.py` runs as its own Bazel `py_test` (glob in `tests/BUILD.bazel`, entry point `tests/pytest_main.py`). `test_http_registry_rust` fetches from `raw.githubusercontent.com`; it is tagged `requires-network` and `external`, so it runs in every `just pytest` but is never served from cache.
-- **Fingerprint:** `9a5695b94131`
+- **Fingerprint:** `0de937ce1048`
 
 ### rust-core
 
@@ -150,11 +154,10 @@ The ARK resolver turns DaSCH ARK identifiers (`ark:/72163/...`) into redirects t
 - **Paths:** `MODULE.bazel`, `MODULE.bazel.lock`, `BUILD.bazel`, `src/BUILD.bazel`, `tests/BUILD.bazel`, `.bazelrc`, `.bazelversion`, `.bazelignore`, `bazel/**`, `platforms/**`, `tools/**`, `Cargo.Bazel.lock`, `flake.nix`, `flake.lock`, `.envrc`, `version.txt`, `.python-version`, `docker-compose.yml`, `justfile`, `pyproject.toml`, `uv.lock`, `.github/**`, `.gitignore`, `.claude/**`, `eng.yaml`, `tests/smoke_test.rs`, `tests/interpreter_path_test.py`, `tests/pytest_main.py`
 - **Purpose:**
   - Bazel is the only build path: builds the PyO3 extension (`pyo3_extension`), runs the Rust and Python tests, and builds the distroless OCI image with `rules_oci`.
-  - CI gates.
+  - PR gates: `check.yml`, `test.yml` (with the Docker Scout compare and CVE scan, skipped on Dependabot PRs), `security.yml` (`cargo-audit`, `pip-audit`, dependency review), `readiness.yml` (the dasch-specs readiness regression check) and `claude-review.yml` (on-demand `@claude review`).
   - release-please versioning from `version.txt` (release-type `simple`).
-  - Docker Hub publishing and the Jenkins deploy webhooks.
-  - Docker Scout SBOM and CVE scans, Sentry release finalization, and the dependency audits (`security.yml`).
-- **Key entities:** `//:_rust`, `//:ark_resolver`, `//:ark_resolver_bin`, `//:image`, `//:image_load`, `//:image_push`, `//tools/healthcheck`, `just test`, `just pytest`, `just pycheck`, `just smoke-test`, `just docker-build`, `just image-check`, `just healthcheck`, `docker-image-tag`, `check.yml`, `test.yml`, `security.yml`, `publish.yml`, `claude-review.yml`
+  - Docker Hub publishing, the Jenkins deploy webhooks, the Docker Scout SBOM and environment records, and Sentry release finalization (`publish.yml`).
+- **Key entities:** `//:_rust`, `//:ark_resolver`, `//:ark_resolver_bin`, `//:image`, `//:image_load`, `//:image_push`, `//tools/healthcheck`, `just test`, `just pytest`, `just pycheck`, `just smoke-test`, `just docker-build`, `just image-check`, `just image-tag-check`, `just audit`, `just crates-repin`, `just healthcheck`, `docker-image-tag`, `tools/workspace_status.sh`, `check.yml`, `test.yml`, `security.yml`, `publish.yml`, `readiness.yml`, `claude-review.yml`
 - **Public interface:**
   - The `just` recipes.
   - The image `daschswiss/ark-resolver:<version>-<shortsha>` (or `<version>` alone when `HEAD` sits exactly on a git tag). The version comes from `version.txt`; the scheme is defined once in `tools/workspace_status.sh` and read back by `justfile`'s `docker-image-tag`. `latest` is loaded locally by `just docker-build` but is never pushed to Docker Hub.
@@ -162,59 +165,62 @@ The ARK resolver turns DaSCH ARK identifiers (`ark:/72163/...`) into redirects t
   - `/app/healthcheck` (`//tools/healthcheck`): the container healthcheck deployments declare as `["CMD", "/app/healthcheck"]`; exits 0 only when `/health` answers `{"status": "ok"}`. `just healthcheck` runs it against a local server.
 - **Local-context kit:** `justfile`, `MODULE.bazel`, `BUILD.bazel`, `pyproject.toml`, `.github/workflows/test.yml`, `.github/workflows/publish.yml`, `.github/workflows/security.yml`
 - **Depends on:**
-  - http-service (it runs it, and `/app/healthcheck` calls its `/health`) and project-docs (`claude-review.yml` reads `CLAUDE.md`).
+  - http-service (it runs it, and `/app/healthcheck` calls its `/health`) and project-docs (`claude-review.yml` reads `CLAUDE.md`, `CONVENTIONS.md` and `REVIEW.md`; `eng.yaml` lists `CLAUDE.md`, `CONVENTIONS.md` and `CONTEXT.md` as conventions).
+  - Remote-owned: `dasch-swiss/dasch-specs` (`readiness.yml` runs its check from `main`, unpinned).
   - External: Docker Hub, `gcr.io/distroless/cc-debian13` (digest-pinned), Jenkins webhooks, Sentry releases, the Bazel Central Registry, crates.io, PyPI.
 - **Used by:** none
 - **Boundary rules:**
-  - The version lives in `version.txt` (release-type `simple`). `pyproject.toml` stays at `0.1.0`. Enforcement: `static-analysis` (release-please).
+  - The version lives in `version.txt` (release-type `simple`). `pyproject.toml` stays at `0.1.0`. Enforcement: `review` (release-please writes `version.txt`; nothing checks that `pyproject.toml` is left alone).
+  - A new Rust source file is added to the explicit `//src:srcs` list in `src/BUILD.bazel`; Python modules and `tests/test_*.py` are globbed. Enforcement: `structure` (the build fails on an unlisted module).
   - Bazel is the only build path. No `cargo`, `maturin` or `Dockerfile` build files exist in this repo (`just audit` runs `cargo-audit` over `Cargo.Bazel.lock`, the one sanctioned exception). Enforcement: `review`.
   - The interpreter path in `BUILD.bazel`'s `oci_image` entrypoint is hand-copied into justfile (`IMAGE_PYTHON`); both must agree. Enforcement: `static-analysis` (`tests/interpreter_path_test.py`).
 - **Durable state:**
-  - Release state: `.github/release-please/manifest.json` and `CHANGELOG.md`. The only writer is release-please.
+  - Release state: `version.txt`, `.github/release-please/manifest.json` and `CHANGELOG.md`. The only writer is release-please.
   - Deployment is outside this repo, reached through `JENKINS_*` webhooks.
-- **Fingerprint:** `605d345b6662`
+- **Fingerprint:** `c540b368a97f`
 
 ### project-docs
 
-- **Paths:** `README.md`, `CLAUDE.md`, `CONTEXT.md`, `CHANGELOG.md`, `LICENSE`, `docs/**`
-- **Purpose:** Documentation for users, operators and agents, plus the ADRs, specs and learnings.
+- **Paths:** `README.md`, `CLAUDE.md`, `CONVENTIONS.md`, `REVIEW.md`, `CONTEXT.md`, `.env.example`, `CHANGELOG.md`, `LICENSE`, `docs/**`
+- **Purpose:** Documentation for users, operators and agents. `CLAUDE.md` is the orientation file, `CONVENTIONS.md` and `REVIEW.md` are the work-phase and review-phase rule cards, `.env.example` is the environment-variable reference; plus the ADRs, specs and learnings.
 - **Key entities:** `ADR-0001`, `ADR-0002`, `log-schema`, `docs/specs/`
-- **Public interface:** `README.md` (deployment, env vars, routes), `CLAUDE.md` (agent guidance), `CONTEXT.md` (domain vocabulary), `docs/adr/`
-- **Local-context kit:** `README.md`, `CLAUDE.md`, `docs/adr/0001-adopt-hexagonal-architecture.md`, `docs/learnings/integration-issues/pyo3-rust-python-shadow-execution-parity.md`
+- **Public interface:** `README.md` (CLI, routes, deployment, healthcheck), `CLAUDE.md` (agent orientation and spec conventions; `@`-imports `CONVENTIONS.md`), `CONVENTIONS.md` (coding conventions), `REVIEW.md` (review checks and skip list), `CONTEXT.md` (domain vocabulary), `.env.example` (every environment variable with its default), `docs/adr/`
+- **Local-context kit:** `CLAUDE.md`, `CONVENTIONS.md`, `REVIEW.md`, `README.md`, `.env.example`, `CONTEXT.md`, `docs/adr/README.md`
 - **Depends on:** none
-- **Used by:** build-and-delivery (`claude-review.yml` reads `CLAUDE.md`)
+- **Used by:** build-and-delivery (`claude-review.yml` reads `CLAUDE.md`, `CONVENTIONS.md` and `REVIEW.md`; `eng.yaml` lists the conventions files; `pyproject.toml` uses `README.md` as the package readme)
 - **Boundary rules:**
   - `docs/specs/` is a sink: a spec may reference out, but nothing outside `docs/specs/` references into it. Check: `grep -rnE "docs/specs/[0-9]{4}" --exclude-dir=specs --exclude-dir=.git .` returns nothing. Enforcement: `review`.
-  - Changes to environment variables, configuration or architecture must be reflected in both `CLAUDE.md` and `README.md`. Enforcement: `docs-only`.
+  - A new or renamed environment variable is added to `.env.example`; `README.md` and `CLAUDE.md` only point to it. Enforcement: `review` (`REVIEW.md`).
+  - `CLAUDE.md` stays an orientation file: coding conventions live in `CONVENTIONS.md` and review checks in `REVIEW.md`, not repeated in `CLAUDE.md`. Enforcement: `docs-only`.
   - `docs/log-schema.md` describes a schema that no code emits. Treat it as a target, not a description.
 - **Durable state:**
   - `CHANGELOG.md`, written only by release-please.
   - `docs/adr/README.md`, the ADR index, updated by hand with each new ADR (copied from `docs/adr/template.md`). Enforcement: `docs-only`.
   - `ARCH-MAP.md` belongs to no component; only `/dune:dune-map` writes it.
-- **Fingerprint:** `8a36f14e9e66`
+- **Fingerprint:** `a58f348f158d`
 
 ## Cross-cutting concerns
 
-- **Configuration.** `ARK_*` environment variables are read twice, once by Python `ark.load_settings()` and once by Rust `EnvironmentVariableProvider`. The code-side inventory is the `EnvVarDefinition` table in `src/adapters/environment/env_logger.rs`. A new variable must be added to both loaders, to that table, and to `README.md` and `CLAUDE.md`.
+- **Configuration.** `ARK_*` environment variables are read twice, once by Python `ark.load_settings()` and once by Rust `EnvironmentVariableProvider`. The code-side inventory is the `EnvVarDefinition` table in `src/adapters/environment/env_logger.rs`. A new variable goes into each loader that reads it, into that table when Rust reads or logs it, and into `.env.example`.
 - **The registry.** `ARK_REGISTRY` is a path or an `http(s)` URL (production and staging: raw GitHub from `dasch-swiss/ark-resolver-data`). Python and Rust each parse it separately. `tests/ark-registry.ini` is the fixture for every test.
 - **Observability.**
   - Sentry is Python-only (`init_tracing_and_sentry`).
   - The OTel TracerProvider is set when `tracing.py` is imported, and exports only to Sentry or the console.
   - Rust logs through `tracing` via `initialize_debug_tracing`.
-- **Business-rule comments.** Rules embedded in code carry the `BR: ` prefix (`CLAUDE.md`).
+- **Business-rule comments.** Rules embedded in code carry the `BR: ` prefix (`CONVENTIONS.md`).
 
 ## Conventions
 
 - **Local-context kit budget:** ≤7 files per component. Enforcement: `docs-only`.
 - **Dependency direction (Python):** `http-service → shadow-bridge → {python-resolution, rust-adapters}`. `python-resolution` never imports `_rust`. Enforcement: `docs-only`. ruff `TID` is enabled with no `banned-api`, so this could be promoted to `static-analysis`.
 - **Dependency direction (Rust):** `rust-adapters → rust-core`. The core never imports adapters or `pyo3` (ADR-0001). Enforcement: `docs-only`. Splitting the core into its own crate without `pyo3` would make this `structure`.
-- **Python is authoritative until migration phase 2 (`CLAUDE.md`: Rust becomes user-facing):**
+- **Python is authoritative until migration phase 2 (`CONVENTIONS.md`: Rust becomes user-facing):**
   - New resolution behaviour is implemented in `python-resolution` and in `rust-core` plus `rust-adapters`.
   - It is wrapped in a `*_rust.py` module and run through `execute_parallel`.
   - It lands with a comparative parity test.
 
   Enforcement: `review` (the `claude-review.yml` prompt).
-- **Rust extension access goes through `*_rust.py` wrappers.** Enforcement: `docs-only`. Violated by `ark.py` (`load_settings`, `initialize_debug_tracing`, `log_environment_variables`) and by several tests.
+- **Routes and `python-resolution` reach the Rust extension only through `*_rust.py` wrappers**, so served code stays independent of the shadow implementation. `ark.py`'s start-up calls (`load_settings`, `initialize_debug_tracing`, `log_environment_variables`), tests and `tools/image_check.py` import `_rust` directly: none of them is served resolution logic, and a wrapper re-exporting them would change no coupling. Enforcement: `docs-only`.
 - **Wiring:**
   - A new route is a Blueprint module in `ark_resolver/routes/`, registered in `ark.py` before `redirect_bp`.
   - A new Rust export is registered in `fn _rust`.
