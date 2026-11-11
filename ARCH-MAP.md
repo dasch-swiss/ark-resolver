@@ -151,13 +151,13 @@ The ARK resolver turns DaSCH ARK identifiers (`ark:/72163/...`) into redirects t
 
 ### build-and-delivery
 
-- **Paths:** `MODULE.bazel`, `MODULE.bazel.lock`, `BUILD.bazel`, `src/BUILD.bazel`, `tests/BUILD.bazel`, `.bazelrc`, `.bazelversion`, `.bazelignore`, `bazel/**`, `platforms/**`, `tools/**`, `Cargo.Bazel.lock`, `flake.nix`, `flake.lock`, `.envrc`, `version.txt`, `.python-version`, `docker-compose.yml`, `justfile`, `pyproject.toml`, `uv.lock`, `.github/**`, `.gitignore`, `.claude/**`, `eng.yaml`, `tests/smoke_test.rs`, `tests/interpreter_path_test.py`, `tests/pytest_main.py`
+- **Paths:** `MODULE.bazel`, `MODULE.bazel.lock`, `BUILD.bazel`, `src/BUILD.bazel`, `tests/BUILD.bazel`, `.bazelrc`, `.bazelversion`, `.bazelignore`, `bazel/**`, `platforms/**`, `tools/**`, `Cargo.Bazel.lock`, `flake.nix`, `flake.lock`, `.envrc`, `version.txt`, `.python-version`, `docker-compose.yml`, `justfile`, `pyproject.toml`, `uv.lock`, `.github/**`, `.gitignore`, `.editorconfig`, `.git-blame-ignore-revs`, `.commitlintrc.yml`, `.claude/**`, `eng.yaml`, `tests/smoke_test.rs`, `tests/interpreter_path_test.py`, `tests/pytest_main.py`
 - **Purpose:**
   - Bazel is the only build path: builds the PyO3 extension (`pyo3_extension`), runs the Rust and Python tests, and builds the distroless OCI image with `rules_oci`.
-  - PR gates: `check.yml`, `test.yml` (with the Docker Scout compare and CVE scan, skipped on Dependabot PRs), `security.yml` (`cargo-audit`, `pip-audit`, dependency review), `readiness.yml` (the dasch-specs readiness regression check) and `claude-review.yml` (on-demand `@claude review`).
+  - PR gates: `check.yml` (rustfmt and clippy, ruff and pyright, and commitlint-rs over every commit of the PR), `test.yml` (with the Docker Scout compare and CVE scan, skipped on Dependabot PRs), `security.yml` (`cargo-audit`, `pip-audit`, dependency review), `readiness.yml` (the dasch-specs readiness regression check) and `claude-review.yml` (on-demand `@claude review`).
   - release-please versioning from `version.txt` (release-type `simple`).
   - Docker Hub publishing, the Jenkins deploy webhooks, the Docker Scout SBOM and environment records, and Sentry release finalization (`publish.yml`).
-- **Key entities:** `//:_rust`, `//:ark_resolver`, `//:ark_resolver_bin`, `//:image`, `//:image_load`, `//:image_push`, `//tools/healthcheck`, `just test`, `just pytest`, `just pycheck`, `just smoke-test`, `just docker-build`, `just image-check`, `just image-tag-check`, `just audit`, `just crates-repin`, `just healthcheck`, `docker-image-tag`, `tools/workspace_status.sh`, `check.yml`, `test.yml`, `security.yml`, `publish.yml`, `readiness.yml`, `claude-review.yml`
+- **Key entities:** `//:_rust`, `//:ark_resolver`, `//:ark_resolver_bin`, `//:image`, `//:image_load`, `//:image_push`, `//tools/healthcheck`, `just test`, `just pytest`, `just pycheck`, `just smoke-test`, `just docker-build`, `just image-check`, `just image-tag-check`, `just audit`, `just crates-repin`, `just healthcheck`, `just commit-lint`, `just setup`, `docker-image-tag`, `tools/workspace_status.sh`, `check.yml`, `test.yml`, `security.yml`, `publish.yml`, `readiness.yml`, `claude-review.yml`
 - **Public interface:**
   - The `just` recipes.
   - The image `daschswiss/ark-resolver:<version>-<shortsha>` (or `<version>` alone when `HEAD` sits exactly on a git tag). The version comes from `version.txt`; the scheme is defined once in `tools/workspace_status.sh` and read back by `justfile`'s `docker-image-tag`. `latest` is loaded locally by `just docker-build` but is never pushed to Docker Hub.
@@ -174,17 +174,20 @@ The ARK resolver turns DaSCH ARK identifiers (`ark:/72163/...`) into redirects t
   - A new Rust source file is added to the explicit `//src:srcs` list in `src/BUILD.bazel`; Python modules and `tests/test_*.py` are globbed. Enforcement: `structure` (the build fails on an unlisted module).
   - Bazel is the only build path. No `cargo`, `maturin` or `Dockerfile` build files exist in this repo (`just audit` runs `cargo-audit` over `Cargo.Bazel.lock`, the one sanctioned exception). Enforcement: `review`.
   - The interpreter path in `BUILD.bazel`'s `oci_image` entrypoint is hand-copied into justfile (`IMAGE_PYTHON`); both must agree. Enforcement: `static-analysis` (`tests/interpreter_path_test.py`).
+  - Every commit is a Conventional Commit with a type from `.commitlintrc.yml`, the enforced list; `CONVENTIONS.md` repeats it with each type's meaning, and both change together. Enforcement: `static-analysis` for the commits (`check.yml` commit-lint), `review` for keeping the two lists in step.
+  - The commitlint-rs version CI installs (`COMMITLINT_VERSION` in `check.yml`) equals the one in the `flake.lock`-pinned nixpkgs that `just commit-lint` uses locally. Enforcement: `review`.
+  - `.editorconfig` repeats ruff's and rustfmt's indent and line-length settings and must not contradict them. Enforcement: `review`.
 - **Durable state:**
   - Release state: `version.txt`, `.github/release-please/manifest.json` and `CHANGELOG.md`. The only writer is release-please.
   - Deployment is outside this repo, reached through `JENKINS_*` webhooks.
-- **Fingerprint:** `c540b368a97f`
+- **Fingerprint:** `3289bfa9637a`
 
 ### project-docs
 
-- **Paths:** `README.md`, `CLAUDE.md`, `CONVENTIONS.md`, `REVIEW.md`, `CONTEXT.md`, `.env.example`, `CHANGELOG.md`, `LICENSE`, `docs/**`
+- **Paths:** `README.md`, `CLAUDE.md`, `CONVENTIONS.md`, `REVIEW.md`, `CONTEXT.md`, `.env.example`, `CHANGELOG.md`, `LICENSE`, `SECURITY.md`, `docs/**`
 - **Purpose:** Documentation for users, operators and agents. `CLAUDE.md` is the orientation file, `CONVENTIONS.md` and `REVIEW.md` are the work-phase and review-phase rule cards, `.env.example` is the environment-variable reference; plus the ADRs, specs and learnings.
 - **Key entities:** `ADR-0001`, `ADR-0002`, `log-schema`, `docs/specs/`
-- **Public interface:** `README.md` (CLI, routes, deployment, healthcheck), `CLAUDE.md` (agent orientation and spec conventions; `@`-imports `CONVENTIONS.md`), `CONVENTIONS.md` (coding conventions), `REVIEW.md` (review checks and skip list), `CONTEXT.md` (domain vocabulary), `.env.example` (every environment variable with its default), `docs/adr/`
+- **Public interface:** `README.md` (CLI, routes, deployment, healthcheck), `CLAUDE.md` (agent orientation and spec conventions; `@`-imports `CONVENTIONS.md`), `CONVENTIONS.md` (coding conventions), `REVIEW.md` (review checks and skip list), `CONTEXT.md` (domain vocabulary), `.env.example` (every environment variable with its default), `SECURITY.md` (how to report a vulnerability), `docs/adr/`
 - **Local-context kit:** `CLAUDE.md`, `CONVENTIONS.md`, `REVIEW.md`, `README.md`, `.env.example`, `CONTEXT.md`, `docs/adr/README.md`
 - **Depends on:** none
 - **Used by:** build-and-delivery (`claude-review.yml` reads `CLAUDE.md`, `CONVENTIONS.md` and `REVIEW.md`; `eng.yaml` lists the conventions files; `pyproject.toml` uses `README.md` as the package readme)
@@ -197,7 +200,7 @@ The ARK resolver turns DaSCH ARK identifiers (`ark:/72163/...`) into redirects t
   - `CHANGELOG.md`, written only by release-please.
   - `docs/adr/README.md`, the ADR index, updated by hand with each new ADR (copied from `docs/adr/template.md`). Enforcement: `docs-only`.
   - `ARCH-MAP.md` belongs to no component; only `/dune:dune-map` writes it.
-- **Fingerprint:** `a58f348f158d`
+- **Fingerprint:** `6c1eff47ccfd`
 
 ## Cross-cutting concerns
 
