@@ -7,105 +7,11 @@ This file provides guidance to coding agents when working with code in this repo
 The coding agent MUST first present plan. Only after confirmation, start implementing plan and changing code.
 The coding agent MUST ask questions about code coverage and if adding new unit tests or extending existing tests is required.
 
-## Documentation Conventions
+## Conventions
 
-### Business Rules Documentation
+Coding conventions (business-rule comments, the served/shadow implementation rules, testing, commits) are in CONVENTIONS.md, imported here so every session loads them:
 
-When working with coding agents, provide requirements and specifications at the **business rules level** rather than
-implementation details. This approach enables coding agents to make informed decisions about how to best implement these
-rules in code.
-
-#### Business Rule Prefix Convention
-
-All business rules embedded in code must be prefixed with `BR: ` to ensure:
-- Easy searchability across the codebase
-- Clear distinction between business logic and implementation details
-- Traceability from requirements to code
-
-**Example:**
-```rust
-// BR: Only public resources resolve to direct content URLs; restricted or embargoed resources redirect to a landing page
-match (resource.visibility, resource.release_date) {
-    (Visibility::Public, None) => redirect(content_url(&resource)),
-    (Visibility::Public, Some(date)) if now() >= date => redirect(content_url(&resource)),
-    _ => redirect(landing_page(&resource)),
-}
-```
-
-### Comment Philosophy
-
-#### Focus on "Why" Not "What"
-
-Comments should explain the **reasoning** behind decisions, not describe what the code does:
-
-❌ **Avoid "What" Comments:**
-```rust
-// Iterate over resources
-for resource in resources.iter() {
-    // Check if embargo is active
-    if let Some(date) = resource.release_date {
-        if now() < date {
-            // Redirect to landing page
-            redirect(landing_page(resource));
-        }
-    }
-}
-```
-
-✅ **Prefer "Why" Comments:**
-```rust
-// BR: Embargoed resources must not expose content before release_date; redirect to landing page until release
-for resource in resources.iter() {
-    if resource.release_date.map_or(false, |d| now() < d) {
-        redirect(landing_page(resource));
-    } else {
-        redirect(content_url(resource));
-    }
-}
-```
-
-#### Code Clarity Principle
-
-If you find yourself needing to explain **what** the code does, this is a signal that the code should be refactored for clarity:
-
-**Instead of commenting unclear code:**
-```rust
-// Compute ARK check digit
-let d = ((ark_suffix.bytes().fold(0u32, |acc, b| acc + b as u32) * 3) % 10) as u8 + b'0';
-```
-
-**Refactor for self-documentation:**
-```rust
-fn compute_ark_check_digit(ark_suffix: &str) -> char {
-    // BR: Validate ARK check digit before redirect
-    // Placeholder for ISO 7064-style calculation
-    compute_check_digit_impl(ark_suffix)
-}
-
-let check = compute_ark_check_digit(ark_suffix);
-```
-
-### Best Practices
-
-1. **Business Rules First**: When describing requirements to Claude Code, focus on business rules and constraints rather than implementation specifics
-2. **Searchable Documentation**: Use the `BR: ` prefix consistently to make business rules easily discoverable
-3. **Self-Documenting Code**: Write code that clearly expresses its intent through meaningful names and structure
-4. **Refactor Over Comment**: If code requires explanation of what it does, refactor it to be more understandable
-5. **Context Over Description**: Comments should provide context, rationale, and business justification
-
-### Example Business Rules Format
-
-When providing requirements to Claude Code, structure them as business rules:
-
-```
-BR: Embargoed resources redirect to a landing page until release_date
-BR: Tombstoned resources return HTTP 410 with an explanatory page
-BR: Public resources resolve to direct content URLs; restricted resources resolve to landing pages
-BR: Legacy salsah.org ARKs map deterministically to DSP IRIs using UUID v5 namespace
-BR: ARK suffix must include a valid check digit before redirect
-```
-
-This approach ensures that the implementation remains flexible while the business logic is clearly documented and traceable.
+@CONVENTIONS.md
 
 ## Specs
 
@@ -125,14 +31,8 @@ The hybrid Python (Sanic) / Rust (PyO3) service is the production architecture, 
 Bazel (see `docs/adr/0002-build-with-bazel.md`). An earlier plan to rewrite the Rust side into a
 standalone Axum service and remove Python/PyO3 entirely is not being pursued.
 
-Logic continues to migrate from Python to Rust inside that hybrid, in two phases:
-
-1. Add functionality to Rust and run it in parallel with the Python implementation to verify correct behavior in
-   production, while the Python behavior is user facing. The convention is that the same Python code that now uses
-   the Rust library is duplicated into files ending in `_rust.py`. Important: Always add comparative unit tests
-   between the Python and Rust implementations.
-2. Change user-facing behavior to the Rust implementation and continue removing Python where the migration is
-   complete.
+Logic continues to migrate from Python to Rust inside that hybrid; the migration phases and the rules for the
+served and shadow implementations are in CONVENTIONS.md.
 
 The core architecture combines:
 
