@@ -146,7 +146,7 @@ jobs:
             So do not stop at "the syntax is valid": find the preconditions the specification
             attaches to the form you built, and for each one name the input that would violate it
             or state why none can. Confirm against the versions this repo builds with
-            (`Cargo.lock` for Rust, `uv.lock` for Python) or the specification itself via web
+            (`Cargo.Bazel.lock` for Rust, `uv.lock` for Python) or the specification itself via web
             search. If you cannot complete that check, say so explicitly and grade the line
             Suspected — do not declare it correct.
 
