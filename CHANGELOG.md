@@ -1,5 +1,45 @@
 # Changelog
 
+## [1.15.1](https://github.com/dasch-swiss/ark-resolver/compare/v1.15.0...v1.15.1) (2026-11-12)
+
+
+### Maintenances
+
+* Add an .editorconfig that agrees with ruff and rustfmt ([e533abd](https://github.com/dasch-swiss/ark-resolver/commit/e533abdc79223942fda5753328b0c01eface03e1))
+* **bazel:** Build the hexagonal core as its own target without pyo3 ([d5cacd7](https://github.com/dasch-swiss/ark-resolver/commit/d5cacd7720143f05c6dcbb55198cfdf35f576335))
+* Remove the unused From conversions on SettingsError ([18441ed](https://github.com/dasch-swiss/ark-resolver/commit/18441edc55f03c406810c133f195fb72cb22d056))
+* Skip the mass reformat commit in git blame ([aa79ed6](https://github.com/dasch-swiss/ark-resolver/commit/aa79ed6c07e614e07ad434e97dfe993002c7f217))
+
+
+### Documentation
+
+* Add a pull-request template ([2c34250](https://github.com/dasch-swiss/ark-resolver/commit/2c342508586139599905b2f43d678310723e914a))
+* Add a SECURITY.md disclosure policy ([9491c63](https://github.com/dasch-swiss/ark-resolver/commit/9491c63f39172eb2def4d505e7494f98cfcfcf23))
+* Add REVIEW.md with this repo's review checklist ([532846c](https://github.com/dasch-swiss/ark-resolver/commit/532846c2b2e1961aeaa88b84055ff7df20b7c2d3))
+* **arch-map:** Map the repo-hygiene files and the commit-lint gate ([27d1c91](https://github.com/dasch-swiss/ark-resolver/commit/27d1c91b5ae2bdbf9b293f55014672a05986ca04))
+* **arch-map:** Re-verify four components and narrow the wrapper rule ([6954188](https://github.com/dasch-swiss/ark-resolver/commit/69541887d046e9f7f6e762f8a967f104c027a05b))
+* **arch-map:** Record the core split and raise the layering rule to structure ([7a45f01](https://github.com/dasch-swiss/ark-resolver/commit/7a45f01d8649a68dbfcaa839942afc08f6ede346))
+* List every environment variable in .env.example ([5a9fa61](https://github.com/dasch-swiss/ark-resolver/commit/5a9fa613763c011b309c17cc24a7ec98289a3079))
+* Move coding conventions from CLAUDE.md to CONVENTIONS.md ([9b3eaa8](https://github.com/dasch-swiss/ark-resolver/commit/9b3eaa8993dc8957dd563606fea52fab701217a5))
+* Name the audit command as `cargo-audit audit` ([6b4dc92](https://github.com/dasch-swiss/ark-resolver/commit/6b4dc9238596196cf433b744231ac0b7f175125a))
+* **specs:** Add the plan for building the core without pyo3 ([73e3a2e](https://github.com/dasch-swiss/ark-resolver/commit/73e3a2e9a0c41bd03a82f1f442708b2d50204f08))
+* **specs:** Record the execution of the core split plan ([5480697](https://github.com/dasch-swiss/ark-resolver/commit/5480697891d1850bd3438afb3c1f5a21457c2f4a))
+* State the core's dependency rule as the //src:core deps list ([338a25a](https://github.com/dasch-swiss/ark-resolver/commit/338a25a9a9a6a1542d83aa712ff2e156cb5789d7))
+* Trim CLAUDE.md to an orientation file ([9512a3b](https://github.com/dasch-swiss/ark-resolver/commit/9512a3b18f1a81e492773602a8acc724fe350e00))
+* Use the CONTEXT.md terms in the parallel execution module ([713da4c](https://github.com/dasch-swiss/ark-resolver/commit/713da4c708c1927e752f6266c988232e38968f2d))
+
+
+### Bug Fixes
+
+* **deps:** Upgrade opentelemetry to 1.45.2 and setuptools to 84.2.1 ([9f7594b](https://github.com/dasch-swiss/ark-resolver/commit/9f7594be9fe87c003efb1417379193cbb73b2fd0))
+* **deps:** Upgrade vulnerable Python and Rust dependencies ([2e68f80](https://github.com/dasch-swiss/ark-resolver/commit/2e68f80d927fb95f83612a7c5ecee0f9992a83b7))
+
+
+### Tests
+
+* Drop the Python interpreter start-up from the UUID domain tests ([4984901](https://github.com/dasch-swiss/ark-resolver/commit/4984901f0f6a5218e1ee3026856ae008a070cf98))
+* Fix the check-digit test module's name ([7aca6aa](https://github.com/dasch-swiss/ark-resolver/commit/7aca6aaa95e90527661e5e4fbe9790f03f217d06))
+
 ## [1.15.0](https://github.com/dasch-swiss/ark-resolver/compare/v1.14.1...v1.15.0) (2026-10-02)
 
 
