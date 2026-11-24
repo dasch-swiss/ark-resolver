@@ -34,7 +34,7 @@ jobs:
     name: rust checks
     timeout-minutes: 90
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - id: setup
@@ -42,7 +42,7 @@ jobs:
       - run: just rustcheck
       - name: Save Bazel repository cache
         if: ${{ !cancelled() && steps.setup.outputs.repo-cache-hit != 'true' }}
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v6
         with:
           path: ~/.cache/bazel-repo
           key: ${{ steps.setup.outputs.repo-cache-key }}
@@ -52,18 +52,18 @@ jobs:
     name: python checks
     timeout-minutes: 90
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - id: setup
         uses: ./.github/actions/ci-setup
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.12'
       - run: just pycheck
       - name: Save Bazel repository cache
         if: ${{ !cancelled() && steps.setup.outputs.repo-cache-hit != 'true' }}
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v6
         with:
           path: ~/.cache/bazel-repo
           key: ${{ steps.setup.outputs.repo-cache-key }}
@@ -78,13 +78,13 @@ jobs:
       # Keep equal to commitlint-rs in the flake.lock-pinned nixpkgs, which `just commit-lint` uses locally.
       COMMITLINT_VERSION: "0.2.4"
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
-      - uses: extractions/setup-just@v3
+      - uses: extractions/setup-just@v4
       - name: Cache commitlint-rs
         id: cache
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.cargo/bin/commitlint
           key: commitlint-rs-${{ runner.os }}-${{ env.COMMITLINT_VERSION }}
